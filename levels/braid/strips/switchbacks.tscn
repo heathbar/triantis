@@ -1,0 +1,67 @@
+[gd_scene format=3 uid="uid://dhhgf2482fnta"]
+
+[ext_resource type="Script" uid="uid://cxdh76gh1h5sy" path="res://scripts/braid/braid_strip.gd" id="1_strip"]
+[ext_resource type="Script" uid="uid://rjebii07ei8a" path="res://scripts/braid/braid_block.gd" id="2_block"]
+[ext_resource type="Script" uid="uid://cxawcvhuwddeq" path="res://scripts/braid/braid_spawn.gd" id="3_spawn"]
+
+[node name="Zigzag" type="Node2D" unique_id=443067731]
+script = ExtResource("1_strip")
+tide_speed = 33.0
+difficulty = 3
+
+[node name="Block5" type="StaticBody2D" parent="." unique_id=2692483]
+texture_repeat = 2
+position = Vector2(300, 0)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_block")
+size = Vector2(40, 230)
+
+[node name="Block6" type="StaticBody2D" parent="." unique_id=1014768921]
+texture_repeat = 2
+position = Vector2(540, 130)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_block")
+size = Vector2(40, 230)
+
+[node name="Block7" type="StaticBody2D" parent="." unique_id=596022392]
+texture_repeat = 2
+position = Vector2(780, 0)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_block")
+size = Vector2(40, 230)
+
+[node name="Block8" type="StaticBody2D" parent="." unique_id=1405489190]
+texture_repeat = 2
+position = Vector2(1020, 130)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_block")
+size = Vector2(40, 230)
+
+[node name="Vent1" type="Node2D" parent="." unique_id=592339047]
+z_index = -10
+position = Vector2(180, 300)
+script = ExtResource("3_spawn")
+
+[node name="Vent2" type="Node2D" parent="." unique_id=1029487835]
+z_index = -10
+position = Vector2(420, 60)
+script = ExtResource("3_spawn")
+
+[node name="Vent3" type="Node2D" parent="." unique_id=1132423733]
+z_index = -10
+position = Vector2(660, 300)
+script = ExtResource("3_spawn")
+
+[node name="Vent4" type="Node2D" parent="." unique_id=287386277]
+z_index = -10
+position = Vector2(900, 60)
+script = ExtResource("3_spawn")
+
+[node name="Vent5" type="Node2D" parent="." unique_id=1078043774]
+z_index = -10
+position = Vector2(1160, 180)
+script = ExtResource("3_spawn")

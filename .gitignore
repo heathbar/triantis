@@ -1,0 +1,11 @@
+# Godot 4+ specific ignores
+.godot/
+/android/
+
+# Export output (build/.gdignore keeps Godot from importing it)
+/build/*
+!/build/.gdignore
+
+# Braid dock lane preview (addons/braid_tools), rebuilt on demand
+/levels/braid/_preview.tscn
+.DS_Store

@@ -1,0 +1,45 @@
+[gd_resource type="Resource" script_class="WaveDefinition" format=3 uid="uid://k6ieq76n1nr"]
+
+[ext_resource type="Script" uid="uid://chqcfdgenydhg" path="res://scripts/waves/wave_enemy_group.gd" id="1_group"]
+[ext_resource type="Script" uid="uid://c0ac1nhe75bhk" path="res://scripts/waves/wave_definition.gd" id="2_wave"]
+[ext_resource type="PackedScene" path="res://scenenodethings/enemies/brute.tscn" id="e_brute"]
+[ext_resource type="PackedScene" path="res://scenenodethings/enemies/charger.tscn" id="e_charger"]
+[ext_resource type="PackedScene" path="res://scenenodethings/enemy.tscn" id="e_grunt"]
+[ext_resource type="PackedScene" uid="uid://dg3ae7hgbnmjk" path="res://scenenodethings/enemies/runner.tscn" id="e_runner"]
+[ext_resource type="PackedScene" uid="uid://pgyt58w10g8f" path="res://scenenodethings/enemies/swarmling.tscn" id="e_swarmling"]
+
+[sub_resource type="Resource" id="Group_grunt"]
+script = ExtResource("1_group")
+count = 38
+
+[sub_resource type="Resource" id="Group_runner"]
+script = ExtResource("1_group")
+enemy_scene = ExtResource("e_runner")
+count = 12
+
+[sub_resource type="Resource" id="Group_swarmling"]
+script = ExtResource("1_group")
+enemy_scene = ExtResource("e_swarmling")
+count = 30
+cluster = 10
+allow_elite = false
+
+[sub_resource type="Resource" id="Group_brute"]
+script = ExtResource("1_group")
+enemy_scene = ExtResource("e_brute")
+count = 2
+allow_elite = false
+
+[sub_resource type="Resource" id="Group_charger"]
+script = ExtResource("1_group")
+enemy_scene = ExtResource("e_charger")
+count = 4
+
+[resource]
+script = ExtResource("2_wave")
+duration = 63.0
+enemy_groups = Array[ExtResource("1_group")]([SubResource("Group_grunt"), SubResource("Group_runner"), SubResource("Group_swarmling"), SubResource("Group_brute"), SubResource("Group_charger")])
+opening_spawn = 9
+enemy_health_multiplier = 1.9
+enemy_speed_multiplier = 1.24
+completion_bonus = 15

@@ -1,0 +1,81 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/character_select.gd" id="1_select"]
+[ext_resource type="Theme" path="res://data/ui/menu_theme.tres" id="2_theme"]
+[ext_resource type="Texture2D" uid="uid://dxth3sirdlo38" path="res://assets/meadow/environment/background-1.png" id="3_grass"]
+
+[node name="CharacterSelect" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture_filter = 2
+theme = ExtResource("2_theme")
+script = ExtResource("1_select")
+
+[node name="Background" type="TextureRect" parent="."]
+unique_name_in_owner = true
+texture_filter = 1
+texture_repeat = 2
+layout_mode = 1
+anchors_preset = 0
+mouse_filter = 2
+texture = ExtResource("3_grass")
+expand_mode = 1
+stretch_mode = 1
+
+[node name="Center" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBox" type="VBoxContainer" parent="Center"]
+layout_mode = 2
+theme_override_constants/separation = 36
+
+[node name="Heading" type="Label" parent="Center/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.86, 0.5, 1)
+theme_override_colors/font_outline_color = Color(0.2, 0.11, 0.04, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.35)
+theme_override_constants/shadow_offset_x = 0
+theme_override_constants/shadow_offset_y = 12
+theme_override_constants/outline_size = 24
+theme_override_constants/shadow_outline_size = 24
+theme_override_font_sizes/font_size = 96
+text = "Choose Your Character"
+horizontal_alignment = 1
+
+[node name="SquadsBar" type="HBoxContainer" parent="Center/VBox"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 40
+alignment = 1
+
+[node name="Slots" type="HBoxContainer" parent="Center/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 60
+alignment = 1
+
+[node name="Hint" type="RichTextLabel" parent="Center/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+mouse_filter = 2
+theme_override_colors/default_color = Color(1, 0.94, 0.8, 1)
+theme_override_colors/font_outline_color = Color(0.2, 0.11, 0.04, 1)
+theme_override_constants/outline_size = 14
+theme_override_font_sizes/normal_font_size = 56
+bbcode_enabled = true
+fit_content = true
+scroll_active = false
+autowrap_mode = 0
+horizontal_alignment = 1

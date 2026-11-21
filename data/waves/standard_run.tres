@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="WaveSet" format=3]
+
+[ext_resource type="Script" path="res://scripts/waves/wave_set.gd" id="1_fm575"]
+[ext_resource type="Script" path="res://scripts/waves/wave_definition.gd" id="2_vr44c"]
+[ext_resource type="Resource" path="res://data/waves/wave_01.tres" id="w01"]
+[ext_resource type="Resource" path="res://data/waves/wave_02.tres" id="w02"]
+[ext_resource type="Resource" path="res://data/waves/wave_03.tres" id="w03"]
+[ext_resource type="Resource" path="res://data/waves/wave_04.tres" id="w04"]
+[ext_resource type="Resource" path="res://data/waves/wave_05.tres" id="w05"]
+[ext_resource type="Resource" path="res://data/waves/wave_06.tres" id="w06"]
+[ext_resource type="Resource" path="res://data/waves/wave_07.tres" id="w07"]
+[ext_resource type="Resource" path="res://data/waves/wave_08.tres" id="w08"]
+[ext_resource type="Resource" path="res://data/waves/wave_09.tres" id="w09"]
+[ext_resource type="Resource" path="res://data/waves/wave_10.tres" id="w10"]
+[ext_resource type="Resource" path="res://data/waves/wave_11.tres" id="w11"]
+[ext_resource type="Resource" path="res://data/waves/wave_12.tres" id="w12"]
+[ext_resource type="Resource" path="res://data/waves/wave_13.tres" id="w13"]
+[ext_resource type="Resource" path="res://data/waves/wave_14.tres" id="w14"]
+[ext_resource type="Resource" path="res://data/waves/wave_15.tres" id="w15"]
+[ext_resource type="Resource" path="res://data/waves/wave_16.tres" id="w16"]
+[ext_resource type="Resource" path="res://data/waves/wave_17.tres" id="w17"]
+[ext_resource type="Resource" path="res://data/waves/wave_18.tres" id="w18"]
+[ext_resource type="Resource" path="res://data/waves/wave_19.tres" id="w19"]
+[ext_resource type="Resource" path="res://data/waves/wave_20.tres" id="w20"]
+
+[resource]
+script = ExtResource("1_fm575")
+waves = Array[ExtResource("2_vr44c")]([ExtResource("w01"), ExtResource("w02"), ExtResource("w03"), ExtResource("w04"), ExtResource("w05"), ExtResource("w06"), ExtResource("w07"), ExtResource("w08"), ExtResource("w09"), ExtResource("w10"), ExtResource("w11"), ExtResource("w12"), ExtResource("w13"), ExtResource("w14"), ExtResource("w15"), ExtResource("w16"), ExtResource("w17"), ExtResource("w18"), ExtResource("w19"), ExtResource("w20")])

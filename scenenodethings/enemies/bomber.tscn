@@ -1,0 +1,22 @@
+[gd_scene format=3 uid="uid://dqmd7dcpmucqm"]
+
+[ext_resource type="Script" uid="uid://be6rolgknkt3r" path="res://scripts/enemyai/bomber.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://dl1f12wi7gkkh" path="res://assets/meadow/enemies/bomber-1.png" id="2_vtnng"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_bomber"]
+size = Vector2(22, 22)
+
+[node name="Bomber" type="CharacterBody2D" unique_id=2094874196]
+collision_layer = 2
+collision_mask = 3
+script = ExtResource("1_script")
+max_health = 12
+speed = 34.0
+points_value = 15
+elite_color = Color(1, 0.5, 0.45, 1)
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=1736751853]
+texture = ExtResource("2_vtnng")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1844777107]
+shape = SubResource("RectangleShape2D_bomber")

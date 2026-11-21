@@ -1,0 +1,39 @@
+[gd_resource type="Resource" script_class="WaveDefinition" format=3 uid="uid://bho24gkysfpc5"]
+
+[ext_resource type="Script" uid="uid://chqcfdgenydhg" path="res://scripts/waves/wave_enemy_group.gd" id="1_group"]
+[ext_resource type="Script" uid="uid://c0ac1nhe75bhk" path="res://scripts/waves/wave_definition.gd" id="2_wave"]
+[ext_resource type="PackedScene" uid="uid://dqmd7dcpmucqm" path="res://scenenodethings/enemies/bomber.tscn" id="e_bomber"]
+[ext_resource type="PackedScene" path="res://scenenodethings/enemies/charger.tscn" id="e_charger"]
+[ext_resource type="PackedScene" path="res://scenenodethings/enemy.tscn" id="e_grunt"]
+[ext_resource type="PackedScene" uid="uid://dg3ae7hgbnmjk" path="res://scenenodethings/enemies/runner.tscn" id="e_runner"]
+
+[sub_resource type="Resource" id="Group_grunt"]
+script = ExtResource("1_group")
+count = 8
+
+[sub_resource type="Resource" id="Group_runner"]
+script = ExtResource("1_group")
+enemy_scene = ExtResource("e_runner")
+count = 5
+
+[sub_resource type="Resource" id="Group_charger"]
+script = ExtResource("1_group")
+enemy_scene = ExtResource("e_charger")
+count = 1
+
+[sub_resource type="Resource" id="Group_bomber"]
+script = ExtResource("1_group")
+enemy_scene = ExtResource("e_bomber")
+count = 2
+
+[resource]
+script = ExtResource("2_wave")
+display_name = "The Lighthouse"
+duration = 45.0
+enemy_groups = Array[ExtResource("1_group")]([SubResource("Group_grunt"), SubResource("Group_runner"), SubResource("Group_charger"), SubResource("Group_bomber")])
+opening_spawn = 2
+enemy_health_multiplier = 2.6
+enemy_speed_multiplier = 1.36
+boss_id = "lighthouse"
+boss_health = 3100
+completion_bonus = 30

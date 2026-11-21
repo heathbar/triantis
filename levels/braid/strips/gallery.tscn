@@ -1,0 +1,74 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/braid/braid_strip.gd" id="1_strip"]
+[ext_resource type="Script" path="res://scripts/braid/braid_block.gd" id="2_block"]
+[ext_resource type="Script" path="res://scripts/braid/braid_spawn.gd" id="3_spawn"]
+
+[node name="Gallery" type="Node2D"]
+script = ExtResource("1_strip")
+length = 1280.0
+difficulty = 3
+
+[node name="Block1" type="StaticBody2D" parent="."]
+position = Vector2(100, 0)
+script = ExtResource("2_block")
+size = Vector2(200, 100)
+
+[node name="Block2" type="StaticBody2D" parent="."]
+position = Vector2(380, 0)
+script = ExtResource("2_block")
+size = Vector2(240, 100)
+
+[node name="Block3" type="StaticBody2D" parent="."]
+position = Vector2(700, 0)
+script = ExtResource("2_block")
+size = Vector2(240, 100)
+
+[node name="Block4" type="StaticBody2D" parent="."]
+position = Vector2(1020, 0)
+script = ExtResource("2_block")
+size = Vector2(160, 100)
+
+[node name="Block5" type="StaticBody2D" parent="."]
+position = Vector2(100, 260)
+script = ExtResource("2_block")
+size = Vector2(120, 100)
+
+[node name="Block6" type="StaticBody2D" parent="."]
+position = Vector2(300, 260)
+script = ExtResource("2_block")
+size = Vector2(240, 100)
+
+[node name="Block7" type="StaticBody2D" parent="."]
+position = Vector2(620, 260)
+script = ExtResource("2_block")
+size = Vector2(240, 100)
+
+[node name="Block8" type="StaticBody2D" parent="."]
+position = Vector2(940, 260)
+script = ExtResource("2_block")
+size = Vector2(240, 100)
+
+[node name="Vent1" type="Node2D" parent="."]
+position = Vector2(340, 50)
+script = ExtResource("3_spawn")
+
+[node name="Vent2" type="Node2D" parent="."]
+position = Vector2(660, 50)
+script = ExtResource("3_spawn")
+
+[node name="Vent3" type="Node2D" parent="."]
+position = Vector2(980, 50)
+script = ExtResource("3_spawn")
+
+[node name="Vent4" type="Node2D" parent="."]
+position = Vector2(260, 310)
+script = ExtResource("3_spawn")
+
+[node name="Vent5" type="Node2D" parent="."]
+position = Vector2(580, 310)
+script = ExtResource("3_spawn")
+
+[node name="Vent6" type="Node2D" parent="."]
+position = Vector2(900, 310)
+script = ExtResource("3_spawn")

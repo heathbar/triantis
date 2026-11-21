@@ -1,0 +1,57 @@
+[gd_scene format=3 uid="uid://dblx8tm3erb7v"]
+
+[ext_resource type="Script" uid="uid://cxdh76gh1h5sy" path="res://scripts/braid/braid_strip.gd" id="1_strip"]
+[ext_resource type="Script" uid="uid://rjebii07ei8a" path="res://scripts/braid/braid_block.gd" id="2_block"]
+
+[node name="Start" type="Node2D" unique_id=118478287]
+script = ExtResource("1_strip")
+length = 640.0
+zone = "start"
+
+[node name="Block1" type="StaticBody2D" parent="." unique_id=611502065]
+texture_repeat = 2
+position = Vector2(176, 89)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_block")
+size = Vector2(64, 40)
+
+[node name="Block2" type="StaticBody2D" parent="." unique_id=1851928309]
+texture_repeat = 2
+position = Vector2(177, 233)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_block")
+size = Vector2(64, 40)
+
+[node name="Block3" type="StaticBody2D" parent="." unique_id=469735432]
+texture_repeat = 2
+position = Vector2(304, 89)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_block")
+size = Vector2(64, 40)
+
+[node name="Block4" type="StaticBody2D" parent="." unique_id=1574330670]
+texture_repeat = 2
+position = Vector2(305, 233)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_block")
+size = Vector2(64, 40)
+
+[node name="Block5" type="StaticBody2D" parent="." unique_id=783706477]
+texture_repeat = 2
+position = Vector2(432, 89)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_block")
+size = Vector2(64, 40)
+
+[node name="Block6" type="StaticBody2D" parent="." unique_id=1799775078]
+texture_repeat = 2
+position = Vector2(432, 233)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_block")
+size = Vector2(64, 40)

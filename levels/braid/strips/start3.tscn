@@ -1,0 +1,25 @@
+[gd_scene format=3 uid="uid://btad5bq5hqkli"]
+
+[ext_resource type="Script" uid="uid://cxdh76gh1h5sy" path="res://scripts/braid/braid_strip.gd" id="1_strip"]
+[ext_resource type="Script" uid="uid://rjebii07ei8a" path="res://scripts/braid/braid_block.gd" id="2_block"]
+
+[node name="Start" type="Node2D" unique_id=1065170871]
+script = ExtResource("1_strip")
+length = 640.0
+zone = "start"
+
+[node name="Block1" type="StaticBody2D" parent="." unique_id=2064395811]
+texture_repeat = 2
+position = Vector2(256, 73)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_block")
+size = Vector2(48, 96)
+
+[node name="Block2" type="StaticBody2D" parent="." unique_id=863908899]
+texture_repeat = 2
+position = Vector2(380, 247)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_block")
+size = Vector2(192, 24)

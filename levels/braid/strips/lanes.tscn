@@ -1,0 +1,85 @@
+[gd_scene format=3 uid="uid://dn4x3spews0pg"]
+
+[ext_resource type="Script" uid="uid://cxdh76gh1h5sy" path="res://scripts/braid/braid_strip.gd" id="1_strip"]
+[ext_resource type="Script" uid="uid://rjebii07ei8a" path="res://scripts/braid/braid_block.gd" id="2_block"]
+[ext_resource type="Script" uid="uid://cxawcvhuwddeq" path="res://scripts/braid/braid_spawn.gd" id="3_spawn"]
+
+[node name="Bunkers" type="Node2D" unique_id=782590762]
+script = ExtResource("1_strip")
+difficulty = 3
+
+[node name="Block1" type="StaticBody2D" parent="." unique_id=70776437]
+texture_repeat = 2
+position = Vector2(138, 96)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_block")
+size = Vector2(375, 24)
+
+[node name="Block3" type="StaticBody2D" parent="." unique_id=1213107454]
+texture_repeat = 2
+position = Vector2(489, 232)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_block")
+size = Vector2(372, 24)
+
+[node name="Block2" type="StaticBody2D" parent="." unique_id=672384967]
+texture_repeat = 2
+position = Vector2(137, 232)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_block")
+size = Vector2(256, 24)
+
+[node name="Block4" type="StaticBody2D" parent="." unique_id=1828496650]
+texture_repeat = 2
+position = Vector2(796, 69)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_block")
+size = Vector2(64, 96)
+
+[node name="Block5" type="StaticBody2D" parent="." unique_id=750917351]
+texture_repeat = 2
+position = Vector2(369, 256)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_block")
+size = Vector2(24, 96)
+
+[node name="Block7" type="StaticBody2D" parent="." unique_id=2144849399]
+texture_repeat = 2
+position = Vector2(489, 120)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_block")
+size = Vector2(24, 112)
+
+[node name="Block6" type="StaticBody2D" parent="." unique_id=817784269]
+texture_repeat = 2
+position = Vector2(1121, 96)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_block")
+size = Vector2(24, 160)
+
+[node name="Vent1" type="Node2D" parent="." unique_id=2084473691]
+z_index = -10
+position = Vector2(347, 313)
+script = ExtResource("3_spawn")
+
+[node name="Vent2" type="Node2D" parent="." unique_id=1191928254]
+z_index = -10
+position = Vector2(548, 203)
+script = ExtResource("3_spawn")
+
+[node name="Vent3" type="Node2D" parent="." unique_id=1951194391]
+z_index = -10
+position = Vector2(910, 300)
+script = ExtResource("3_spawn")
+
+[node name="Vent4" type="Node2D" parent="." unique_id=777845351]
+z_index = -10
+position = Vector2(1170, 180)
+script = ExtResource("3_spawn")

@@ -1,0 +1,514 @@
+[gd_scene format=3 uid="uid://cgr4k4ml25njb"]
+
+[ext_resource type="Script" uid="uid://dtwxoq0r7b78" path="res://scripts/ui/title_screen.gd" id="1_title"]
+[ext_resource type="Theme" uid="uid://cm3btnhrfdock" path="res://data/ui/menu_theme.tres" id="2_theme"]
+[ext_resource type="Texture2D" uid="uid://dxth3sirdlo38" path="res://assets/meadow/environment/background-1.png" id="3_grass"]
+
+[node name="TitleScreen" type="Control" unique_id=508258352]
+texture_filter = 2
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2_theme")
+script = ExtResource("1_title")
+
+[node name="Strip" type="Control" parent="." unique_id=2075753129]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 0
+mouse_filter = 2
+
+[node name="Grass" type="TextureRect" parent="Strip" unique_id=1690804043]
+unique_name_in_owner = true
+texture_filter = 1
+texture_repeat = 2
+layout_mode = 1
+mouse_filter = 2
+texture = ExtResource("3_grass")
+expand_mode = 1
+stretch_mode = 1
+
+[node name="MainMenu" type="CenterContainer" parent="Strip" unique_id=1578168564]
+unique_name_in_owner = true
+layout_mode = 1
+
+[node name="VBox" type="VBoxContainer" parent="Strip/MainMenu" unique_id=398004856]
+layout_mode = 2
+theme_override_constants/separation = 48
+
+[node name="Title" type="Label" parent="Strip/MainMenu/VBox" unique_id=287851402]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.86, 0.5, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.35)
+theme_override_colors/font_outline_color = Color(0.2, 0.11, 0.04, 1)
+theme_override_constants/shadow_offset_x = 0
+theme_override_constants/shadow_offset_y = 22
+theme_override_constants/outline_size = 40
+theme_override_constants/shadow_outline_size = 40
+theme_override_font_sizes/font_size = 200
+text = "Triantis"
+horizontal_alignment = 1
+
+[node name="Spacer" type="Control" parent="Strip/MainMenu/VBox" unique_id=1203858917]
+custom_minimum_size = Vector2(0, 80)
+layout_mode = 2
+
+[node name="NewLocalGameButton" type="Button" parent="Strip/MainMenu/VBox" unique_id=762018501]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(960, 150)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "New Local Game"
+
+[node name="NewSquadsGameButton" type="Button" parent="Strip/MainMenu/VBox" unique_id=1784086436]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(960, 150)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "New Squads Game"
+
+[node name="ControlsButton" type="Button" parent="Strip/MainMenu/VBox" unique_id=221015837]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(960, 150)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Controls"
+
+[node name="SettingsButton" type="Button" parent="Strip/MainMenu/VBox" unique_id=1262018688]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(960, 150)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Settings"
+
+[node name="QuitButton" type="Button" parent="Strip/MainMenu/VBox" unique_id=1889386848]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(960, 150)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Exit"
+
+[node name="SettingsMenu" type="CenterContainer" parent="Strip" unique_id=605934482]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+
+[node name="Panel" type="PanelContainer" parent="Strip/SettingsMenu" unique_id=292461089]
+custom_minimum_size = Vector2(1400, 0)
+layout_mode = 2
+
+[node name="VBox" type="VBoxContainer" parent="Strip/SettingsMenu/Panel" unique_id=226468565]
+layout_mode = 2
+theme_override_constants/separation = 56
+
+[node name="Heading" type="Label" parent="Strip/SettingsMenu/Panel/VBox" unique_id=151827794]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.86, 0.5, 1)
+theme_override_font_sizes/font_size = 120
+text = "Settings"
+horizontal_alignment = 1
+
+[node name="VolumeRow" type="HBoxContainer" parent="Strip/SettingsMenu/Panel/VBox" unique_id=1297868769]
+layout_mode = 2
+theme_override_constants/separation = 40
+
+[node name="VolumeLabel" type="Label" parent="Strip/SettingsMenu/Panel/VBox/VolumeRow" unique_id=1238155444]
+custom_minimum_size = Vector2(360, 0)
+layout_mode = 2
+text = "Master"
+
+[node name="VolumeSlider" type="HSlider" parent="Strip/SettingsMenu/Panel/VBox/VolumeRow" unique_id=1447846737]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 80)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+value = 100.0
+
+[node name="VolumeValue" type="Label" parent="Strip/SettingsMenu/Panel/VBox/VolumeRow" unique_id=585102697]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(220, 0)
+layout_mode = 2
+text = "100%"
+horizontal_alignment = 2
+
+[node name="MusicRow" type="HBoxContainer" parent="Strip/SettingsMenu/Panel/VBox" unique_id=547194925]
+layout_mode = 2
+theme_override_constants/separation = 40
+
+[node name="MusicLabel" type="Label" parent="Strip/SettingsMenu/Panel/VBox/MusicRow" unique_id=1830442101]
+custom_minimum_size = Vector2(360, 0)
+layout_mode = 2
+text = "Music"
+
+[node name="MusicSlider" type="HSlider" parent="Strip/SettingsMenu/Panel/VBox/MusicRow" unique_id=1830442102]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 80)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+value = 100.0
+
+[node name="MusicValue" type="Label" parent="Strip/SettingsMenu/Panel/VBox/MusicRow" unique_id=1830442103]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(220, 0)
+layout_mode = 2
+text = "100%"
+horizontal_alignment = 2
+
+[node name="SfxRow" type="HBoxContainer" parent="Strip/SettingsMenu/Panel/VBox" unique_id=1830442104]
+layout_mode = 2
+theme_override_constants/separation = 40
+
+[node name="SfxLabel" type="Label" parent="Strip/SettingsMenu/Panel/VBox/SfxRow" unique_id=1830442105]
+custom_minimum_size = Vector2(360, 0)
+layout_mode = 2
+text = "Effects"
+
+[node name="SfxSlider" type="HSlider" parent="Strip/SettingsMenu/Panel/VBox/SfxRow" unique_id=1830442106]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 80)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+value = 100.0
+
+[node name="SfxValue" type="Label" parent="Strip/SettingsMenu/Panel/VBox/SfxRow" unique_id=1830442107]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(220, 0)
+layout_mode = 2
+text = "100%"
+horizontal_alignment = 2
+
+[node name="FullscreenCheck" type="CheckButton" parent="Strip/SettingsMenu/Panel/VBox" unique_id=444891038]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Fullscreen"
+
+[node name="TutorialsCheck" type="CheckButton" parent="Strip/SettingsMenu/Panel/VBox" unique_id=346432850]
+unique_name_in_owner = true
+layout_mode = 2
+button_pressed = true
+text = "Objective tutorials"
+
+[node name="BackButton" type="Button" parent="Strip/SettingsMenu/Panel/VBox" unique_id=368692663]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(600, 140)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Back"
+
+[node name="SquadsMenu" type="CenterContainer" parent="Strip" unique_id=546144008]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+
+[node name="Panel" type="PanelContainer" parent="Strip/SquadsMenu" unique_id=549579438]
+custom_minimum_size = Vector2(1400, 0)
+layout_mode = 2
+
+[node name="VBox" type="VBoxContainer" parent="Strip/SquadsMenu/Panel" unique_id=629746775]
+layout_mode = 2
+theme_override_constants/separation = 56
+
+[node name="Heading" type="Label" parent="Strip/SquadsMenu/Panel/VBox" unique_id=777373420]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.86, 0.5, 1)
+theme_override_font_sizes/font_size = 120
+text = "Squads Game"
+horizontal_alignment = 1
+
+[node name="HostButton" type="Button" parent="Strip/SquadsMenu/Panel/VBox" unique_id=1071908322]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(800, 150)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Host"
+
+[node name="JoinButton" type="Button" parent="Strip/SquadsMenu/Panel/VBox" unique_id=1728551630]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(800, 150)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Join"
+
+[node name="SquadsStatus" type="Label" parent="Strip/SquadsMenu/Panel/VBox" unique_id=1878192375]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(1200, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.6, 0.5, 1)
+theme_override_font_sizes/font_size = 48
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="SquadsBackButton" type="Button" parent="Strip/SquadsMenu/Panel/VBox" unique_id=1988085876]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(600, 140)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Back"
+
+[node name="JoinMenu" type="CenterContainer" parent="Strip" unique_id=323609619]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+
+[node name="Panel" type="PanelContainer" parent="Strip/JoinMenu" unique_id=1800005329]
+custom_minimum_size = Vector2(1600, 0)
+layout_mode = 2
+
+[node name="VBox" type="VBoxContainer" parent="Strip/JoinMenu/Panel" unique_id=1713304664]
+layout_mode = 2
+theme_override_constants/separation = 48
+
+[node name="Heading" type="Label" parent="Strip/JoinMenu/Panel/VBox" unique_id=1326827371]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.86, 0.5, 1)
+theme_override_font_sizes/font_size = 120
+text = "Join a Squads Game"
+horizontal_alignment = 1
+
+[node name="JoinStatus" type="Label" parent="Strip/JoinMenu/Panel/VBox" unique_id=1914862390]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(1400, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 48
+text = "Searching the LAN..."
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="HostList" type="VBoxContainer" parent="Strip/JoinMenu/Panel/VBox" unique_id=1730777861]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 24
+
+[node name="AddressLabel" type="Label" parent="Strip/JoinMenu/Panel/VBox" unique_id=1420031144]
+layout_mode = 2
+theme_override_font_sizes/font_size = 48
+text = "Or join by address (IP or hostname, optional :port)"
+horizontal_alignment = 1
+
+[node name="AddressRow" type="HBoxContainer" parent="Strip/JoinMenu/Panel/VBox" unique_id=210771618]
+layout_mode = 2
+theme_override_constants/separation = 32
+alignment = 1
+
+[node name="AddressEdit" type="LineEdit" parent="Strip/JoinMenu/Panel/VBox/AddressRow" unique_id=341876286]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(900, 130)
+layout_mode = 2
+theme_override_font_sizes/font_size = 56
+placeholder_text = "e.g. 203.0.113.7"
+max_length = 255
+select_all_on_focus = true
+
+[node name="AddressJoinButton" type="Button" parent="Strip/JoinMenu/Panel/VBox/AddressRow" unique_id=1777670582]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(400, 130)
+layout_mode = 2
+text = "Join"
+
+[node name="JoinBackButton" type="Button" parent="Strip/JoinMenu/Panel/VBox" unique_id=1520702275]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(600, 140)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Back"
+
+[node name="HostMenu" type="CenterContainer" parent="Strip" unique_id=1118103664]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+
+[node name="Panel" type="PanelContainer" parent="Strip/HostMenu" unique_id=1513648250]
+custom_minimum_size = Vector2(1400, 0)
+layout_mode = 2
+
+[node name="VBox" type="VBoxContainer" parent="Strip/HostMenu/Panel" unique_id=1437743897]
+layout_mode = 2
+theme_override_constants/separation = 48
+
+[node name="Heading" type="Label" parent="Strip/HostMenu/Panel/VBox" unique_id=2095642978]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.86, 0.5, 1)
+theme_override_font_sizes/font_size = 120
+text = "Host a Squads Game"
+horizontal_alignment = 1
+
+[node name="NameLabel" type="Label" parent="Strip/HostMenu/Panel/VBox" unique_id=823845855]
+layout_mode = 2
+theme_override_font_sizes/font_size = 56
+text = "Game name (shown to players on your network)"
+horizontal_alignment = 1
+
+[node name="GameNameEdit" type="LineEdit" parent="Strip/HostMenu/Panel/VBox" unique_id=586300810]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(1100, 130)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_font_sizes/font_size = 64
+max_length = 32
+select_all_on_focus = true
+
+[node name="HostStatus" type="Label" parent="Strip/HostMenu/Panel/VBox" unique_id=1231964042]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(1200, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.6, 0.5, 1)
+theme_override_font_sizes/font_size = 48
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="StartHostingButton" type="Button" parent="Strip/HostMenu/Panel/VBox" unique_id=1967614771]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(800, 150)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Host Game"
+
+[node name="HostBackButton" type="Button" parent="Strip/HostMenu/Panel/VBox" unique_id=362879963]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(600, 140)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Back"
+
+[node name="ModeMenu" type="CenterContainer" parent="Strip" unique_id=927079515]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+
+[node name="Panel" type="PanelContainer" parent="Strip/ModeMenu" unique_id=569213957]
+custom_minimum_size = Vector2(1400, 0)
+layout_mode = 2
+
+[node name="VBox" type="VBoxContainer" parent="Strip/ModeMenu/Panel" unique_id=1646649532]
+layout_mode = 2
+theme_override_constants/separation = 18
+
+[node name="Heading" type="Label" parent="Strip/ModeMenu/Panel/VBox" unique_id=1222515984]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.86, 0.5, 1)
+theme_override_font_sizes/font_size = 120
+text = "Arena"
+horizontal_alignment = 1
+
+[node name="StandardButton" type="Button" parent="Strip/ModeMenu/Panel/VBox" unique_id=423383766]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(800, 120)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Standard"
+
+[node name="StandardInfo" type="Label" parent="Strip/ModeMenu/Panel/VBox" unique_id=1604490686]
+custom_minimum_size = Vector2(1200, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.94, 0.8, 0.8)
+theme_override_font_sizes/font_size = 48
+text = "Survive each wave until the clock runs out. Every 4th wave has an objective too."
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="CustomButton" type="Button" parent="Strip/ModeMenu/Panel/VBox" unique_id=1111476286]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(800, 120)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Custom"
+
+[node name="CustomInfo" type="Label" parent="Strip/ModeMenu/Panel/VBox" unique_id=1905850259]
+custom_minimum_size = Vector2(1200, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.94, 0.8, 0.8)
+theme_override_font_sizes/font_size = 48
+text = "Choose the number of waves, which enemies and objectives show up, and how often an objective wave comes."
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="BossRushButton" type="Button" parent="Strip/ModeMenu/Panel/VBox" unique_id=1384920571]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(800, 120)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Boss Rush"
+
+[node name="BossRushInfo" type="Label" parent="Strip/ModeMenu/Panel/VBox" unique_id=1739204865]
+custom_minimum_size = Vector2(1200, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.94, 0.8, 0.8)
+theme_override_font_sizes/font_size = 48
+text = "Every boss, back to back, with a shop between. Beat them fast for a better score."
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="ModeBackButton" type="Button" parent="Strip/ModeMenu/Panel/VBox" unique_id=243620072]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(600, 120)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Back"
+
+[node name="PlayMenu" type="CenterContainer" parent="Strip" unique_id=432643060]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+
+[node name="Panel" type="PanelContainer" parent="Strip/PlayMenu" unique_id=1337040826]
+custom_minimum_size = Vector2(1400, 0)
+layout_mode = 2
+
+[node name="VBox" type="VBoxContainer" parent="Strip/PlayMenu/Panel" unique_id=2056940147]
+layout_mode = 2
+theme_override_constants/separation = 18
+
+[node name="PlayHeading" type="Label" parent="Strip/PlayMenu/Panel/VBox" unique_id=415286962]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.86, 0.5, 1)
+theme_override_font_sizes/font_size = 120
+text = "Local Game"
+horizontal_alignment = 1
+
+[node name="CampaignButton" type="Button" parent="Strip/PlayMenu/Panel/VBox" unique_id=1562243337]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(800, 120)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Campaign"
+
+[node name="CampaignInfo" type="Label" parent="Strip/PlayMenu/Panel/VBox" unique_id=1894518181]
+custom_minimum_size = Vector2(1200, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.94, 0.8, 0.8)
+theme_override_font_sizes/font_size = 48
+text = "Fight your way along the lanes ahead of the tide, act by act."
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="ArenaButton" type="Button" parent="Strip/PlayMenu/Panel/VBox" unique_id=1822152331]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(800, 120)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Arena"
+
+[node name="ArenaInfo" type="Label" parent="Strip/PlayMenu/Panel/VBox" unique_id=99301737]
+custom_minimum_size = Vector2(1200, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.94, 0.8, 0.8)
+theme_override_font_sizes/font_size = 48
+text = "Hold one map against wave after wave, with a shop between."
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="PlayBackButton" type="Button" parent="Strip/PlayMenu/Panel/VBox" unique_id=1666242635]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(600, 120)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Back"

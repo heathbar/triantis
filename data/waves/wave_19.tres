@@ -1,0 +1,70 @@
+[gd_resource type="Resource" script_class="WaveDefinition" format=3 uid="uid://d27fpn5a7gi7q"]
+
+[ext_resource type="Script" uid="uid://chqcfdgenydhg" path="res://scripts/waves/wave_enemy_group.gd" id="1_group"]
+[ext_resource type="Script" uid="uid://c0ac1nhe75bhk" path="res://scripts/waves/wave_definition.gd" id="2_wave"]
+[ext_resource type="PackedScene" uid="uid://dqmd7dcpmucqm" path="res://scenenodethings/enemies/bomber.tscn" id="e_bomber"]
+[ext_resource type="PackedScene" path="res://scenenodethings/enemies/brute.tscn" id="e_brute"]
+[ext_resource type="PackedScene" path="res://scenenodethings/enemies/charger.tscn" id="e_charger"]
+[ext_resource type="PackedScene" path="res://scenenodethings/enemy.tscn" id="e_grunt"]
+[ext_resource type="PackedScene" uid="uid://dg3ae7hgbnmjk" path="res://scenenodethings/enemies/runner.tscn" id="e_runner"]
+[ext_resource type="PackedScene" path="res://scenenodethings/enemies/saboteur.tscn" id="e_saboteur"]
+[ext_resource type="PackedScene" path="res://scenenodethings/enemies/sprayer.tscn" id="e_sprayer"]
+[ext_resource type="PackedScene" path="res://scenenodethings/enemies/splitter.tscn" id="e_splitter"]
+[ext_resource type="PackedScene" uid="uid://pgyt58w10g8f" path="res://scenenodethings/enemies/swarmling.tscn" id="e_swarmling"]
+
+[sub_resource type="Resource" id="Group_grunt"]
+script = ExtResource("1_group")
+count = 31
+
+[sub_resource type="Resource" id="Group_runner"]
+script = ExtResource("1_group")
+enemy_scene = ExtResource("e_runner")
+count = 22
+
+[sub_resource type="Resource" id="Group_swarmling"]
+script = ExtResource("1_group")
+enemy_scene = ExtResource("e_swarmling")
+count = 60
+cluster = 10
+allow_elite = false
+
+[sub_resource type="Resource" id="Group_brute"]
+script = ExtResource("1_group")
+enemy_scene = ExtResource("e_brute")
+count = 5
+allow_elite = false
+
+[sub_resource type="Resource" id="Group_charger"]
+script = ExtResource("1_group")
+enemy_scene = ExtResource("e_charger")
+count = 7
+
+[sub_resource type="Resource" id="Group_bomber"]
+script = ExtResource("1_group")
+enemy_scene = ExtResource("e_bomber")
+count = 8
+
+[sub_resource type="Resource" id="Group_splitter"]
+script = ExtResource("1_group")
+enemy_scene = ExtResource("e_splitter")
+count = 8
+
+[sub_resource type="Resource" id="Group_saboteur"]
+script = ExtResource("1_group")
+enemy_scene = ExtResource("e_saboteur")
+count = 8
+
+[sub_resource type="Resource" id="Group_sprayer"]
+script = ExtResource("1_group")
+enemy_scene = ExtResource("e_sprayer")
+count = 6
+
+[resource]
+script = ExtResource("2_wave")
+duration = 81.0
+enemy_groups = Array[ExtResource("1_group")]([SubResource("Group_grunt"), SubResource("Group_runner"), SubResource("Group_swarmling"), SubResource("Group_brute"), SubResource("Group_charger"), SubResource("Group_bomber"), SubResource("Group_splitter"), SubResource("Group_saboteur"), SubResource("Group_sprayer")])
+opening_spawn = 15
+enemy_health_multiplier = 4.8
+enemy_speed_multiplier = 1.51
+base_elite_chance = 0.24
+completion_bonus = 30

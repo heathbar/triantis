@@ -1,0 +1,62 @@
+[gd_scene format=3 uid="uid://v7uccf5oewge"]
+
+[ext_resource type="Script" uid="uid://cxdh76gh1h5sy" path="res://scripts/braid/braid_strip.gd" id="1_2sosm"]
+[ext_resource type="Script" uid="uid://rjebii07ei8a" path="res://scripts/braid/braid_block.gd" id="2_pfgyb"]
+[ext_resource type="Script" uid="uid://cxawcvhuwddeq" path="res://scripts/braid/braid_spawn.gd" id="3_pfgyb"]
+
+[node name="Zigzagmaze" type="Node2D" unique_id=1036853447]
+script = ExtResource("1_2sosm")
+length = 640.0
+difficulty = 4
+
+[node name="Block5" type="StaticBody2D" parent="." unique_id=2143594199]
+texture_repeat = 2
+position = Vector2(123, 16)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_pfgyb")
+size = Vector2(32, 224)
+
+[node name="Block6" type="StaticBody2D" parent="." unique_id=27540767]
+texture_repeat = 2
+position = Vector2(123, 240)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_pfgyb")
+size = Vector2(256, 32)
+
+[node name="Block7" type="StaticBody2D" parent="." unique_id=1229668032]
+texture_repeat = 2
+position = Vector2(260, 88)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_pfgyb")
+size = Vector2(256, 32)
+
+[node name="Block8" type="StaticBody2D" parent="." unique_id=1181114596]
+texture_repeat = 2
+position = Vector2(484, 121)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_pfgyb")
+size = Vector2(32, 224)
+
+[node name="Vent1" type="Node2D" parent="." unique_id=1505908383]
+z_index = -10
+position = Vector2(209, 100)
+script = ExtResource("3_pfgyb")
+
+[node name="Vent2" type="Node2D" parent="." unique_id=1195677929]
+z_index = -10
+position = Vector2(565, 44)
+script = ExtResource("3_pfgyb")
+
+[node name="Vent3" type="Node2D" parent="." unique_id=456247699]
+z_index = -10
+position = Vector2(72, 312)
+script = ExtResource("3_pfgyb")
+
+[node name="Vent4" type="Node2D" parent="." unique_id=974963063]
+z_index = -10
+position = Vector2(432, 257)
+script = ExtResource("3_pfgyb")

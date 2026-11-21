@@ -1,0 +1,27 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemyai/charger.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://assets/meadow/enemies/charger-1.png" id="2_look"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_charger"]
+size = Vector2(27, 45)
+
+[node name="Charger" type="CharacterBody2D"]
+collision_layer = 2
+collision_mask = 3
+script = ExtResource("1_script")
+max_health = 25
+speed = 24.0
+points_value = 25
+resource_drops = 2
+mass = 2.0
+contact_damage = 2
+elite_color = Color(0.1, 0.18, 0.5, 1)
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("2_look")
+centered = false
+offset = Vector2(-13, -22)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_charger")

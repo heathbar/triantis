@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="WaveDefinition" format=3 uid="uid://dldm0cdcwkg25"]
+
+[ext_resource type="Script" uid="uid://chqcfdgenydhg" path="res://scripts/waves/wave_enemy_group.gd" id="1_group"]
+[ext_resource type="Script" uid="uid://c0ac1nhe75bhk" path="res://scripts/waves/wave_definition.gd" id="2_wave"]
+[ext_resource type="PackedScene" path="res://scenenodethings/enemy.tscn" id="e_grunt"]
+[ext_resource type="PackedScene" uid="uid://dg3ae7hgbnmjk" path="res://scenenodethings/enemies/runner.tscn" id="e_runner"]
+
+[sub_resource type="Resource" id="Group_grunt"]
+script = ExtResource("1_group")
+count = 24
+
+[sub_resource type="Resource" id="Group_runner"]
+script = ExtResource("1_group")
+enemy_scene = ExtResource("e_runner")
+count = 8
+
+[resource]
+script = ExtResource("2_wave")
+display_name = "Thickening"
+duration = 40.0
+enemy_groups = Array[ExtResource("1_group")]([SubResource("Group_grunt"), SubResource("Group_runner")])
+opening_spawn = 5
+enemy_health_multiplier = 1.1
+enemy_speed_multiplier = 1.08
+completion_bonus = 10

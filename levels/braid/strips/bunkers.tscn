@@ -1,0 +1,56 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/braid/braid_strip.gd" id="1_strip"]
+[ext_resource type="Script" path="res://scripts/braid/braid_block.gd" id="2_block"]
+[ext_resource type="Script" path="res://scripts/braid/braid_spawn.gd" id="3_spawn"]
+
+[node name="Bunkers" type="Node2D"]
+script = ExtResource("1_strip")
+length = 1280.0
+difficulty = 3
+
+[node name="Block1" type="StaticBody2D" parent="."]
+position = Vector2(260, 80)
+script = ExtResource("2_block")
+size = Vector2(64, 48)
+
+[node name="Block2" type="StaticBody2D" parent="."]
+position = Vector2(260, 232)
+script = ExtResource("2_block")
+size = Vector2(64, 48)
+
+[node name="Block3" type="StaticBody2D" parent="."]
+position = Vector2(520, 156)
+script = ExtResource("2_block")
+size = Vector2(64, 48)
+
+[node name="Block4" type="StaticBody2D" parent="."]
+position = Vector2(780, 80)
+script = ExtResource("2_block")
+size = Vector2(64, 48)
+
+[node name="Block5" type="StaticBody2D" parent="."]
+position = Vector2(780, 232)
+script = ExtResource("2_block")
+size = Vector2(64, 48)
+
+[node name="Block6" type="StaticBody2D" parent="."]
+position = Vector2(1040, 156)
+script = ExtResource("2_block")
+size = Vector2(64, 48)
+
+[node name="Vent1" type="Node2D" parent="."]
+position = Vector2(390, 320)
+script = ExtResource("3_spawn")
+
+[node name="Vent2" type="Node2D" parent="."]
+position = Vector2(650, 60)
+script = ExtResource("3_spawn")
+
+[node name="Vent3" type="Node2D" parent="."]
+position = Vector2(910, 300)
+script = ExtResource("3_spawn")
+
+[node name="Vent4" type="Node2D" parent="."]
+position = Vector2(1170, 180)
+script = ExtResource("3_spawn")

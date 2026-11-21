@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="WaveDefinition" format=3 uid="uid://cnerhjxvecxx"]
+
+[ext_resource type="Script" uid="uid://chqcfdgenydhg" path="res://scripts/waves/wave_enemy_group.gd" id="1_group"]
+[ext_resource type="Script" uid="uid://c0ac1nhe75bhk" path="res://scripts/waves/wave_definition.gd" id="2_wave"]
+[ext_resource type="PackedScene" path="res://scenenodethings/enemy.tscn" id="e_grunt"]
+
+[sub_resource type="Resource" id="Group_grunt"]
+script = ExtResource("1_group")
+count = 12
+
+[resource]
+script = ExtResource("2_wave")
+display_name = "First Contact"
+enemy_groups = Array[ExtResource("1_group")]([SubResource("Group_grunt")])
+completion_bonus = 5
