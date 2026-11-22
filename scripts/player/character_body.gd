@@ -59,6 +59,18 @@ const BLOCK_FLASH_COLOR := Color(0.75, 0.85, 1.0)
 ## Flash when a heart is healed back.
 const HEAL_FLASH_COLOR := Color(0.45, 1.0, 0.55)
 const FLASH_HOLD := 0.1
+## Played when the player loses health (one at random) and when armor
+## deflects a hit (the white flash), at these volumes (0-1, of the Effects
+## volume).
+const HURT_SOUNDS: Array[AudioStream] = [
+	preload("res://assets/player/hurt-1.ogg"),
+	preload("res://assets/player/hurt-2.ogg"),
+	preload("res://assets/player/hurt-3.ogg"),
+	preload("res://assets/player/hurt-4.ogg"),
+]
+const HURT_VOLUME := 0.5
+const DODGE_SOUND := preload("res://assets/player/dodge.ogg")
+const DODGE_VOLUME := 1.0
 const FLASH_FADE := 0.2
 const DeathMarker := preload("res://scripts/death_marker.gd")
 const Projectile := preload("res://scripts/projectile.gd")
@@ -71,6 +83,30 @@ const Items := preload("res://scripts/items.gd")
 
 ## How far in front of the player's centre projectiles appear.
 const MUZZLE_DISTANCE := 17.0
+## Melee swing sounds, one picked at random per swing: QUICK ones for swings
+## at least every QUICK_SWING_INTERVAL seconds (knife, machete, chainsaw, or
+## any weapon sped up that far by tier, tune-ups and fire rate), SLOW ones
+## for heavier swings (wrench, katana, spiked bat, sledgehammer).
+const QUICK_SWING_SOUNDS: Array[AudioStream] = [
+	preload("res://assets/weapons/melee/melee-whoosh-01.ogg"),
+	preload("res://assets/weapons/melee/melee-whoosh-02.ogg"),
+	preload("res://assets/weapons/melee/melee-whoosh-03.ogg"),
+	preload("res://assets/weapons/melee/melee-whoosh-04.ogg"),
+	preload("res://assets/weapons/melee/melee-whoosh-05.ogg"),
+]
+const SLOW_SWING_SOUNDS: Array[AudioStream] = [
+	preload("res://assets/weapons/melee/melee-whoosh-06.ogg"),
+	preload("res://assets/weapons/melee/melee-whoosh-07.ogg"),
+	preload("res://assets/weapons/melee/melee-whoosh-08.ogg"),
+	preload("res://assets/weapons/melee/melee-whoosh-09.ogg"),
+	preload("res://assets/weapons/melee/melee-whoosh-10.ogg"),
+]
+const QUICK_SWING_INTERVAL := 0.55
+## Swing sounds play at this fraction of the Effects volume (like gun shots,
+## player_gun.gd SOUND_VOLUME).
+const SWING_VOLUME := 0.2
+## Overlapping swing sounds allowed (a chainsaw swings every 0.12s).
+const SWING_POLYPHONY := 3
 ## Speed (x normal) while carrying something (a Hot Potato).
 const CARRY_SPEED := 0.55
 ## Seconds a gun's recoil push (Guns "recoil") takes to fade out after a shot.
@@ -210,6 +246,10 @@ var banked_price_waves := {}
 var _hit_cooldown := 0.0
 var _fire_cooldown := 0.0
 var _melee_cooldown := 0.0
+## Players for the QUICK_SWING_SOUNDS and SLOW_SWING_SOUNDS (each picks one
+## at random per play, so overlapping swings don't cut each other off).
+var _quick_swing_sound: AudioStreamPlayer
+var _slow_swing_sound: AudioStreamPlayer
 ## Physics layers while up (a knocked-out player is on none).
 var _live_collision_layer := PhysicsLayers.PLAYERS
 ## True while the left trigger is held (see _poll_equipment_trigger).
@@ -259,6 +299,8 @@ func _ready() -> void:
 	# player) and gets carried along by it.
 	motion_mode = CharacterBody2D.MOTION_MODE_FLOATING
 	add_to_group("players")
+	_quick_swing_sound = _swing_player(QUICK_SWING_SOUNDS)
+	_slow_swing_sound = _swing_player(SLOW_SWING_SOUNDS)
 	# Unlike "players", knocked-out players stay in this one.
 	add_to_group("all_players")
 	if attributes.is_empty():
@@ -694,6 +736,7 @@ func _try_melee() -> void:
 	var player_half := (body.size.x + body.size.y) / 4.0
 	_melee_cooldown = maxf(_melee_cooldown + melee_interval, 0.0)
 	melee_swung.emit()
+	_play_swing_sound()
 	var swing := MeleeSwing.new()
 	swing.reach = player_half + melee_range
 	swing.inner = player_half
@@ -707,6 +750,31 @@ func _try_melee() -> void:
 	swing.damage = melee_damage
 	swing.knockback = melee_knockback
 	add_child(swing)
+
+
+## A random whoosh, quick or slow to match how fast this player swings.
+func _play_swing_sound() -> void:
+	if melee_interval < QUICK_SWING_INTERVAL:
+		_quick_swing_sound.play()
+	else:
+		_slow_swing_sound.play()
+
+
+## A sound player (child of this player) that plays one of `sounds` at
+## random each time.
+func _swing_player(sounds: Array[AudioStream]) -> AudioStreamPlayer:
+	var randomizer := AudioStreamRandomizer.new()
+	randomizer.playback_mode = AudioStreamRandomizer.PLAYBACK_RANDOM_NO_REPEATS
+	randomizer.random_pitch = 1.0
+	for sound in sounds:
+		randomizer.add_stream(-1, sound)
+	var sound_player := AudioStreamPlayer.new()
+	sound_player.stream = randomizer
+	sound_player.bus = Global.SFX_BUS
+	sound_player.volume_linear = SWING_VOLUME
+	sound_player.max_polyphony = SWING_POLYPHONY
+	add_child(sound_player)
+	return sound_player
 
 
 ## Swaps the held melee weapon for another (scripts/melee.gd); the old one is
@@ -736,12 +804,15 @@ func melee_name() -> String:
 ## player's hands: {damage, interval, range, arc (radians), knockback}. Melee
 ## damage scales the damage, fire rate scales the swing speed and the
 ## knockback attribute scales knockback; reach isn't affected by the range
-## attribute (only by tune-ups).
+## attribute (only by tune-ups). Class perks (CharacterClasses "perks") then
+## change the swing interval and reach.
 func melee_stats(weapon: Dictionary, level: int = 0) -> Dictionary:
 	return {
 		"damage": maxi(Melee.upgraded_damage(weapon["damage"] * _stat_mult("melee_damage"), level), 1),
-		"interval": weapon["interval"] / (_stat_mult("fire_rate") * Melee.level_mult("fire_rate", level)),
-		"range": float(weapon["range"]) * Melee.level_mult("range", level),
+		"interval": weapon["interval"] / (_stat_mult("fire_rate") * Melee.level_mult("fire_rate", level))
+			* CharacterClasses.perk(class_id, "melee_interval_mult", 1.0),
+		"range": float(weapon["range"]) * Melee.level_mult("range", level)
+			+ CharacterClasses.perk(class_id, "melee_reach_bonus", 0.0),
 		"arc": deg_to_rad(weapon["arc"]),
 		"knockback": weapon.get("knockback", 0) * _stat_mult("knockback"),
 	}
@@ -865,6 +936,7 @@ func _recalculate_stats() -> void:
 		health = clampi(health + maxi(max_health - old_max, 0), 0, max_health)
 
 	move_speed = SPEED * _stat_mult("speed")
+	hit_cooldown = CharacterClasses.perk(class_id, "hit_cooldown", HIT_COOLDOWN)
 	var stats := gun_stats(gun, gun_level)
 	damage = stats["damage"]
 	fire_interval = stats["interval"]
@@ -974,6 +1046,7 @@ func take_hit(amount: int = 1, hit_position: Vector2 = global_position) -> void:
 	_hit_cooldown = hit_cooldown
 	health_changed.emit(health)
 	_flash()
+	Global.play_sfx(HURT_SOUNDS.pick_random(), HURT_VOLUME)
 	if is_dead():
 		_die(hit_position)
 
@@ -1001,6 +1074,7 @@ static func _contact_damage(enemy: Node) -> int:
 func _block_hit() -> void:
 	_hit_cooldown = hit_cooldown
 	_flash(BLOCK_FLASH_COLOR)
+	Global.play_sfx(DODGE_SOUND, DODGE_VOLUME)
 
 
 func _touching_enemy() -> Node2D:

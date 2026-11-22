@@ -1,28 +1,36 @@
 extends CanvasLayer
-## Pause menu for the game scene. Escape (keyboard) or Start (any controller)
-## toggles it. While open the scene tree is paused; this layer keeps running.
+## Pause menu for the game scene, in two pages:
+##   MENU  - Resume, Music / Effects volume (saved like the title screen's
+##           settings), the title screen's Controls diagram
+##           (scripts/ui/controls_menu.gd) and the way out.
+##   STATS - every local player's stats (scripts/ui/player_stats.gd).
+## Start (any controller) / Escape / P opens it on MENU; Select (two squares) /
+## Tab opens it on STATS. Pressing the button for the page that's showing
+## closes it; the other one switches page. LB / RB, the D-pad's left / right
+## and Q / E switch pages too. While open the scene tree and the music are
+## paused; this layer keeps running.
 ##
 ## In a squads game the other squads keep playing, so the menu doesn't pause
 ## anything: it's just a way to leave. The host's "End Game" sends every squad
 ## back to character select; anyone else's "Leave Game" quits to the title.
-##
-## Below the menu, every local player's stats (scripts/ui/player_stats.gd).
-##
-## Also: Music and Effects volume sliders (saved like the title screen's
-## settings) and the
-## title screen's Controls diagram (scripts/ui/controls_menu.gd).
+## Every way out asks for confirmation first.
 ##
 ## Styled by the menus' theme (data/ui/menu_theme.tres: wooden sign board and
 ## plank buttons), like the title screen and character select.
 
 const PlayerStats := preload("res://scripts/ui/player_stats.gd")
 const ControlsMenu := preload("res://scripts/ui/controls_menu.gd")
+const ButtonPrompts := preload("res://scripts/ui/button_prompts.gd")
 const MENU_THEME := preload("res://data/ui/menu_theme.tres")
 ## Heading colour on the sign boards (as title_screen.gd ACCENT).
 const ACCENT := Color(1, 0.86, 0.5)
+const MUTED := Color(0.75, 0.7, 0.6)
 ## In a squads game the world keeps running, so the stats cards are
 ## refreshed this often (seconds) while the menu is open.
 const STATS_REFRESH := 0.25
+
+enum Page { MENU, STATS }
+const PAGE_NAMES := ["MENU", "STATS"]
 
 ## Set to false to block pausing (e.g. once the game is over).
 var enabled := true
@@ -35,14 +43,22 @@ var boss_test := false
 var players: Array[Node] = []
 
 var _root: Control
+var _page := Page.MENU
+var _tab_styles: Array[StyleBoxFlat] = []
+var _menu_page: Control
+var _stats_page: Control
 var _resume_button: Button
 var _quit_button: Button
 var _music_slider: HSlider
 var _sfx_slider: HSlider
 var _controls_button: Button
-## The menu panel and stats cards, hidden while the controls are shown.
+## The tabs and pages, hidden while the controls are shown.
 var _column: Control
 var _controls: ControlsMenu
+## The "are you sure?" box for _quit_button, and what quitting does.
+var _confirm: Control
+var _confirm_stay: Button
+var _quit_action: Callable
 ## [player, PlayerStats] pairs, in player order.
 var _cards: Array = []
 var _stats_timer := 0.0
@@ -55,30 +71,56 @@ func _ready() -> void:
 	_root.hide()
 
 
+## Leaving the scene with the menu open (quitting) mustn't leave the music
+## paused.
+func _exit_tree() -> void:
+	if is_open():
+		Global.set_music_paused(false)
+
+
 func is_open() -> bool:
 	return _root.visible
 
 
-func open() -> void:
+func open(page := Page.MENU) -> void:
 	if not enabled or is_open():
 		return
 	if not squads_game:
 		get_tree().paused = true
+		Global.set_music_paused(true)
 	_refresh_stats()
 	_music_slider.set_value_no_signal(Global.music_volume * 100.0)
 	_sfx_slider.set_value_no_signal(Global.sfx_volume * 100.0)
 	_hide_controls()
+	_confirm.hide()
 	_root.show()
-	_resume_button.grab_focus()
+	_show_page(page)
 
 
 func close() -> void:
 	if not is_open():
 		return
 	_hide_controls()
+	_confirm.hide()
 	_root.hide()
 	if not squads_game:
 		get_tree().paused = false
+		Global.set_music_paused(false)
+
+
+func _show_page(page: Page) -> void:
+	_page = page
+	_hide_controls()
+	_menu_page.visible = page == Page.MENU
+	_stats_page.visible = page == Page.STATS
+	for i in _tab_styles.size():
+		_tab_styles[i].bg_color = Color(ACCENT, 0.9) if i == page else Color(0, 0, 0, 0.45)
+	if page == Page.MENU:
+		_resume_button.grab_focus()
+	else:
+		var focus := get_viewport().gui_get_focus_owner()
+		if focus != null:
+			focus.release_focus()
 
 
 func _process(delta: float) -> void:
@@ -97,33 +139,79 @@ func _refresh_stats() -> void:
 			pair[1].show_stats(PlayerStats.snapshot(pair[0]))
 
 
-func _unhandled_input(event: InputEvent) -> void:
-	# While disabled, leave input (e.g. Escape) for the game-over screen.
-	if not enabled and not is_open():
+## While open, everything is read here, before the buttons and sliders see it
+## (so the D-pad switches pages instead of moving a slider, and Tab isn't
+## focus navigation).
+func _input(event: InputEvent) -> void:
+	if not is_open():
 		return
-	if event.is_action_pressed("pause"):
-		if is_open():
-			close()
-		else:
-			open()
-		get_viewport().set_input_as_handled()
-	elif is_open() and event.is_action_pressed("ui_cancel"):
-		# B / Escape-style cancel backs out of the controls, else resumes.
+	if _confirm.visible:
+		if event.is_action_pressed("ui_cancel") or event.is_action_pressed("pause") \
+				or event.is_action_pressed("stats_menu"):
+			_cancel_quit()
+			get_viewport().set_input_as_handled()
+		return
+	var handled := true
+	if event.is_action_pressed("ui_cancel"):
+		# B / Escape backs out of the controls, else resumes.
 		if _controls.visible:
 			_close_controls()
 		else:
 			close()
-		get_viewport().set_input_as_handled()
-	elif is_open() and get_viewport().gui_get_focus_owner() == null:
+	elif event.is_action_pressed("pause"):
+		_press_page_button(Page.MENU)
+	elif event.is_action_pressed("stats_menu"):
+		_press_page_button(Page.STATS)
+	elif _switch_direction(event) != 0:
+		_show_page(Page.STATS if _page == Page.MENU else Page.MENU)
+	elif get_viewport().gui_get_focus_owner() == null and not _controls.visible \
+			and _page == Page.MENU and (event.is_action_pressed("ui_accept")
+			or event.is_action_pressed("ui_up") or event.is_action_pressed("ui_down")):
 		# Focus lost (e.g. mouse clicked the background): re-focus on nav input.
-		for action in ["ui_accept", "ui_up", "ui_down"]:
-			if event.is_action_pressed(action):
-				if _controls.visible:
-					_controls.back_button.grab_focus()
-				else:
-					_resume_button.grab_focus()
-				get_viewport().set_input_as_handled()
-				return
+		_resume_button.grab_focus()
+	else:
+		handled = false
+	if handled:
+		get_viewport().set_input_as_handled()
+
+
+## Opening the menu is left to _unhandled_input, so screens over the game
+## (the shop, summaries) get Start first.
+func _unhandled_input(event: InputEvent) -> void:
+	# While disabled, leave input (e.g. Escape) for the game-over screen.
+	if not enabled or is_open():
+		return
+	if event.is_action_pressed("pause"):
+		open(Page.MENU)
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("stats_menu") and (squads_game or not get_tree().paused):
+		# Not over another paused screen (the shop has its own STATS tab).
+		open(Page.STATS)
+		get_viewport().set_input_as_handled()
+
+
+## Start / Select while open: closes the menu if it's showing that page,
+## otherwise switches to it.
+func _press_page_button(page: Page) -> void:
+	if _page == page and not _controls.visible:
+		close()
+	else:
+		_show_page(page)
+
+
+## -1 / 1 if `event` switches page (LB / RB, Q / E, the D-pad's left / right),
+## else 0. The left stick and arrow keys still move sliders.
+func _switch_direction(event: InputEvent) -> int:
+	if event.is_action_pressed("menu_prev_tab"):
+		return -1
+	if event.is_action_pressed("menu_next_tab"):
+		return 1
+	if event is InputEventJoypadButton and event.pressed:
+		if event.button_index == JOY_BUTTON_DPAD_LEFT:
+			return -1
+		if event.button_index == JOY_BUTTON_DPAD_RIGHT:
+			return 1
+	return 0
 
 
 func _build() -> void:
@@ -147,10 +235,63 @@ func _build() -> void:
 	center.add_child(column)
 	_column = column
 
+	column.add_child(_build_tabs())
+	_menu_page = _build_menu_page()
+	column.add_child(_menu_page)
+	_stats_page = _build_stats_page()
+	column.add_child(_stats_page)
+
+	_controls = ControlsMenu.new()
+	# The diagram is nearly screen-wide: the same sign board, slimmer margins.
+	var controls_style: StyleBox = MENU_THEME.get_stylebox("panel", "PanelContainer").duplicate()
+	controls_style.content_margin_left = 40
+	controls_style.content_margin_right = 40
+	controls_style.content_margin_top = 24
+	controls_style.content_margin_bottom = 32
+	_controls.build(controls_style, ACCENT)
+	_controls.closed.connect(_close_controls)
+	_root.add_child(_controls)
+
+	_confirm = _build_confirm()
+	_root.add_child(_confirm)
+
+
+## LB  [MENU]  [STATS]  RB
+func _build_tabs() -> Control:
+	var bar := HBoxContainer.new()
+	bar.alignment = BoxContainer.ALIGNMENT_CENTER
+	bar.add_theme_constant_override("separation", 24)
+	bar.add_child(ButtonPrompts.label("{LB}", MUTED, 64))
+	for i in PAGE_NAMES.size():
+		var style := StyleBoxFlat.new()
+		style.set_corner_radius_all(16)
+		style.content_margin_left = 48
+		style.content_margin_right = 48
+		style.content_margin_top = 8
+		style.content_margin_bottom = 8
+		_tab_styles.append(style)
+		var tab := PanelContainer.new()
+		tab.add_theme_stylebox_override("panel", style)
+		tab.mouse_filter = Control.MOUSE_FILTER_STOP
+		tab.gui_input.connect(func(event: InputEvent) -> void:
+			if event is InputEventMouseButton and event.pressed \
+					and event.button_index == MOUSE_BUTTON_LEFT:
+				_show_page(i))
+		var label := Label.new()
+		label.text = PAGE_NAMES[i]
+		label.add_theme_font_size_override("font_size", 72)
+		label.add_theme_color_override("font_outline_color", Color.BLACK)
+		label.add_theme_constant_override("outline_size", 12)
+		tab.add_child(label)
+		bar.add_child(tab)
+	bar.add_child(ButtonPrompts.label("{RB}", MUTED, 64))
+	return bar
+
+
+func _build_menu_page() -> Control:
 	# The theme's sign board.
 	var panel := PanelContainer.new()
 	panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	column.add_child(panel)
 
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 32)
@@ -182,41 +323,112 @@ func _build() -> void:
 	_controls_button.pressed.connect(_open_controls)
 	vbox.add_child(_controls_button)
 
+	var quit_text: String
 	if boss_test:
-		_quit_button = _button("Back to Character Select")
-		_quit_button.pressed.connect(Global.go_to_character_select)
+		quit_text = "Back to Character Select"
+		_quit_action = Global.go_to_character_select
 	elif not squads_game:
-		_quit_button = _button("Quit to Title")
-		_quit_button.pressed.connect(Global.go_to_title)
+		quit_text = "Quit Game"
+		_quit_action = Global.go_to_title
 	elif Squads.is_host():
-		_quit_button = _button("End Game for All Squads")
-		_quit_button.pressed.connect(Squads.return_to_lobby)
+		quit_text = "End Game for All Squads"
+		_quit_action = Squads.return_to_lobby
 	else:
-		_quit_button = _button("Leave Game")
-		_quit_button.pressed.connect(Global.go_to_title)
+		quit_text = "Leave Game"
+		_quit_action = Global.go_to_title
+	_quit_button = _button(quit_text)
+	_quit_button.pressed.connect(_ask_quit)
 	vbox.add_child(_quit_button)
+	return panel
 
+
+func _build_stats_page() -> Control:
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 32)
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 40)
-	column.add_child(row)
+	vbox.add_child(row)
 	var ordered := players.duplicate()
 	ordered.sort_custom(func(a: Node, b: Node) -> bool: return a.player_index < b.player_index)
 	for player in ordered:
 		var card := PlayerStats.new()
 		row.add_child(card)
 		_cards.append([player, card])
+	vbox.add_child(ButtonPrompts.label("{B} Resume", MUTED, 56, 10))
+	return vbox
 
-	_controls = ControlsMenu.new()
-	# The diagram is nearly screen-wide: the same sign board, slimmer margins.
-	var controls_style: StyleBox = MENU_THEME.get_stylebox("panel", "PanelContainer").duplicate()
-	controls_style.content_margin_left = 40
-	controls_style.content_margin_right = 40
-	controls_style.content_margin_top = 24
-	controls_style.content_margin_bottom = 32
-	_controls.build(controls_style, ACCENT)
-	_controls.closed.connect(_close_controls)
-	_root.add_child(_controls)
+
+## "Quit the game?" with Keep Playing (focused, so a stray A press is safe)
+## and the quit button's own action.
+func _build_confirm() -> Control:
+	var overlay := Control.new()
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	overlay.visible = false
+
+	var dim := ColorRect.new()
+	dim.color = Color(0, 0, 0, 0.5)
+	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.add_child(dim)
+
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.add_child(center)
+
+	var panel := PanelContainer.new()
+	center.add_child(panel)
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 32)
+	panel.add_child(vbox)
+
+	var heading := Label.new()
+	heading.text = _confirm_question()
+	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	heading.add_theme_font_size_override("font_size", 96)
+	heading.add_theme_color_override("font_color", ACCENT)
+	vbox.add_child(heading)
+
+	var note := Label.new()
+	note.text = _confirm_note()
+	note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	note.add_theme_font_size_override("font_size", 52)
+	note.modulate = Color(1, 1, 1, 0.8)
+	vbox.add_child(note)
+
+	_confirm_stay = _button("Keep Playing")
+	_confirm_stay.pressed.connect(_cancel_quit)
+	vbox.add_child(_confirm_stay)
+	var go := _button(_quit_button.text)
+	go.pressed.connect(func() -> void: _quit_action.call())
+	vbox.add_child(go)
+	return overlay
+
+
+func _confirm_question() -> String:
+	if boss_test:
+		return "Leave the Boss Test?"
+	if squads_game and Squads.is_host():
+		return "End the game for everyone?"
+	if squads_game:
+		return "Leave the game?"
+	return "Quit the game?"
+
+
+func _confirm_note() -> String:
+	if squads_game and Squads.is_host():
+		return "Every squad goes back to character select."
+	return "This run's progress will be lost."
+
+
+func _ask_quit() -> void:
+	_confirm.show()
+	_confirm_stay.grab_focus()
+
+
+func _cancel_quit() -> void:
+	_confirm.hide()
+	_quit_button.grab_focus()
 
 
 ## Adds a labelled 0-100% volume slider to `parent`; `set_volume` gets the

@@ -10,6 +10,10 @@ extends Enemy
 const Blast := preload("res://scripts/equipment/blast.gd")
 const ActTheme := preload("res://scripts/act_theme.gd")
 
+## Played as it blows up (every act's bombers, and other squads' bombers
+## blowing up on our map), at this volume (0-1, of the Effects volume).
+const BLAST_SOUND := preload("res://assets/meadow/enemies/bomber.ogg")
+const BLAST_VOLUME := 0.35
 ## Lights the fuse when its target is this close (centre to centre).
 const FUSE_RANGE := 52.0
 const FUSE_TIME := 0.9
@@ -92,6 +96,7 @@ func mirror_died(at: Vector2) -> void:
 ## The blast at `center`: hurts our players and our own enemies in it (not
 ## mirrors: each squad's game blows up its own side, see mirror_died).
 func _explode(center: Vector2, killer: Node) -> void:
+	Global.play_sfx(BLAST_SOUND, BLAST_VOLUME)
 	var enemy_damage := maxi(roundi(enemy_blast_damage * health_scale), 1)
 	for enemy: Node2D in get_tree().get_nodes_in_group("enemies"):
 		if enemy == self or (enemy is Enemy and enemy.is_mirror) or not enemy.has_method("take_damage") \

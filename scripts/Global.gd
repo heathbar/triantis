@@ -194,6 +194,10 @@ func _setup_controller_ui_input() -> void:
 	_ensure_key("pause", KEY_ESCAPE)
 	_ensure_key("pause", KEY_P)
 	_ensure_joy_button("pause", JOY_BUTTON_START)
+	# The pause menu's STATS page: Tab on keyboard, Select / Back (two
+	# squares) on a controller.
+	_ensure_key("stats_menu", KEY_TAB)
+	_ensure_joy_button("stats_menu", JOY_BUTTON_BACK)
 	# Keyboard movement: WASD as well as the arrow keys (set in project.godot).
 	_ensure_key("up", KEY_W)
 	_ensure_key("left", KEY_A)
@@ -312,6 +316,7 @@ func _setup_music() -> void:
 ## file: silence.
 func play_music(path: String) -> void:
 	if _music.stream and _music.stream.resource_path == path:
+		_music.stream_paused = false
 		return
 	if not ResourceLoader.exists(path):
 		_music.stop()
@@ -321,7 +326,13 @@ func play_music(path: String) -> void:
 	if stream is AudioStreamOggVorbis or stream is AudioStreamMP3:
 		stream.loop = true  # Seamless; the `finished` replay is the fallback.
 	_music.stream = stream
+	_music.stream_paused = false
 	_music.play()
+
+
+## Pauses (true) or resumes the music where it left off (the pause menu).
+func set_music_paused(paused: bool) -> void:
+	_music.stream_paused = paused
 
 
 ## Loops act theme `theme`'s track (an ActTheme theme; "" = "meadow"), or its
@@ -332,6 +343,19 @@ func play_theme_music(theme: String, boss := false) -> void:
 		play_music(BOSS_MUSIC % theme)
 	else:
 		play_music(THEME_MUSIC % theme)
+
+
+## Plays `stream` once on the Effects bus at `volume` (0-1, linear), from a
+## player that frees itself when done, so the sound outlives whatever made
+## it (a bomber that's just blown up).
+func play_sfx(stream: AudioStream, volume := 1.0) -> void:
+	var sfx := AudioStreamPlayer.new()
+	sfx.stream = stream
+	sfx.bus = SFX_BUS
+	sfx.volume_linear = volume
+	sfx.finished.connect(sfx.queue_free)
+	add_child(sfx)
+	sfx.play()
 
 
 func _on_scene_changed() -> void:

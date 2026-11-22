@@ -30,6 +30,13 @@ const STUCK_NEAR := 40.0
 const STUCK_COUNT_MAX := 20
 const NO_REMOTE_KILLER := Vector2i(-1, -1)
 const NetFollow := preload("res://scripts/net/net_follow.gd")
+## Hit flash: like the player's (character_body.gd FLASH_COLOR, FLASH_HOLD,
+## FLASH_FADE; player_sprite.gd FLASH_STRENGTH), when a hit doesn't kill it.
+const HIT_FLASH_SHADER := preload("res://scripts/enemyai/hit_flash.gdshader")
+const HIT_FLASH_COLOR := Color(1, 0, 0)
+const HIT_FLASH_HOLD := 0.1
+const HIT_FLASH_FADE := 0.2
+const HIT_FLASH_STRENGTH := 0.8
 
 ## Per-type stats. A new enemy type can be a scene that overrides these.
 @export var max_health := 10
@@ -112,6 +119,9 @@ var _stuck_want := 0.0
 ## Braid mode: damage it takes is multiplied by this (a Spotter's mark,
 ## scripts/braid/braid_class_mod.gd). Always 1 in the arena game.
 var damage_taken_multiplier := 1.0
+## The hit flash material (made on the first hit) and its fade.
+var _flash_material: ShaderMaterial
+var _flash_tween: Tween
 ## The CollisionShape2D child, looked up once (see _collision_shape).
 var _shape_node: CollisionShape2D
 var _shape_looked_up := false
@@ -176,6 +186,7 @@ func is_dead() -> bool:
 func take_damage(amount: int, source: Node = null, knockback := Vector2.ZERO) -> void:
 	if is_mirror:
 		forward_hit.call(amount, source, knockback)
+		flash_hit()  # (its owner's copy decides if it dies; if so it vanishes)
 		return
 	if is_dead():
 		return
@@ -185,6 +196,45 @@ func take_damage(amount: int, source: Node = null, knockback := Vector2.ZERO) ->
 	health = maxi(health - amount, 0)
 	if is_dead():
 		_die(source)
+	else:
+		flash_hit()
+
+
+## Washes its sprites red for a moment, then fades back (as a hurt player
+## does). The flash is a shader on each of _flash_targets(), so it stacks with the slow tint (modulate) and elite or
+## wind-up colours (self_modulate). Children that have their own material
+## are left alone.
+func flash_hit() -> void:
+	if not is_inside_tree():
+		return
+	if _flash_material == null:
+		_flash_material = ShaderMaterial.new()
+		_flash_material.shader = HIT_FLASH_SHADER
+		_flash_material.set_shader_parameter("flash_color", HIT_FLASH_COLOR)
+	# Checked every hit: some types add sprites after spawning.
+	for item in _flash_targets():
+		if item.material == null:
+			item.material = _flash_material
+	if _flash_tween:
+		_flash_tween.kill()
+	_set_flash(HIT_FLASH_STRENGTH)
+	_flash_tween = create_tween()
+	_flash_tween.tween_interval(HIT_FLASH_HOLD)
+	_flash_tween.tween_method(_set_flash, HIT_FLASH_STRENGTH, 0.0, HIT_FLASH_FADE)
+
+
+func _set_flash(amount: float) -> void:
+	_flash_material.set_shader_parameter("flash_amount", amount)
+
+
+## What flash_hit washes red: its Sprite2D / AnimatedSprite2D / ColorRect
+## children. Types that keep their body art elsewhere override this.
+func _flash_targets() -> Array[CanvasItem]:
+	var out: Array[CanvasItem] = []
+	for child in get_children():
+		if child is Sprite2D or child is AnimatedSprite2D or child is ColorRect:
+			out.append(child)
+	return out
 
 
 ## Removes it, announcing `died` (killer = `source`). Subclasses hook in

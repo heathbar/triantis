@@ -27,9 +27,9 @@ const DEFAULT_TYPE := "pistol"
 const SHOT_SOUND := preload("res://assets/weapons/guns/minigun.ogg")
 ## Overlapping shot sounds allowed at once (fast guns cut off the oldest).
 const SOUND_POLYPHONY := 4
-## Gun shots play at this fraction of the Effects volume (0.25 = a quarter as
+## Gun shots play at this fraction of the Effects volume (0.2 = a fifth as
 ## loud as the files).
-const SOUND_VOLUME := 0.25
+const SOUND_VOLUME := 0.2
 ## How far along the aim the gun's back end (the grip) sits from the
 ## shoulder. Longer guns reach further out; shots still appear at
 ## character_body.gd's MUZZLE_DISTANCE.

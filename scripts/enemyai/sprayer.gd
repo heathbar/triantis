@@ -133,6 +133,14 @@ func make_elite(scaling: PlayerScaling) -> void:
 		sprite.self_modulate = elite_color
 
 
+## Only the body flashes when hit, not the spray.
+func _flash_targets() -> Array[CanvasItem]:
+	var out: Array[CanvasItem] = []
+	if _sprite:
+		out.append(_sprite)
+	return out
+
+
 ## The sprayer is after players (or a Decoy) only: objectives are left to the
 ## enemies that can touch them.
 func _objective_target() -> Node2D:

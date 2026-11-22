@@ -24,6 +24,13 @@ extends RefCounted
 ##
 ## "equipment" (optional) is the equipment the class starts with
 ## (scripts/equipment.gd), by id ("turret"). Most classes start without.
+##
+## "perks" (optional) are class rules that aren't attributes, kept for the
+## whole run whatever the player buys (see perk()):
+##   hit_cooldown         seconds the player can't be hurt after a hit or a
+##                        blocked hit (default Player.HIT_COOLDOWN)
+##   melee_interval_mult  x seconds between melee swings, any melee weapon
+##   melee_reach_bonus    + pixels of melee reach, any melee weapon
 
 const MIN_VALUE := -100
 const MAX_VALUE := 100
@@ -103,7 +110,7 @@ const CLASSES := {
 	},
 	"scout": {
 		"gun": "solid_smg",
-		"melee": "scrap_knife",
+		"melee": "scrap_chainsaw",
 		"name": "Scout",
 		"description": "Very fast, easily hurt",
 		"attributes": {
@@ -138,8 +145,12 @@ const CLASSES := {
 		"equipment": "barricade",
 		"name": "Tank",
 		"description": "Slow, armoured, many hearts",
+		# A brawler that holds the line in a crowd: longer recovery after
+		# hits, quicker and wider swings (a Sledgehammer swings every 0.9 s
+		# instead of 1.3 s, reaching 32 px instead of 26).
+		"perks": {"hit_cooldown": 1.6, "melee_interval_mult": 0.9 / 1.3, "melee_reach_bonus": 6.0},
 		"attributes": {
-			"lives": 6, "range": -15, "speed": -35, "harvesting": -20,
+			"lives": 6, "range": -15, "speed": -20, "harvesting": -20,
 			"ranged_damage": 0, "fire_rate": 0, "melee_damage": 20, "knockback": 30, "engineering": 0, "armor": 50,
 		},
 	},
@@ -184,6 +195,11 @@ static func starting_attributes(class_id: String) -> Dictionary:
 		var id: String = attr["id"]
 		result[id] = clamp_attribute(id, int(source.get(id, default_value(id))))
 	return result
+
+
+## A class's `perk` (see "perks" above), or `default` if it has none.
+static func perk(class_id: String, id: String, default: float) -> float:
+	return float(get_class_data(class_id).get("perks", {}).get(id, default))
 
 
 static func starting_gun(class_id: String) -> String:
