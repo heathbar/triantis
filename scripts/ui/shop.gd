@@ -25,7 +25,14 @@ extends CanvasLayer
 ## click to buy (or ready up / un-ready on the READY row), right-click to bank,
 ## click a tab to switch to it, click the re-roll line to re-roll.
 ##
-## Emits `all_ready` once every player is ready, then removes itself.
+## READY UP sits under the tabs, so it's there on every tab: on SHOP it's the
+## last row; on STATS and MODS it's the only one, so A readies up.
+##
+## The shop closes after SHOP_TIME seconds even if not everyone is ready
+## (a countdown in the top-right corner), so nobody holds the squad up.
+##
+## Emits `all_ready` once every player is ready (or time runs out), then
+## removes itself.
 
 signal all_ready
 
@@ -60,6 +67,13 @@ const DEBUFF_COLOR := AttributeBar.NEGATIVE_COLOR
 const HINT := "{LB}{RB} switch tab     Up / Down: choose     {A} buy" \
 	+ "     {X} bank item     Start: ready     {B} un-ready"
 
+## Seconds before the shop closes on its own; the countdown turns red for
+## the last SHOP_WARN of them.
+const SHOP_TIME := 30.0
+const SHOP_WARN := 10.0
+const TIMER_COLOR := Color(0.85, 0.85, 0.85)
+const TIMER_WARN_COLOR := Color(1.0, 0.4, 0.3)
+
 enum Tab { SHOP, STATS, MODS }
 const TAB_NAMES := ["SHOP", "STATS", "MODS"]
 ## Every tab page is at least this tall (taller if any page needs it), and
@@ -76,6 +90,8 @@ const PAGE_HEIGHT := 870
 var _seats: Array[Dictionary] = []
 var _menu_input := MenuInput.new()
 var _hint: RichTextLabel
+var _timer_label: Label
+var _time_left := SHOP_TIME
 var bg: TextureRect  # the act floor behind the shop
 var _done := false
 ## Waves played before this shop (1 for the first shop); sets item prices
@@ -122,10 +138,10 @@ func open(players: Array[Node], next_wave_index: int, total_waves: int, price_wa
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 
 	var vbox := VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 32)
+	vbox.add_theme_constant_override("separation", 20)
 	center.add_child(vbox)
 
-	vbox.add_child(_label("SHOP", Color(0.45, 0.95, 0.45), 150, 24))
+	vbox.add_child(_label("SHOP", Color(0.45, 0.95, 0.45), 120, 20))
 	var next := "Next: FINAL WAVE" if next_wave_index == total_waves - 1 \
 		else "Next: Wave %d / %d" % [next_wave_index + 1, total_waves]
 	if not next_heading.is_empty():
@@ -133,6 +149,13 @@ func open(players: Array[Node], next_wave_index: int, total_waves: int, price_wa
 	if not next_label.is_empty():
 		next = "%s  -  %s" % [next, next_label]
 	vbox.add_child(_label(next, Color(0.85, 0.85, 0.85), 60, 10))
+	# The countdown sits in the top-right corner, off the columns.
+	_timer_label = _label("", TIMER_COLOR, 60, 10)
+	_timer_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	add_child(_timer_label)
+	_timer_label.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT, Control.PRESET_MODE_MINSIZE, 48)
+	_timer_label.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	_show_time()
 
 	var columns := HBoxContainer.new()
 	columns.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -178,6 +201,27 @@ func open(players: Array[Node], next_wave_index: int, total_waves: int, price_wa
 	_refresh()
 
 
+## The countdown: when it runs out, everyone is readied up and the shop closes.
+func _process(delta: float) -> void:
+	if _done:
+		return
+	_time_left = maxf(_time_left - delta, 0.0)
+	_show_time()
+	if _time_left <= 0.0:
+		for seat in _seats:
+			seat["ready"] = true
+		_check_all_ready()
+
+
+func _show_time() -> void:
+	var secs := ceili(_time_left)
+	var text := "Moving on in %ds" % secs
+	if _timer_label.text != text:
+		_timer_label.text = text
+		_timer_label.add_theme_color_override("font_color",
+			TIMER_WARN_COLOR if _time_left <= SHOP_WARN else TIMER_COLOR)
+
+
 ## Tile the floor over the whole screen at its in-game pixel size.
 func _fit_background() -> void:
 	var view := bg.get_viewport_rect()
@@ -211,9 +255,10 @@ func _handle(seat: Dictionary, intent: String) -> void:
 				var step := -1 if intent == "up" else 1
 				seat["cursor"] = posmod(cursor + step, _row_count(seat))
 		"accept":
-			if not on_shop:
+			if seat["ready"]:
 				pass
-			elif cursor == _ready_row(seat):
+			elif seat["tab"] != Tab.SHOP or cursor == _ready_row(seat):
+				# Off the SHOP tab, READY UP is the only row.
 				seat["ready"] = true
 			elif cursor == _tune_row(seat):
 				_buy_tune(seat)
@@ -440,7 +485,7 @@ func _build_column(seat: Dictionary, parent: Node) -> void:
 	parent.add_child(panel)
 
 	var vbox := VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 20)
+	vbox.add_theme_constant_override("separation", 14)
 	panel.add_child(vbox)
 
 	var header := HBoxContainer.new()
@@ -531,8 +576,9 @@ func _build_column(seat: Dictionary, parent: Node) -> void:
 	description.add_theme_font_size_override("normal_font_size", 38)
 	description.add_theme_color_override("default_color", Color(0.85, 0.85, 0.85))
 	shop_page.add_child(description)
-	# READY sits at the bottom, below the item details.
-	shop_page.move_child(rows[-1], -1)
+	# READY sits under the pages, so every tab has it.
+	shop_page.remove_child(rows[-1])
+	vbox.add_child(rows[-1])
 
 	# --- STATS page: attribute bars, then the stats they produce.
 	var stats := PlayerStats.new()
@@ -804,7 +850,8 @@ func _refresh_shop_page(seat: Dictionary) -> void:
 
 	for i in seat["rows"].size():
 		var style: StyleBoxFlat = seat["rows"][i].get_theme_stylebox("panel")
-		var selected: bool = i == seat["cursor"] and not is_ready
+		var selected: bool = not is_ready and (i == seat["cursor"]
+			if seat["tab"] == Tab.SHOP else i == _ready_row(seat))
 		var banked: bool = i < seat["offer"].size() and seat["banked"][i]
 		style.bg_color = ROW_SELECTED_BG if selected else ROW_BG
 		if selected:

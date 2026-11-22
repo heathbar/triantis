@@ -42,7 +42,7 @@ extends Boss
 ## players and crushes only its own enemies; the rocks are hazards.
 
 const DEFAULT_HEALTH := 2100
-const ENRAGE_AT := 150.0
+const ENRAGE_AT := 90.0
 
 ## The truck, tyres included: its length (along its facing) and width.
 const SIZE := Vector2(48, 38)

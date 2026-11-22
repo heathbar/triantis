@@ -117,6 +117,9 @@ const CLOCK_SNAP := 0.5
 ## The camera zooms out this far ahead of a junction (and stays out a little
 ## past it).
 const ZOOM_LEAD := 200.0
+## max_player_spread keeps players this much (world px, per edge) further in
+## than the camera frames them, so their spread can't nudge the zoom out.
+const SPREAD_SLACK := 1.0
 
 ## How a squad's player count scales its enemies: Braid's own table, so tuning
 ## it never changes the arena game's (which uses the wave set's).
@@ -249,14 +252,14 @@ func is_wave_running() -> bool:
 	return state == State.RUNNING
 
 
-## Players can't walk further apart than this (character_body.gd): a screen
-## along the lane, the whole band across it.
+## Players can't walk further apart than this (character_body.gd): what the
+## camera shows right now, less BraidTuning.SCREEN_MARGIN at each edge (and a
+## hair more, so walking to the limit never makes the camera zoom out). Zoomed
+## out (a junction, window, slice or the room) they can spread further; as the
+## camera zooms back in, the limit shrinks with it (_update_camera won't zoom
+## in past what fits them, so nobody is pushed).
 func max_player_spread() -> Vector2:
-	if in_room():
-		return Vector2(BraidTuning.MAX_SPREAD_X, BraidTuning.BAND_HEIGHT) * BraidTuning.ROOM_SPREAD
-	if absf(level.dir_at(my_lane(), _squad_s()).y) > 0.5:
-		return Vector2(BraidTuning.BAND_HEIGHT, BraidTuning.MAX_SPREAD_VERTICAL)
-	return Vector2(BraidTuning.MAX_SPREAD_X, BraidTuning.BAND_HEIGHT)
+	return view_size() / world_zoom() - Vector2.ONE * (BraidTuning.SCREEN_MARGIN + SPREAD_SLACK) * 2.0
 
 
 ## The round being played, counted through the run (segments and boss
@@ -817,18 +820,21 @@ func _reach_checkpoint() -> void:
 
 	var n := level.segment_count()
 	var summary := WaveSummary.new()
+	# B, not A: a second player still mashing A from the fight would
+	# otherwise skip this and buy something in the shop by accident.
+	summary.back_only = true
 	add_child(summary)
 	if is_boss_round():
 		summary.show_summary("BOSS DEFEATED", Color(1.0, 0.85, 0.3), boss_note, rows, bonus,
-			"Press {A} to continue to the shop", segment_wave.bonus_hearts)
+			"Press {B} to continue to the shop", segment_wave.bonus_hearts)
 	elif was_out:
 		summary.show_summary("CHECKPOINT %d / %d" % [segment + 1, n], Color(1.0, 0.6, 0.3),
 			"Your squad fell, but the others made it. You're back in!", rows, bonus,
-			"Press {A} to continue to the shop", segment_wave.bonus_hearts)
+			"Press {B} to continue to the shop", segment_wave.bonus_hearts)
 	else:
 		summary.show_summary("CHECKPOINT %d / %d" % [segment + 1, n], Color(0.45, 0.95, 0.45),
 			"Chapter %d crossed" % (segment + 1), rows, bonus,
-			"Press {A} to continue to the shop", segment_wave.bonus_hearts)
+			"Press {B} to continue to the shop", segment_wave.bonus_hearts)
 	await summary.continued
 
 	# After a boss: every player picks a Class Mod.
@@ -875,7 +881,7 @@ func _reach_checkpoint() -> void:
 
 	if squads_game:
 		state = State.WAITING
-		hud.show_notice("Waiting for the other squads...")
+		show_waiting_campfire("Waiting for the other squads...")
 		Squads.report_ready_for_wave(round_index() + 1)
 		return
 	_open_and_start()
@@ -891,6 +897,7 @@ func _last_segment_of_act() -> int:
 ## squad just past them in whichever lane it's in by then), the boss fight
 ## (the same, into the room), or the next act's first segment (a new level).
 func _open_and_start() -> void:
+	hide_waiting_campfire()
 	hud.hide_notice()
 	if segment == _last_segment_of_act():
 		_build_act(act + 1)
@@ -1322,9 +1329,12 @@ func _place_players(x: float) -> void:
 
 ## Follows the squad along its lane (round corners too), centred across it.
 ## At a window, or in (and near) a junction, it zooms out to show both lanes.
-## In the convergence room it zooms out and follows the squad up and down.
-## While the lane runs up or down it looks VERTICAL_CAMERA_LEAD ahead. While
-## our squad is out, it follows the squad we're watching.
+## Through a vertical slice it zooms out a little (VERTICAL_ZOOM) and looks
+## VERTICAL_CAMERA_LEAD ahead. In the convergence room it zooms out and
+## follows the squad up and down. Whatever the place, it always shows every
+## living player in our squad (BraidTuning.SCREEN_MARGIN in from the edges):
+## it moves off its target, and won't zoom in, as far as that takes. While our
+## squad is out, it follows the squad we're watching.
 func _update_camera(weight: float) -> void:
 	var x := _squad_s()
 	var lane := my_lane()
@@ -1343,6 +1353,10 @@ func _update_camera(weight: float) -> void:
 	var along := level.dir_at(lane, x)
 	if absf(along.y) > 0.5:
 		target += along * BraidTuning.VERTICAL_CAMERA_LEAD
+	for sl in level.slices:
+		if x >= sl["from"] - ZOOM_LEAD and x < sl["to"] + ZOOM_LEAD / 2.0:
+			zoom = BraidTuning.VERTICAL_ZOOM
+			break
 	var pair := -1
 	for j in level.junctions:
 		if x < j["x0"] - ZOOM_LEAD or x >= j["x1"] + ZOOM_LEAD / 2.0:
@@ -1364,14 +1378,50 @@ func _update_camera(weight: float) -> void:
 	if level.room.has_area() and x >= level.room_start - ZOOM_LEAD:
 		zoom = BraidTuning.ROOM_ZOOM
 		target.y = squad_y
+
+	# Our living players, as a box grown by the margin: the camera must show
+	# all of it. (None when watching another squad.)
+	var frame := Rect2()
+	var framing := false
+	if not watched:
+		for p: Node2D in _living_players():
+			if framing:
+				frame = frame.expand(p.global_position)
+			else:
+				frame = Rect2(p.global_position, Vector2.ZERO)
+				framing = true
+		frame = frame.grow(BraidTuning.SCREEN_MARGIN)
+
+	var view := view_size()
 	var new_zoom := lerpf(world_zoom().x, zoom, weight)
+	if framing:
+		# Never zoomed in so far that the box doesn't fit.
+		new_zoom = minf(new_zoom, minf(view.x / frame.size.x, view.y / frame.size.y))
 	camera.zoom = Vector2.ONE * new_zoom * render_scale
-	var half := view_size() / new_zoom / 2.0
+	var half := view / new_zoom / 2.0
+	var pos := camera.global_position.lerp(_in_bounds(target, half), weight)
+	if framing:
+		# However the camera lags or leads, it keeps the box on screen.
+		pos = Vector2(_frame_axis(pos.x, frame.position.x, frame.end.x, half.x),
+			_frame_axis(pos.y, frame.position.y, frame.end.y, half.y))
+	camera.global_position = _in_bounds(pos, half)
+
+
+## Camera centre `c` moved so the screen (`half` either side of it) stays
+## inside the level.
+func _in_bounds(c: Vector2, half: Vector2) -> Vector2:
 	var b := level.bounds
-	target = Vector2(
-		clampf(target.x, b.position.x + half.x, maxf(b.end.x - half.x, b.position.x + half.x)),
-		clampf(target.y, b.position.y + half.y, maxf(b.end.y - half.y, b.position.y + half.y)))
-	camera.global_position = camera.global_position.lerp(target, weight)
+	return Vector2(
+		clampf(c.x, b.position.x + half.x, maxf(b.end.x - half.x, b.position.x + half.x)),
+		clampf(c.y, b.position.y + half.y, maxf(b.end.y - half.y, b.position.y + half.y)))
+
+
+## Camera centre `c` on one axis, moved (as little as it takes) so the screen,
+## `half` either side of it, covers lo..hi; centred on lo..hi if it's wider.
+static func _frame_axis(c: float, lo: float, hi: float, half: float) -> float:
+	if hi - lo >= half * 2.0:
+		return (lo + hi) / 2.0
+	return clampf(c, hi - half, lo + half)
 
 
 # --- Strip test ---------------------------------------------------------------------

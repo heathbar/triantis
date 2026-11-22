@@ -22,8 +22,8 @@ extends Boss
 ## Squads game: the host owns every piece's health and where
 ## the pieces are anchored; the rings are hazards (scripts/bosses/boss.gd).
 
-const DEFAULT_HEALTH := 7700
-const ENRAGE_AT := 150.0
+const DEFAULT_HEALTH := 10000
+const ENRAGE_AT := 120.0
 const CORE_SHARE := 0.5
 const CORE_RADIUS := 38.0
 const PIECE_RADIUS := 23.0

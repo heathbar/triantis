@@ -21,6 +21,12 @@ const SKINS := [
 	{"name": "Mario", "texture": preload("res://assets/player/mario.png")},
 	{"name": "Pickle", "texture": preload("res://assets/player/pickle.png")},
 	{"name": "Minion", "texture": preload("res://assets/player/minion.png")},
+	{"name": "Darth Vader", "texture": preload("res://assets/player/darth_vader.png")},
+	{"name": "Harry Potter", "texture": preload("res://assets/player/harry_potter.png")},
+	{"name": "Spider-Man", "texture": preload("res://assets/player/spiderman.png")},
+	{"name": "SpongeBob", "texture": preload("res://assets/player/spongebob.png")},
+	{"name": "Pac-Man", "texture": preload("res://assets/player/pacman.png")},
+	{"name": "Bluey", "texture": preload("res://assets/player/bluey.png")},
 ]
 
 ## texture -> Rect2 of its opaque pixels (see art_rect()). 

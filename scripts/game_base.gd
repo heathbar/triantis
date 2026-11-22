@@ -18,6 +18,7 @@ const PLAYER_SCENE := preload("res://scenenodethings/player.tscn")
 const PauseMenu := preload("res://scripts/ui/pause_menu.gd")
 const PlayerStats := preload("res://scripts/ui/player_stats.gd")
 const WaveSummary := preload("res://scripts/ui/wave_summary.gd")
+const CampfireWait := preload("res://scripts/ui/campfire_wait.gd")
 const ResourcePickup := preload("res://scripts/resource_pickup.gd")
 const DEFAULT_WAVE_SET := "res://data/waves/standard_run.tres"
 ## Where each player (by slot) starts around the spawn point. A lone player
@@ -73,6 +74,9 @@ var render_scale := 1.0
 var _squad_results := {}
 ## The end-of-run summary while it's up (else null).
 var _final_summary: WaveSummary
+## Squads game: the campfire scene while we wait for the other squads (else
+## null).
+var _campfire: CampfireWait
 
 
 func _exit_tree() -> void:
@@ -80,6 +84,23 @@ func _exit_tree() -> void:
 
 
 # --- For subclasses to fill in ------------------------------------------------------
+
+## Squads game: our squad round the campfire (scripts/ui/campfire_wait.gd)
+## with `text` at the top, until hide_waiting_campfire().
+func show_waiting_campfire(text: String) -> void:
+	if _campfire:
+		_campfire.set_text(text)
+		return
+	_campfire = CampfireWait.new()
+	add_child(_campfire)
+	_campfire.open(all_players, text)
+
+
+func hide_waiting_campfire() -> void:
+	if _campfire:
+		_campfire.close()
+		_campfire = null
+
 
 ## True while a round is being fought (not between rounds or after the end).
 func is_wave_running() -> bool:

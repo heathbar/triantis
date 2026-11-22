@@ -37,7 +37,7 @@ const _RICOCHET := [
 ]
 const _FULL_SPIN := [
 	{"text": "Swings go all the way round.", "reach": 1.0},
-	{"text": "All the way round, and 40% further.", "reach": 1.4},
+	{"text": "Swings go all the way round and reach 40% further.", "reach": 1.4},
 ]
 
 ## class id -> {"main": "gun" or "melee", "gun": [branch, ...], "melee": [...]}.
@@ -50,25 +50,25 @@ const TREES := {
 			{"id": "rail", "name": "Rail", "mechanic": "pierce", "stages": [
 				{"text": "Shots go through 3 enemies.", "pierce": 3, "gain": 0.0},
 				{"text": "Shots go through everything, +15% damage for each enemy passed.", "pierce": 99, "gain": 0.15},
-				{"text": "Shots go through everything (+15% per enemy) and leave a burning line along their path for 3 s.",
+				{"text": "Shots go through everything (+15% damage for each enemy passed) and leave a burning line along their path for 3 s.",
 					"pierce": 99, "gain": 0.15, "line": 3.0}]},
 			{"id": "spotter", "name": "Spotter", "mechanic": "mark", "stages": [
 				{"text": "Hits mark enemies for 3 s: they take +25% damage from everyone, other squads too.", "mult": 1.25, "secs": 3.0},
-				{"text": "Marks last 5 s and add +50%.", "mult": 1.5, "secs": 5.0},
-				{"text": "Marks last 5 s and add +50%. A marked enemy that dies passes its mark to enemies within 48 px.",
+				{"text": "Hits mark enemies for 5 s: they take +50% damage from everyone, other squads too.", "mult": 1.5, "secs": 5.0},
+				{"text": "Hits mark enemies for 5 s (+50% damage from everyone). A marked enemy that dies passes its mark to enemies within 48 px.",
 					"mult": 1.5, "secs": 5.0, "spread": 48.0}]},
 			{"id": "ricochet", "name": "Ricochet", "mechanic": "ricochet", "stages": _RICOCHET},
 			{"id": "charge", "name": "Charge Shot", "mechanic": "charge", "stages": [
 				{"text": "Hold fire to charge for up to 1 s, release to shoot: up to 2x damage.", "max": 2.0, "time": 1.0},
-				{"text": "Charges up to 3x damage, and the bullet grows with it.", "max": 3.0, "time": 1.0, "grow": true},
-				{"text": "Up to 3x. A full charge goes through every enemy and stuns them for 0.8 s.",
+				{"text": "Hold fire to charge for up to 1 s, release to shoot: up to 3x damage, and the bullet grows with it.", "max": 3.0, "time": 1.0, "grow": true},
+				{"text": "Charge for up to 3x damage (and a bigger bullet). A full charge goes through every enemy and stuns them for 0.8 s.",
 					"max": 3.0, "time": 1.0, "grow": true, "stun": 0.8}]},
 		],
 		"melee": [
 			{"id": "lunge", "name": "Lunge", "mechanic": "lunge", "stages": [
 				{"text": "Each swing carries you 40 px forward, through enemies.", "dist": 40.0, "guard": 0.0},
-				{"text": "A 64 px lunge you can't be hurt during.", "dist": 64.0, "guard": 0.35},
-				{"text": "A 64 px lunge you can't be hurt during. Your next shot after it does +50% damage.",
+				{"text": "Each swing carries you 64 px forward, through enemies, and you can't be hurt during it.", "dist": 64.0, "guard": 0.35},
+				{"text": "Each swing carries you 64 px forward and you can't be hurt during it. Your next shot after it does +50% damage.",
 					"dist": 64.0, "guard": 0.35, "next_shot": 1.5}]},
 		],
 	},
@@ -77,31 +77,31 @@ const TREES := {
 		"gun": [
 			{"id": "underbarrel", "name": "Underbarrel", "mechanic": "grenade", "stages": [
 				{"text": "Every 8th shot is a grenade that bursts where it stops (24 px).", "every": 8, "radius": 24.0, "dmg": 1.5},
-				{"text": "Every 6th shot; bigger bursts (36 px).", "every": 6, "radius": 36.0, "dmg": 1.5},
-				{"text": "Every 6th shot (36 px), and each grenade scatters 3 bomblets.",
+				{"text": "Every 6th shot is a grenade, with bigger bursts (36 px).", "every": 6, "radius": 36.0, "dmg": 1.5},
+				{"text": "Every 6th shot is a grenade (36 px bursts) that also scatters 3 bomblets.",
 					"every": 6, "radius": 36.0, "dmg": 1.5, "bomblets": 3}]},
 			{"id": "suppression", "name": "Suppression", "mechanic": "slow", "stages": [
 				{"text": "Hits slow enemies by 20% for 1 s.", "mult": 0.8, "secs": 1.0},
-				{"text": "Hits slow enemies by 35%.", "mult": 0.65, "secs": 1.0},
-				{"text": "Hits slow by 35%, and 3 hits within 1 s stun the enemy for 0.5 s.",
+				{"text": "Hits slow enemies by 35% for 1 s.", "mult": 0.65, "secs": 1.0},
+				{"text": "Hits slow enemies by 35% for 1 s, and 3 hits within 1 s stun the enemy for 0.5 s.",
 					"mult": 0.65, "secs": 1.0, "stun_hits": 3, "stun": 0.5}]},
 			{"id": "ap", "name": "AP Rounds", "mechanic": "pierce", "stages": [
 				{"text": "Shots go through 1 enemy.", "pierce": 1, "gain": 0.0},
 				{"text": "Shots go through 2 enemies; +20% damage against Brutes, elites and bosses.",
 					"pierce": 2, "gain": 0.0, "big": 0.2},
-				{"text": "Through 2 (+20% against big enemies). Enemies you go through take +15% damage from everyone for 3 s.",
+				{"text": "Shots go through 2 enemies (+20% damage against Brutes, elites and bosses). Enemies you go through take +15% damage from everyone for 3 s.",
 					"pierce": 2, "gain": 0.0, "big": 0.2, "pierced_mark": 1.15, "pierced_secs": 3.0}]},
 			{"id": "drum", "name": "Drum Mag", "mechanic": "drum", "stages": [
 				{"text": "Holding fire speeds the gun up: +10% fire rate a second, up to +30%.", "per_sec": 0.1, "max": 0.3},
-				{"text": "Up to +60%.", "per_sec": 0.1, "max": 0.6},
-				{"text": "Up to +60%, and at full speed shots also go through 1 enemy.",
+				{"text": "Holding fire speeds the gun up: +10% fire rate a second, up to +60%.", "per_sec": 0.1, "max": 0.6},
+				{"text": "Holding fire speeds the gun up to +60% fire rate, and at full speed shots also go through 1 enemy.",
 					"per_sec": 0.1, "max": 0.6, "pierce": 1}]},
 		],
 		"melee": [
 			{"id": "bayonet", "name": "Bayonet", "mechanic": "lunge", "stages": [
 				{"text": "Each swing lunges you 40 px forward, through enemies.", "dist": 40.0, "guard": 0.0},
-				{"text": "A 56 px lunge you can't be hurt during.", "dist": 56.0, "guard": 0.35},
-				{"text": "A 56 px lunge you can't be hurt during. Melee kills give +25% fire rate for 3 s.",
+				{"text": "Each swing lunges you 56 px forward, through enemies, and you can't be hurt during it.", "dist": 56.0, "guard": 0.35},
+				{"text": "Each swing lunges you 56 px forward and you can't be hurt during it. Melee kills give +25% fire rate for 3 s.",
 					"dist": 56.0, "guard": 0.35, "kill_rate": 0.25, "kill_secs": 3.0}]},
 		],
 	},
@@ -110,28 +110,28 @@ const TREES := {
 		"gun": [
 			{"id": "salvage", "name": "Salvage", "mechanic": "salvage", "stages": [
 				{"text": "Your kills have a 10% chance to drop an extra resource.", "chance": 0.1},
-				{"text": "A 20% chance.", "chance": 0.2},
-				{"text": "A 20% chance, and picking up resources gives +20% fire rate for 2 s.",
+				{"text": "Your kills have a 20% chance to drop an extra resource.", "chance": 0.2},
+				{"text": "Your kills have a 20% chance to drop an extra resource, and picking up resources gives +20% fire rate for 2 s.",
 					"chance": 0.2, "rate": 0.2, "rate_secs": 2.0}]},
 			{"id": "shredder", "name": "Shredder", "mechanic": "shred", "stages": [
 				{"text": "Each hit makes the enemy take +5% damage from everyone (up to 5 times, for 4 s).", "per": 0.05, "max": 5},
-				{"text": "+8% a hit, up to 8 times.", "per": 0.08, "max": 8},
-				{"text": "+8% a hit, up to 8 times, and fully shredded enemies bleed.",
+				{"text": "Each hit makes the enemy take +8% damage from everyone (up to 8 times, for 4 s).", "per": 0.08, "max": 8},
+				{"text": "Each hit makes the enemy take +8% damage from everyone (up to 8 times, for 4 s), and fully shredded enemies bleed.",
 					"per": 0.08, "max": 8, "bleed": 0.5}]},
 			{"id": "spray", "name": "Spray", "mechanic": "fan", "stages": [
 				{"text": "Every shot is a burst of 2.", "extra": 1},
-				{"text": "A burst of 3.", "extra": 2},
-				{"text": "A burst of 3, and every bullet goes through 1 enemy.", "extra": 2, "pierce": 1}]},
+				{"text": "Every shot is a burst of 3.", "extra": 2},
+				{"text": "Every shot is a burst of 3, and every bullet goes through 1 enemy.", "extra": 2, "pierce": 1}]},
 			{"id": "recycler", "name": "Recycler", "mechanic": "recycler", "stages": [
 				{"text": "Every 25 kills heal you half a heart.", "kills": 25},
-				{"text": "Every 15 kills.", "kills": 15},
-				{"text": "Every 15 kills, and the heal also makes you immune to damage for 1 s.", "kills": 15, "guard": 1.0}]},
+				{"text": "Every 15 kills heal you half a heart.", "kills": 15},
+				{"text": "Every 15 kills heal you half a heart and make you immune to damage for 1 s.", "kills": 15, "guard": 1.0}]},
 		],
 		"melee": [
 			{"id": "clearcut", "name": "Clear-Cut", "mechanic": "spin", "stages": [
 				{"text": "The machete swings all the way round.", "reach": 1.0},
-				{"text": "All the way round, and 40% further.", "reach": 1.4},
-				{"text": "All the way round, 40% further, and melee kills always drop an extra resource.",
+				{"text": "The machete swings all the way round and reaches 40% further.", "reach": 1.4},
+				{"text": "The machete swings all the way round and reaches 40% further, and melee kills always drop an extra resource.",
 					"reach": 1.4, "kill_drop": 1}]},
 		],
 	},
@@ -140,27 +140,27 @@ const TREES := {
 		"gun": [
 			{"id": "nailer", "name": "Nailer", "mechanic": "nail", "stages": [
 				{"text": "Rivets that stop leave a spike trap for 5 s (up to 8).", "secs": 5.0, "max": 8},
-				{"text": "Spikes last 9 s, up to 14 at once.", "secs": 9.0, "max": 14},
-				{"text": "Spikes last 9 s (up to 14) and slow enemies on them by 40%.", "secs": 9.0, "max": 14, "slow": 0.6}]},
+				{"text": "Rivets that stop leave a spike trap for 9 s (up to 14 at once).", "secs": 9.0, "max": 14},
+				{"text": "Rivets that stop leave a spike trap for 9 s (up to 14) that slows enemies on it by 40%.", "secs": 9.0, "max": 14, "slow": 0.6}]},
 			{"id": "mortar", "name": "Mortar", "mechanic": "mortar", "stages": [
-				{"text": "Rivets arc over walls and burst where they land, even in a neighbour's lane.", "radius": 28.0, "dmg": 1.2},
-				{"text": "Bigger bursts.", "radius": 44.0, "dmg": 1.5},
-				{"text": "Bigger bursts that leave a corrosive puddle for 3 s.", "radius": 44.0, "dmg": 1.5, "puddle": 3.0}]},
+				{"text": "Rivets arc over walls and burst where they land (28 px), even in a neighbour's lane.", "radius": 28.0, "dmg": 1.2},
+				{"text": "Rivets arc over walls and burst where they land, with bigger (44 px), harder-hitting bursts.", "radius": 44.0, "dmg": 1.5},
+				{"text": "Rivets arc over walls and burst where they land (44 px, harder-hitting), leaving a corrosive puddle for 3 s.", "radius": 44.0, "dmg": 1.5, "puddle": 3.0}]},
 			{"id": "linker", "name": "Linker", "mechanic": "chain", "stages": [
 				{"text": "Hits jump to 1 more enemy nearby.", "jumps": 1, "share": 0.6},
-				{"text": "Hits jump to 3 more enemies.", "jumps": 3, "share": 0.6},
-				{"text": "Hits jump to 3 more, and to your equipment nearby, which zaps an enemy too.",
+				{"text": "Hits jump to 3 more enemies nearby.", "jumps": 3, "share": 0.6},
+				{"text": "Hits jump to 3 more enemies nearby, and to your equipment nearby, which zaps an enemy too.",
 					"jumps": 3, "share": 0.6, "gadgets": true}]},
 			{"id": "overclock", "name": "Overclock", "mechanic": "overclock", "stages": [
 				{"text": "Each hit takes 0.2 s off your equipment's cooldown.", "per_hit": 0.2},
-				{"text": "0.4 s a hit.", "per_hit": 0.4},
-				{"text": "0.4 s a hit, and each kill adds 1 s to your equipment that's out.", "per_hit": 0.4, "kill_extend": 1.0}]},
+				{"text": "Each hit takes 0.4 s off your equipment's cooldown.", "per_hit": 0.4},
+				{"text": "Each hit takes 0.4 s off your equipment's cooldown, and each kill adds 1 s to your equipment that's out.", "per_hit": 0.4, "kill_extend": 1.0}]},
 		],
 		"melee": [
 			{"id": "torque", "name": "Torque", "mechanic": "spin", "stages": [
 				{"text": "The wrench swings all the way round.", "reach": 1.0},
-				{"text": "All the way round, and 40% further.", "reach": 1.4},
-				{"text": "All the way round, 40% further, and hitting your own equipment tops it up by 3 s.",
+				{"text": "The wrench swings all the way round and reaches 40% further.", "reach": 1.4},
+				{"text": "The wrench swings all the way round and reaches 40% further, and hitting your own equipment tops it up by 3 s.",
 					"reach": 1.4, "extend": 3.0}]},
 		],
 	},
@@ -169,29 +169,29 @@ const TREES := {
 		"gun": [
 			{"id": "triage", "name": "Triage", "mechanic": "heal", "stages": [
 				{"text": "Shots heal your squad's players they pass (half a heart, at most once a second each).", "remote": false},
-				{"text": "And other squads' players too, through windows and in shared rooms.", "remote": true},
-				{"text": "Heals other squads too, and a squadmate already at full health gets a shield that stops one hit.",
+				{"text": "Shots heal players they pass, other squads' too (through windows and in shared rooms): half a heart, at most once a second each.", "remote": true},
+				{"text": "Shots heal players they pass, other squads' too, and a squadmate already at full health gets a shield that stops one hit.",
 					"remote": true, "shield": true}]},
 			{"id": "toxin", "name": "Toxin", "mechanic": "toxin", "stages": [
 				{"text": "Hits poison enemies for 3 s.", "dps": 0.6, "secs": 3.0, "spread": 0.0},
-				{"text": "Stronger poison that spreads to enemies nearby when its host dies.", "dps": 1.0, "secs": 4.0, "spread": 48.0},
-				{"text": "Stronger, spreading poison. A poisoned enemy dying heals the nearest player in your squad half a heart (at most once a second).",
+				{"text": "Hits poison enemies for 4 s with stronger poison, which spreads to enemies nearby when its host dies.", "dps": 1.0, "secs": 4.0, "spread": 48.0},
+				{"text": "Stronger 4 s poison that spreads when its host dies. A poisoned enemy dying heals your squad's nearest player (you too) half a heart, at most once a second.",
 					"dps": 1.0, "secs": 4.0, "spread": 48.0, "heal_kill": true}]},
 			{"id": "fan", "name": "Fan", "mechanic": "fan", "stages": [
 				{"text": "Every shot is a burst of 2.", "extra": 1},
-				{"text": "A burst of 4.", "extra": 3},
-				{"text": "A burst of 4, and the last bullet homes in on an enemy.", "extra": 3, "home_last": true}]},
+				{"text": "Every shot is a burst of 4.", "extra": 3},
+				{"text": "Every shot is a burst of 4, and the last bullet homes in on an enemy.", "extra": 3, "home_last": true}]},
 			{"id": "stim", "name": "Stim Darts", "mechanic": "stim", "stages": [
 				{"text": "Shots that pass squadmates give them +15% speed and fire rate for 3 s.", "boost": 0.15, "secs": 3.0},
-				{"text": "+30%.", "boost": 0.3, "secs": 3.0},
-				{"text": "+30%, and 6 of your shots passing a knocked-out squadmate revive them.",
+				{"text": "Shots that pass squadmates give them +30% speed and fire rate for 3 s.", "boost": 0.3, "secs": 3.0},
+				{"text": "Shots that pass squadmates give them +30% speed and fire rate for 3 s, and 6 of your shots passing a knocked-out squadmate revive them.",
 					"boost": 0.3, "secs": 3.0, "revive_hits": 6}]},
 		],
 		"melee": [
 			{"id": "sidestep", "name": "Side Step", "mechanic": "lunge", "stages": [
 				{"text": "Each swing carries you 36 px forward, through enemies.", "dist": 36.0, "guard": 0.0},
-				{"text": "56 px, and you can't be hurt during it.", "dist": 56.0, "guard": 0.35},
-				{"text": "56 px, can't be hurt, and stepping through a squadmate heals them half a heart (once every 2 s each).",
+				{"text": "Each swing carries you 56 px forward, through enemies, and you can't be hurt during it.", "dist": 56.0, "guard": 0.35},
+				{"text": "Each swing carries you 56 px forward and you can't be hurt during it. Stepping through a squadmate heals them half a heart (once every 2 s each).",
 					"dist": 56.0, "guard": 0.35, "heal_pass": 2.0}]},
 		],
 	},
@@ -201,29 +201,29 @@ const TREES := {
 			{"id": "incendiary", "name": "Incendiary", "mechanic": "burn", "stages": [
 				{"text": "Hits set enemies on fire for 2 s. Each hit stacks more fire (up to 10).",
 					"dps": 0.25, "secs": 2.0, "stacks": 10},
-				{"text": "Hotter fire that lasts 3 s (stacks up to 10).", "dps": 0.4, "secs": 3.0, "stacks": 10},
-				{"text": "Hotter fire (3 s, stacks up to 10), and burning enemies explode when they die (24 px).",
+				{"text": "Hits set enemies on hotter fire for 3 s. Each hit stacks more fire (up to 10).", "dps": 0.4, "secs": 3.0, "stacks": 10},
+				{"text": "Hits set enemies on hotter fire for 3 s, stacking up to 10, and burning enemies explode when they die (24 px).",
 					"dps": 0.4, "secs": 3.0, "stacks": 10, "explode": 24.0}]},
 			{"id": "bulldozer", "name": "Bulldozer", "mechanic": "push", "stages": [
 				{"text": "Shots push enemies much harder.", "push": 3.0, "add": 6.0},
-				{"text": "Even harder.", "push": 5.0, "add": 10.0},
-				{"text": "Even harder, and enemies knocked into a wall are stunned for 1 s.",
+				{"text": "Shots push enemies even harder.", "push": 5.0, "add": 10.0},
+				{"text": "Shots push enemies even harder, and enemies knocked into a wall are stunned for 1 s.",
 					"push": 5.0, "add": 10.0, "wall_stun": 1.0}]},
 			{"id": "emplacement", "name": "Emplacement", "mechanic": "brace", "stages": [
 				{"text": "Standing still for 1 s gives +25% damage.", "after": 1.0, "dmg": 0.25},
-				{"text": "+50% damage.", "after": 1.0, "dmg": 0.5},
-				{"text": "+50% damage and +25 armor while you stand still.", "after": 1.0, "dmg": 0.5, "armor": 25}]},
+				{"text": "Standing still for 1 s gives +50% damage.", "after": 1.0, "dmg": 0.5},
+				{"text": "Standing still for 1 s gives +50% damage and +25 armor until you move.", "after": 1.0, "dmg": 0.5, "armor": 25}]},
 			{"id": "tracer", "name": "Tracer Belt", "mechanic": "tracer", "stages": [
 				{"text": "Every 5th shot marks the enemy for 3 s: +20% damage from everyone.", "every": 5, "mult": 1.2, "secs": 3.0},
-				{"text": "Every 3rd shot.", "every": 3, "mult": 1.2, "secs": 3.0},
-				{"text": "Every 3rd shot, and a marked enemy that dies passes its mark to enemies within 48 px.",
+				{"text": "Every 3rd shot marks the enemy for 3 s: +20% damage from everyone.", "every": 3, "mult": 1.2, "secs": 3.0},
+				{"text": "Every 3rd shot marks the enemy for 3 s (+20% damage from everyone), and a marked enemy that dies passes its mark to enemies within 48 px.",
 					"every": 3, "mult": 1.2, "secs": 3.0, "spread": 48.0}]},
 		],
 		"melee": [
 			{"id": "shove", "name": "Shove", "mechanic": "shove", "stages": [
 				{"text": "Swings push enemies back 48 px.", "push": 48.0, "stun": 0.0},
-				{"text": "72 px, and they're stunned for 0.5 s.", "push": 72.0, "stun": 0.5},
-				{"text": "72 px and stunned, and shoved enemies take +25% damage for 2 s.",
+				{"text": "Swings push enemies back 72 px and stun them for 0.5 s.", "push": 72.0, "stun": 0.5},
+				{"text": "Swings push enemies back 72 px and stun them for 0.5 s, and shoved enemies take +25% damage for 2 s.",
 					"push": 72.0, "stun": 0.5, "mark": 1.25, "mark_secs": 2.0}]},
 		],
 	},
@@ -233,24 +233,24 @@ const TREES := {
 			{"id": "runandgun", "name": "Run & Gun", "mechanic": "moving", "stages": [
 				{"text": "+20% damage while moving.", "dmg": 0.2},
 				{"text": "+35% damage while moving.", "dmg": 0.35},
-				{"text": "+35% while moving, and shots fired on the move go through 1 enemy.", "dmg": 0.35, "pierce": 1}]},
+				{"text": "+35% damage while moving, and shots fired on the move go through 1 enemy.", "dmg": 0.35, "pierce": 1}]},
 			{"id": "hitandrun", "name": "Hit & Run", "mechanic": "hitrun", "stages": [
 				{"text": "Kills give +20% speed for 2 s.", "speed": 0.2, "secs": 2.0, "stacks": 1},
-				{"text": "+35% speed.", "speed": 0.35, "secs": 2.0, "stacks": 1},
-				{"text": "+35% speed that stacks up to 3 times, and while it's on, touching enemies doesn't hurt.",
+				{"text": "Kills give +35% speed for 2 s.", "speed": 0.35, "secs": 2.0, "stacks": 1},
+				{"text": "Kills give +35% speed for 2 s, stacking up to 3 times, and while it's on, touching enemies doesn't hurt.",
 					"speed": 0.35, "secs": 2.0, "stacks": 3, "shield": true}]},
 			{"id": "ricochet", "name": "Ricochet", "mechanic": "ricochet", "stages": _RICOCHET},
 			{"id": "flare", "name": "Flare", "mechanic": "mark", "stages": [
 				{"text": "Hits mark enemies for 3 s: +20% damage from everyone.", "mult": 1.2, "secs": 3.0},
-				{"text": "Marks last 5 s and add +35%.", "mult": 1.35, "secs": 5.0},
-				{"text": "Marks last 5 s (+35%), and marked enemies drop an extra resource when they die.",
+				{"text": "Hits mark enemies for 5 s: +35% damage from everyone.", "mult": 1.35, "secs": 5.0},
+				{"text": "Hits mark enemies for 5 s (+35% damage from everyone), and marked enemies drop an extra resource when they die.",
 					"mult": 1.35, "secs": 5.0, "drop": 1}]},
 		],
 		"melee": [
 			{"id": "slip", "name": "Slip", "mechanic": "lunge", "stages": [
 				{"text": "Each swing dashes you 48 px forward, through enemies.", "dist": 48.0, "guard": 0.0},
-				{"text": "72 px, and you can't be hurt during it.", "dist": 72.0, "guard": 0.35},
-				{"text": "72 px, can't be hurt, and enemies you dash through are marked for 3 s (+20% damage).",
+				{"text": "Each swing dashes you 72 px forward, through enemies, and you can't be hurt during it.", "dist": 72.0, "guard": 0.35},
+				{"text": "Each swing dashes you 72 px forward and you can't be hurt during it. Enemies you dash through are marked for 3 s (+20% damage from everyone).",
 					"dist": 72.0, "guard": 0.35, "mark": 1.2, "mark_secs": 3.0}]},
 		],
 	},
@@ -259,28 +259,28 @@ const TREES := {
 		"melee": [
 			{"id": "charge", "name": "Shoulder Charge", "mechanic": "lunge", "stages": [
 				{"text": "Each swing charges you 48 px forward, through enemies.", "dist": 48.0, "guard": 0.0},
-				{"text": "A 72 px charge you can't be hurt during.", "dist": 72.0, "guard": 0.4},
-				{"text": "A 72 px charge you can't be hurt during, stunning everything you go through for 0.6 s.",
+				{"text": "Each swing charges you 72 px forward, through enemies, and you can't be hurt during it.", "dist": 72.0, "guard": 0.4},
+				{"text": "Each swing charges you 72 px forward and you can't be hurt during it, stunning everything you go through for 0.6 s.",
 					"dist": 72.0, "guard": 0.4, "stun": 0.6}]},
 			{"id": "haymaker", "name": "Haymaker", "mechanic": "spin", "stages": [
 				_FULL_SPIN[0], _FULL_SPIN[1],
-				{"text": "All the way round, 40% further, and hits pull enemies 24 px toward you.", "reach": 1.4, "pull": 24.0}]},
+				{"text": "Swings go all the way round and reach 40% further, and hits pull enemies 24 px toward you.", "reach": 1.4, "pull": 24.0}]},
 			{"id": "shockwave", "name": "Shockwave", "mechanic": "wave", "stages": [
 				{"text": "Swings send a short shockwave ahead.", "count": 1, "range": 0.25, "width": 24.0},
-				{"text": "A bigger shockwave that goes further.", "count": 1, "range": 0.4, "width": 40.0},
-				{"text": "A bigger shockwave that goes through walls into the next lane.",
+				{"text": "Swings send a bigger shockwave that goes further.", "count": 1, "range": 0.4, "width": 40.0},
+				{"text": "Swings send a bigger, longer shockwave that goes through walls into the next lane.",
 					"count": 1, "range": 0.4, "width": 40.0, "walls": true}]},
 			{"id": "combo", "name": "Combo", "mechanic": "combo", "stages": [
 				{"text": "Melee hits within 1.5 s of each other add +10% melee damage (up to 5).", "per": 0.1, "max": 5, "window": 1.5},
-				{"text": "+15% each, up to 6.", "per": 0.15, "max": 6, "window": 1.5},
-				{"text": "+15% each, up to 6. At full combo your next swing is a ground slam that stuns everything within 48 px for 0.8 s.",
+				{"text": "Melee hits within 1.5 s of each other add +15% melee damage (up to 6).", "per": 0.15, "max": 6, "window": 1.5},
+				{"text": "Melee hits within 1.5 s of each other add +15% melee damage (up to 6). At full combo your next swing is a ground slam that stuns everything within 48 px for 0.8 s.",
 					"per": 0.15, "max": 6, "window": 1.5, "slam": 48.0, "stun": 0.8}]},
 		],
 		"gun": [
 			{"id": "flak", "name": "Flak", "mechanic": "flak", "stages": [
 				{"text": "Pellets burst into shrapnel after a short distance: hits round corners.", "shards": 3, "at": 0.45},
-				{"text": "More shrapnel, sooner.", "shards": 5, "at": 0.3},
-				{"text": "More shrapnel, sooner, and shrapnel hits add to your Combo.", "shards": 5, "at": 0.3, "combo": true}]},
+				{"text": "Pellets burst into more shrapnel, sooner: hits round corners.", "shards": 5, "at": 0.3},
+				{"text": "Pellets burst into more shrapnel, sooner, and shrapnel hits add to your Combo.", "shards": 5, "at": 0.3, "combo": true}]},
 		],
 	},
 	"duelist": {
@@ -288,29 +288,29 @@ const TREES := {
 		"melee": [
 			{"id": "dash", "name": "Dash", "mechanic": "lunge", "stages": [
 				{"text": "Each swing dashes you 56 px forward, through enemies.", "dist": 56.0, "guard": 0.0},
-				{"text": "An 88 px dash you can't be hurt during.", "dist": 88.0, "guard": 0.35},
-				{"text": "An 88 px dash you can't be hurt during. A melee kill lets you swing again straight away.",
+				{"text": "Each swing dashes you 88 px forward, through enemies, and you can't be hurt during it.", "dist": 88.0, "guard": 0.35},
+				{"text": "Each swing dashes you 88 px forward and you can't be hurt during it. A melee kill lets you swing again straight away.",
 					"dist": 88.0, "guard": 0.35, "kill_reset": true}]},
 			{"id": "whirlwind", "name": "Whirlwind", "mechanic": "spin", "stages": [
 				{"text": "The katana spins all the way round.", "reach": 1.0},
-				{"text": "All the way round, and 40% further.", "reach": 1.4},
-				{"text": "All the way round, 40% further, and each spin hits a second time.", "reach": 1.4, "twice": true}]},
+				{"text": "The katana spins all the way round and reaches 40% further.", "reach": 1.4},
+				{"text": "The katana spins all the way round, reaches 40% further, and each spin hits a second time.", "reach": 1.4, "twice": true}]},
 			{"id": "windcutter", "name": "Wind Cutter", "mechanic": "wave", "stages": [
 				{"text": "Swings send a blade of wind ahead.", "count": 1, "range": 0.35, "width": 16.0},
-				{"text": "A wider blade that goes further.", "count": 1, "range": 0.55, "width": 28.0},
-				{"text": "A wider blade that goes further, then flies back to you, hitting again.",
+				{"text": "Swings send a wider blade of wind that goes further.", "count": 1, "range": 0.55, "width": 28.0},
+				{"text": "Swings send a wider, longer blade of wind that flies back to you, hitting again.",
 					"count": 1, "range": 0.55, "width": 28.0, "returns": true}]},
 			{"id": "riposte", "name": "Riposte", "mechanic": "riposte", "stages": [
 				{"text": "An enemy hit in the first 0.2 s of a swing is blocked.", "window": 0.2, "counter": 0.0},
-				{"text": "A 0.3 s window, and a block hits back for 2x melee damage.", "window": 0.3, "counter": 2.0},
-				{"text": "0.3 s window, 2x counter. A block also stuns enemies close by for 1 s and doubles your next swing.",
+				{"text": "An enemy hit in the first 0.3 s of a swing is blocked, and the block hits back for 2x melee damage.", "window": 0.3, "counter": 2.0},
+				{"text": "Enemy hits in the first 0.3 s of a swing are blocked and hit back for 2x melee damage. A block also stuns enemies close by for 1 s and doubles your next swing.",
 					"window": 0.3, "counter": 2.0, "stun": 1.0, "next_double": true}]},
 		],
 		"gun": [
 			{"id": "deadeye", "name": "Dead-Eye", "mechanic": "mark", "stages": [
 				{"text": "Hits mark enemies for 3 s: they take +25% damage from everyone, other squads too.", "mult": 1.25, "secs": 3.0},
-				{"text": "Marks last 5 s and add +50%.", "mult": 1.5, "secs": 5.0},
-				{"text": "Marks last 5 s (+50%), and a katana hit on a marked enemy does double damage and uses up the mark.",
+				{"text": "Hits mark enemies for 5 s: they take +50% damage from everyone, other squads too.", "mult": 1.5, "secs": 5.0},
+				{"text": "Hits mark enemies for 5 s (+50% damage from everyone), and a katana hit on a marked enemy does double damage and uses up the mark.",
 					"mult": 1.5, "secs": 5.0, "melee_double": true}]},
 		],
 	},
@@ -319,28 +319,28 @@ const TREES := {
 		"melee": [
 			{"id": "juggernaut", "name": "Juggernaut", "mechanic": "lunge", "stages": [
 				{"text": "Each swing steps you 32 px forward, through enemies.", "dist": 32.0, "guard": 0.0},
-				{"text": "48 px, and you can't be hurt during it.", "dist": 48.0, "guard": 0.35},
-				{"text": "48 px, can't be hurt, and enemies you hit are thrown, damaging whatever they land on.",
+				{"text": "Each swing steps you 48 px forward, through enemies, and you can't be hurt during it.", "dist": 48.0, "guard": 0.35},
+				{"text": "Each swing steps you 48 px forward and you can't be hurt during it, and enemies you hit are thrown, damaging whatever they land on.",
 					"dist": 48.0, "guard": 0.35, "throw": 48.0}]},
 			{"id": "wideswing", "name": "Wide Swing", "mechanic": "spin", "stages": [
 				_FULL_SPIN[0], _FULL_SPIN[1],
-				{"text": "All the way round, 40% further, and hits pull enemies 24 px toward you.", "reach": 1.4, "pull": 24.0}]},
+				{"text": "Swings go all the way round and reach 40% further, and hits pull enemies 24 px toward you.", "reach": 1.4, "pull": 24.0}]},
 			{"id": "groundpound", "name": "Ground Pound", "mechanic": "ring", "stages": [
 				{"text": "Swings send out a ring that hits everything within 24 px.", "radius": 24.0, "stun": 0.0},
-				{"text": "A 40 px ring that stuns for 0.4 s.", "radius": 40.0, "stun": 0.4},
-				{"text": "A 40 px stunning ring, and every 3rd swing is a quake that hits everything within 120 px.",
+				{"text": "Swings send out a bigger ring that hits everything within 40 px and stuns for 0.4 s.", "radius": 40.0, "stun": 0.4},
+				{"text": "Swings send out a ring that hits and stuns everything within 40 px, and every 3rd swing is a quake that hits everything within 120 px.",
 					"radius": 40.0, "stun": 0.4, "quake_every": 3, "quake": 120.0}]},
 			{"id": "bulwark", "name": "Bulwark", "mechanic": "bulwark", "stages": [
 				{"text": "Each melee hit gives +5 armor for 4 s (up to +25).", "per": 5, "max": 25, "secs": 4.0},
-				{"text": "+8 a hit, up to +40.", "per": 8, "max": 40, "secs": 4.0},
-				{"text": "+8 a hit, up to +40. At full armor, enemies touching you take damage.",
+				{"text": "Each melee hit gives +8 armor for 4 s (up to +40).", "per": 8, "max": 40, "secs": 4.0},
+				{"text": "Each melee hit gives +8 armor for 4 s (up to +40). At full armor, enemies touching you take damage.",
 					"per": 8, "max": 40, "secs": 4.0, "thorns": 0.5}]},
 		],
 		"gun": [
 			{"id": "concussion", "name": "Concussion", "mechanic": "concussion", "stages": [
 				{"text": "Shots knock enemies back much harder.", "push": 3.0, "stun": 0.0, "blast": 0.0},
-				{"text": "And stun them for 0.5 s.", "push": 3.0, "stun": 0.5, "blast": 0.0},
-				{"text": "Hard knockback, 0.5 s stun, and shots burst on impact (32 px).", "push": 3.0, "stun": 0.5, "blast": 32.0}]},
+				{"text": "Shots knock enemies back much harder and stun them for 0.5 s.", "push": 3.0, "stun": 0.5, "blast": 0.0},
+				{"text": "Shots knock enemies back much harder, stun them for 0.5 s, and burst on impact (32 px).", "push": 3.0, "stun": 0.5, "blast": 32.0}]},
 		],
 	},
 }

@@ -68,7 +68,7 @@ const TYPES := [
 	{"id": "assault_rifle", "name": "Assault Rifle", "cost": 16,
 		"damage": 9, "interval": 0.3, "range": 520, "knockback": 6, "spread": 3},
 	{"id": "sniper_rifle", "name": "Sniper Rifle", "cost": 18,
-		"damage": 45, "interval": 1.4, "range": 1200, "knockback": 28, "speed": 1120, "size": Vector2(14, 1),
+		"damage": 45, "interval": 1.2, "range": 1200, "knockback": 28, "speed": 1120, "size": Vector2(14, 1),
 		"overkill": true},
 	{"id": "minigun", "name": "Minigun", "cost": 22,
 		"damage": 6, "interval": 0.1, "range": 560, "knockback": 2, "spread": 10, "size": Vector2(5, 2),

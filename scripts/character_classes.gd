@@ -83,7 +83,7 @@ const CLASSES := {
 		"name": "Sniper",
 		"description": "Long reach, hard hits, fragile",
 		"attributes": {
-			"lives": 2, "range": 0, "speed": -15, "harvesting": 20,
+			"lives": 2, "range": 0, "speed": -10, "harvesting": 20,
 			"ranged_damage": 10, "fire_rate": 0, "melee_damage": -60, "knockback": 0, "engineering": 10, "armor": -30,
 		},
 	},
@@ -234,8 +234,8 @@ static func clamp_attribute(id: String, value: int) -> int:
 
 ## Multiplier at -100 and +100 for speed, range, ranged damage, fire rate,
 ## knockback and harvesting.
-const STAT_MULT_MIN := 0.2
-const STAT_MULT_MAX := 4.0
+const STAT_MULT_MIN := 0.35
+const STAT_MULT_MAX := 3.0
 ## Speed bottoms out higher: -100 speed is what -50 used to be (~0.45x).
 const SPEED_MULT_MIN := 0.4472136  # sqrt(STAT_MULT_MIN)
 

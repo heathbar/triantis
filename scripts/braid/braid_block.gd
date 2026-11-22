@@ -35,6 +35,10 @@ const GLASS_SHINE := Color(0.85, 0.95, 1.0, 0.6)
 ## Which of the act's block textures a wall uses: 1 = block-1.png,
 ## 2 = block-2.png, 3 = block-3.png (assets/<theme>/environment). Only the
 ## look changes; a missing file falls back to the meadow's, then block-1.
+## Variants 1 and 3 tile on the world grid (bricks line up across blocks);
+## variant 2 starts at the block's own top-left corner (a picture, tiling
+## right and down if the block is bigger than it). Only variant 1 gets the
+## dark outline.
 @export_range(1, 3) var variant := 1:
 	set(value):
 		variant = value
@@ -94,5 +98,10 @@ func _draw() -> void:
 			y += 6.0
 		draw_rect(Rect2(Vector2.ZERO, size), Color(tint, 0.9), false, 1.0)
 		return
-	draw_texture_rect_region(ActTheme.environment("block", TEXTURE, variant), Rect2(Vector2.ZERO, size), Rect2(global_position, size))
-	draw_rect(Rect2(Vector2.ZERO, size), OUTLINE, false, 1.0)
+	var texture := ActTheme.environment("block", TEXTURE, variant)
+	var from := global_position
+	if variant == 2:
+		from = Vector2.ZERO
+	draw_texture_rect_region(texture, Rect2(Vector2.ZERO, size), Rect2(from, size))
+	if variant == 1:  # Variants 2 and 3 have no outline (their art may be see-through).
+		draw_rect(Rect2(Vector2.ZERO, size), OUTLINE, false, 1.0)

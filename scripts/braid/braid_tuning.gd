@@ -194,8 +194,6 @@ const ROOM_MIN_LANES := 2
 const MOUTH_DEPTH := 192.0
 ## Camera zoom in the room.
 const ROOM_ZOOM := 0.5
-## Players can spread this much further apart in the room (it's zoomed out).
-const ROOM_SPREAD := 2.0
 
 # --- Pathing --------------------------------------------------------------------
 
@@ -227,15 +225,18 @@ const SLICE_STRIPS_BY_LANES: Array[int] = [1, 1, 0, 0]
 ## strips': a little slower, since the screen shows about half as far ahead
 ## running up or down.
 const VERTICAL_TIDE_FACTOR := 0.85
-## Players can spread this far apart along the lane while it runs up or down
-## (the screen is only 360 tall).
-const MAX_SPREAD_VERTICAL := 300.0
+## The camera zooms out to this through a vertical slice (corners too), so
+## the screen shows more of the lane ahead and behind (it's only 360 tall).
+const VERTICAL_ZOOM := 0.75
 ## The camera looks this far ahead along the lane while it runs up or down
 ## (0: centred on the squad, as when it runs right).
 const VERTICAL_CAMERA_LEAD := 80.0
 
 # --- Camera ---------------------------------------------------------------------
 
-## Couch co-op: players can spread this far apart along the lane (the screen
-## minus a margin).
-const MAX_SPREAD_X := 520.0
+## Players can't spread further apart than the camera shows: the camera
+## frames every living player in our squad, at least this far (world px,
+## centre to screen edge) inside the screen's edge, and zooms out past the
+## place's own zoom only to keep doing that. (At most 28, or two players
+## against a lane's opposite walls would zoom the camera out.)
+const SCREEN_MARGIN := 24.0

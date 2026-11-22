@@ -32,8 +32,8 @@ extends Boss
 ## turning between updates). Phases come from the shared wave clock.
 
 const RADIUS := 30.0
-const DEFAULT_HEALTH := 4960
-const ENRAGE_AT := 120.0
+const DEFAULT_HEALTH := 6000
+const ENRAGE_AT := 80.0
 
 const FRONT_ARC := deg_to_rad(65.0)
 const REAR_ARC := deg_to_rad(60.0)

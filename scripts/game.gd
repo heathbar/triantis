@@ -239,7 +239,7 @@ func _prepare_wave(index: int) -> void:
 	if squads_game and (index > 0 or has_objective(index) or wave.is_boss_wave()):
 		state = State.WAITING
 		get_tree().paused = true
-		hud.show_notice("Waiting for the other squads...")
+		show_waiting_campfire("Waiting for the other squads...")
 		Squads.report_ready_for_wave(index)
 		return
 	_start_wave(index)
@@ -446,7 +446,7 @@ func _on_host_wave_ended(index: int, failed: bool) -> void:
 
 func _on_squads_wave_begin(index: int) -> void:
 	if state == State.WAITING:
-		hud.hide_notice()
+		hide_waiting_campfire()
 		_start_wave(index)
 
 

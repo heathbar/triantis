@@ -39,12 +39,12 @@ extends Boss
 const ButtonPrompts := preload("res://scripts/ui/button_prompts.gd")
 
 const RADIUS := 30.0
-const DEFAULT_HEALTH := 4000
+const DEFAULT_HEALTH := 12000
 const ENRAGE_AT := 180.0
 
 ## Seconds the shield stays down, and the most of its health (a fraction of
 ## its full health) one window can take before the shield comes back.
-const BURN_TIME := 10.0
+const BURN_TIME := 15.0
 const WINDOW_CAP := 0.4
 ## Squads game: squads that must enter a code to open a window.
 const SQUADS_NEEDED := 2

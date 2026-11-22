@@ -63,9 +63,9 @@ const TYPES := [
 const TIER_SCALING := [
 	{"range": 1.0, "arc": 1.0, "upgrade_cost": 1.0},
 	{"range": 1.1, "arc": 1.1, "upgrade_cost": 1.4},
-	{"range": 1.4, "arc": 1.4, "upgrade_cost": 2.0},
-	{"range": 2.0, "arc": 2.0, "upgrade_cost": 2.8},
-	{"range": 4.0, "arc": 4.0, "upgrade_cost": 4.0},
+	{"range": 1.2, "arc": 1.2, "upgrade_cost": 2.0},
+	{"range": 1.4, "arc": 1.4, "upgrade_cost": 2.8},
+	{"range": 2.0, "arc": 1.6, "upgrade_cost": 4.0},
 ]
 
 const DEFAULT_ID := "scrap_knife"

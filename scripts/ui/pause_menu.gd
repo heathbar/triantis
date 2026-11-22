@@ -402,6 +402,18 @@ func _build_confirm() -> Control:
 	var go := _button(_quit_button.text)
 	go.pressed.connect(func() -> void: _quit_action.call())
 	vbox.add_child(go)
+	# Focus stays on these two: left to itself, navigation would reach the
+	# menu's buttons behind the box.
+	for pair in [[_confirm_stay, go], [go, _confirm_stay]]:
+		var b: Button = pair[0]
+		var other: NodePath = b.get_path_to(pair[1])
+		var me: NodePath = b.get_path_to(b)
+		b.focus_neighbor_top = other
+		b.focus_neighbor_bottom = other
+		b.focus_previous = other
+		b.focus_next = other
+		b.focus_neighbor_left = me
+		b.focus_neighbor_right = me
 	return overlay
 
 
