@@ -25,6 +25,8 @@ const TILE := 24.0
 ## The act's own block texture replaces TEXTURE, when it has one.
 const ActTheme := preload("res://scripts/act_theme.gd")
 const OUTLINE := Color(0.14, 0.13, 0.16)
+## Variant 1's outline in the robot act (#262854).
+const ROBOT_OUTLINE := Color8(0x26, 0x28, 0x54)
 const GLASS := Color(0.55, 0.8, 1.0, 0.28)
 const GLASS_SHINE := Color(0.85, 0.95, 1.0, 0.6)
 
@@ -47,7 +49,7 @@ const GLASS_SHINE := Color(0.85, 0.95, 1.0, 0.6)
 ## Variants 1 and 3 tile on the world grid (bricks line up across blocks);
 ## variant 2 starts at the block's own top-left corner (a picture, tiling
 ## right and down if the block is bigger than it). Only variant 1 gets the
-## dark outline.
+## outline (dark; light grey in the robot act).
 @export_range(1, 3) var variant := 1:
 	set(value):
 		variant = value
@@ -133,7 +135,8 @@ func _draw() -> void:
 	else:
 		_draw_tiles(options)
 	if variant == 1:  # Variants 2 and 3 have no outline (their art may be see-through).
-		draw_rect(Rect2(Vector2.ZERO, size), OUTLINE, false, 1.0)
+		var outline := ROBOT_OUTLINE if ActTheme.current == "robot" else OUTLINE
+		draw_rect(Rect2(Vector2.ZERO, size), outline, false, 1.0)
 
 
 ## Lettered block art (block-1a.png, ...): each TILE-sized cell of the world
