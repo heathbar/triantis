@@ -62,7 +62,7 @@ var _pages: Array = []
 var _page := 0
 ## Index into _squads -> how far its scoreboard's cash-in count got (0..1).
 var _progress := {}
-var _points_per_resource := 0
+var _points_per_resource := 0.0
 var _bonus := 0
 var _page_header: Label
 var _prev_arrow: Label
@@ -124,6 +124,9 @@ func show_summary(title: String, title_color: Color, subtitle: String,
 	_add_prompt(vbox, prompt)
 	await get_tree().create_timer(INPUT_DELAY, true).timeout
 	_accept_input()
+	# A dummy squad (scripts/net/dummy_squad.gd) has nobody to press on.
+	if Global.dummy_squad:
+		_continue()
 
 
 ## End of the run (won or lost). `squads`: one per squad, ours first, as
@@ -132,7 +135,7 @@ func show_summary(title: String, title_color: Color, subtitle: String,
 ## `points_per_resource` each. Other squads' results can arrive later
 ## (add_results); their pages say they're waiting until then.
 func show_final(title: String, title_color: Color, subtitle: String, bonus: int,
-		prompt: String, points_per_resource: int, squads: Array[Dictionary]) -> void:
+		prompt: String, points_per_resource: float, squads: Array[Dictionary]) -> void:
 	_points_per_resource = points_per_resource
 	_squads = squads
 	for squad in _squads:
@@ -392,7 +395,7 @@ func _sort_results(results: Dictionary) -> void:
 
 ## A scoreboard row's score once its resources are cashed in.
 func _final_score(row: Dictionary) -> int:
-	return row["points_before"] + row["resources"] * _points_per_resource
+	return row["points_before"] + roundi(row["resources"] * _points_per_resource)
 
 
 ## Seconds the cash-in count takes for these results (0 if nothing to count).
@@ -415,7 +418,7 @@ func _apply_cash_in(views: Array, results: Dictionary, t: float) -> void:
 		var total: int = v["row"]["resources"]
 		var counted := mini(roundi(t * most), total)
 		v["resources"].text = str(total - counted)
-		v["score"].text = str(v["row"]["points_before"] + counted * _points_per_resource)
+		v["score"].text = str(v["row"]["points_before"] + roundi(counted * _points_per_resource))
 
 
 func _pop_scores(views: Array) -> void:

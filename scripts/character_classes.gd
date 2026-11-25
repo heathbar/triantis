@@ -232,12 +232,21 @@ static func clamp_attribute(id: String, value: int) -> int:
 	return clampi(value, MIN_VALUE, MAX_VALUE)
 
 
-## Multiplier at -100 and +100 for speed, range, ranged damage, fire rate,
-## knockback and harvesting.
-const STAT_MULT_MIN := 0.35
-const STAT_MULT_MAX := 3.0
-## Speed bottoms out higher: -100 speed is what -50 used to be (~0.45x).
-const SPEED_MULT_MIN := 0.4472136  # sqrt(STAT_MULT_MIN)
+## Multiplier at -100 and +100 for range, ranged damage, melee damage, fire
+## rate and knockback.
+const STAT_MULT_MIN := 0.2
+const STAT_MULT_MAX := 4.0
+## Speed and harvesting break the game sooner, so they get a narrower range.
+const NARROW_MULT_MIN := 0.3
+const NARROW_MULT_MAX := 3.0
+const NARROW_MULT_ATTRIBUTES: Array[String] = ["speed", "harvesting"]
+
+
+## The multipliers at -100 (x) and +100 (y) for an attribute.
+static func mult_limits(attribute_id: String) -> Vector2:
+	if attribute_id in NARROW_MULT_ATTRIBUTES:
+		return Vector2(NARROW_MULT_MIN, NARROW_MULT_MAX)
+	return Vector2(STAT_MULT_MIN, STAT_MULT_MAX)
 
 
 ## Chance (0..1) that armor ignores an enemy hit, straight lines between
@@ -261,11 +270,12 @@ static func block_chance(armor: int) -> float:
 	return BLOCK_CHANCE_POINTS[-1].y
 
 
-## Maps an attribute to a stat multiplier: -100 -> 0.2x, 0 -> 1x, +100 -> 4x.
+## Maps an attribute to a stat multiplier: -100 -> 0.2x, 0 -> 1x, +100 -> 4x
+## (speed and harvesting: 0.3x .. 3x, see mult_limits()).
 ## Exponential on each side of 0, so equal steps feel like equal changes:
 ## e.g. -50 -> ~0.45x, +50 -> 2x.
-## Pass min_mult to override the -100 end (speed uses SPEED_MULT_MIN).
-static func stat_multiplier(value: int, min_mult: float = STAT_MULT_MIN) -> float:
+static func stat_multiplier(value: int, attribute_id: String = "") -> float:
+	var limits := mult_limits(attribute_id)
 	var t := clampi(value, MIN_VALUE, MAX_VALUE) / 100.0
-	var end := STAT_MULT_MAX if t >= 0.0 else min_mult
+	var end := limits.y if t >= 0.0 else limits.x
 	return pow(end, absf(t))

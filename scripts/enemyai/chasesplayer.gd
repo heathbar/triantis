@@ -15,6 +15,10 @@ const STOP_DISTANCE = 9.0
 ## N * KNOCKBACK_DECAY px/s and slows exponentially, so it covers ~N pixels.
 const KNOCKBACK_DECAY := 12.0
 const ELITE_COLOR := Color(0.55, 0.0, 0.2)
+## Half hearts an elite's hits always take, at least (a full heart): its
+## contact_damage here, and its subclass's bullets, spray or blast.
+const ELITE_DAMAGE := 2
+const EliteCrown := preload("res://scripts/enemyai/elite_crown.gd")
 ## Tint while slowed (see apply_slow), and while frozen solid (slowed to 0,
 ## the Freeze Ray): light blue, over 1 so it lightens dark sprites too.
 const SLOW_TINT := Color(0.55, 0.8, 1.0)
@@ -158,9 +162,13 @@ func apply_modifiers(health_multiplier: float, speed_multiplier: float) -> void:
 
 
 ## Called by game.gd (after apply_modifiers, before entering the tree) to turn
-## this enemy into a bigger, tougher, more rewarding elite.
+## this enemy into a bigger, tougher, more rewarding elite: a full heart a
+## hit (ELITE_DAMAGE), and a crown over its head (elite_crown.gd).
 func make_elite(scaling: PlayerScaling) -> void:
 	is_elite = true
+	if contact_damage > 0:  # (some only hurt with their attack: see subclasses)
+		contact_damage = maxi(contact_damage, ELITE_DAMAGE)
+	add_child(EliteCrown.new())
 	max_health = maxi(roundi(max_health * scaling.elite_health_multiplier), 1)
 	speed *= scaling.elite_speed_multiplier
 	points_value *= scaling.elite_reward_multiplier

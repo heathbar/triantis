@@ -60,7 +60,7 @@ signal mode_message(from_squad: int, data: Array)
 const GAME_ID := "triantis-squads"
 ## Games only see and join hosts with the same version. Bump it whenever the
 ## messages change, or anything both sides must agree on (like MAP_OVERLAP).
-const PROTOCOL_VERSION := 12
+const PROTOCOL_VERSION := 13
 const DISCOVERY_PORT := 47800
 const GAME_PORT := 47801
 const CONNECT_FAILED := "Couldn't connect to that game."
@@ -104,6 +104,9 @@ var game_mode := "standard"
 var custom_settings := {}
 ## The host's Global.run_seed for the game in progress (sent as it starts).
 var run_seed := 0
+## The host's Campaign modifiers for the game in progress (BraidModifiers
+## ids, sent as it starts).
+var modifiers: Array = []
 
 var _session_id := ""
 var _started := false
@@ -239,13 +242,14 @@ func host(name_for_game: String, mode_for_game: String, custom := {}) -> Error:
 	return OK
 
 
-## Host only: tell every squad to start. Returns false if not everyone's ready.
-func start_game() -> bool:
+## Host only: tell every squad to start, with these Campaign modifiers
+## (BraidModifiers ids). Returns false if not everyone's ready.
+func start_game(mods: Array = []) -> bool:
 	if not is_host() or not all_squads_ready():
 		return false
 	_started = true
 	(multiplayer.multiplayer_peer as ENetMultiplayerPeer).refuse_new_connections = true
-	_begin.rpc(randi())
+	_begin.rpc(randi(), mods)
 	return true
 
 
@@ -511,8 +515,9 @@ func set_local_status(joined_count: int, ready_count: int) -> void:
 
 
 @rpc("authority", "call_local", "reliable")
-func _begin(seed_for_run: int) -> void:
+func _begin(seed_for_run: int, mods: Array) -> void:
 	run_seed = seed_for_run
+	modifiers = mods.duplicate()
 	_started = true
 	game_starting.emit()
 

@@ -4,7 +4,7 @@ extends Node2D
 ## segment (scripts/braid/braid_level.gd puts one across every lane, over the
 ## solid gate block that stops players walking past it).
 ##
-## Seen from above: a brick building (brick-1.png) with a SHOP sign, a front
+## Seen from above: a building (its roof, roof-1.png) with a SHOP sign, a front
 ## door on the left with a welcome mat (store-mat-1.png, the checkpoint plate)
 ## in front of it, and a back door on the right that squads leave by after the shop. Under the sign is
 ## one indicator light per squad in the game (ringed in its colour): red while
@@ -16,10 +16,10 @@ extends Node2D
 ## The node's position is the building's top-left corner; it is `size` big.
 ## The plate is outside it, to its left (plate_rect).
 
-## The building's walls and the door mat, tiled.
-const BRICK := preload("res://assets/meadow/environment/brick-1.png")
+## The building's roof and the door mat, tiled.
+const ROOF := preload("res://assets/meadow/environment/roof-1.png")
 const MAT := preload("res://assets/meadow/environment/store-mat-1.png")
-## Act-themed replacements for BRICK and MAT, when the act has them.
+## Act-themed replacements for ROOF and MAT, when the act has them.
 const ActTheme := preload("res://scripts/act_theme.gd")
 
 ## Light states (set_lights): nobody on the plate, someone on it, squad down.
@@ -108,9 +108,9 @@ func plate_rect() -> Rect2:
 func _draw() -> void:
 	_draw_plate(plate_rect().position - position)
 	var mid := size.y / 2.0
-	# Shadow, then the brick building with a dark edge.
+	# Shadow, then the building's roof with a dark edge.
 	draw_rect(Rect2(Vector2(4, 6), size), SHADOW)
-	draw_texture_rect_region(ActTheme.environment("brick", BRICK), Rect2(Vector2.ZERO, size), Rect2(Vector2.ZERO, size))
+	draw_texture_rect_region(ActTheme.environment("roof", ROOF), Rect2(Vector2.ZERO, size), Rect2(Vector2.ZERO, size))
 	# The bottom half in shade (as the old roof's far slope was).
 	draw_rect(Rect2(Vector2(0, mid), Vector2(size.x, size.y - mid)), HALF_SHADE)
 	draw_rect(Rect2(Vector2.ZERO, size), EAVE, false, 2.0)

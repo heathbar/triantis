@@ -41,13 +41,13 @@ count = 1
 
 [resource]
 script = ExtResource("2_wave")
-display_name = "The Quartet"
+display_name = "The Crusher"
 duration = 45.0
 enemy_groups = Array[ExtResource("1_group")]([SubResource("Group_grunt"), SubResource("Group_runner"), SubResource("Group_swarmling"), SubResource("Group_charger"), SubResource("Group_bomber"), SubResource("Group_splitter")])
 opening_spawn = 4
 enemy_health_multiplier = 4.0
 enemy_speed_multiplier = 1.45
 base_elite_chance = 0.16
-boss_id = "quartet"
-boss_health = 7700
+boss_id = "crusher"
+boss_health = 5600
 completion_bonus = 35

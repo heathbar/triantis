@@ -7,7 +7,7 @@
 [ext_resource type="PackedScene" path="res://scenenodethings/enemies/charger.tscn" id="e_charger"]
 [ext_resource type="PackedScene" path="res://scenenodethings/enemy.tscn" id="e_grunt"]
 [ext_resource type="PackedScene" uid="uid://dg3ae7hgbnmjk" path="res://scenenodethings/enemies/runner.tscn" id="e_runner"]
-[ext_resource type="PackedScene" path="res://scenenodethings/enemies/saboteur.tscn" id="e_saboteur"]
+[ext_resource type="PackedScene" path="res://scenenodethings/enemies/shooter.tscn" id="e_shooter"]
 [ext_resource type="PackedScene" path="res://scenenodethings/enemies/splitter.tscn" id="e_splitter"]
 
 [sub_resource type="Resource" id="Group_grunt"]
@@ -40,16 +40,16 @@ script = ExtResource("1_group")
 enemy_scene = ExtResource("e_splitter")
 count = 4
 
-[sub_resource type="Resource" id="Group_saboteur"]
+[sub_resource type="Resource" id="Group_shooter"]
 script = ExtResource("1_group")
-enemy_scene = ExtResource("e_saboteur")
+enemy_scene = ExtResource("e_shooter")
 count = 6
 
 [resource]
 script = ExtResource("2_wave")
-display_name = "Sabotage"
+display_name = "Crossfire"
 duration = 72.0
-enemy_groups = Array[ExtResource("1_group")]([SubResource("Group_grunt"), SubResource("Group_runner"), SubResource("Group_brute"), SubResource("Group_charger"), SubResource("Group_bomber"), SubResource("Group_splitter"), SubResource("Group_saboteur")])
+enemy_groups = Array[ExtResource("1_group")]([SubResource("Group_grunt"), SubResource("Group_runner"), SubResource("Group_brute"), SubResource("Group_charger"), SubResource("Group_bomber"), SubResource("Group_splitter"), SubResource("Group_shooter")])
 opening_spawn = 12
 enemy_health_multiplier = 3.6
 enemy_speed_multiplier = 1.42

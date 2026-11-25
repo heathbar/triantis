@@ -21,7 +21,7 @@ const ENEMIES := [
 	{"id": "charger", "name": "Charger", "scene": "res://scenenodethings/enemies/charger.tscn"},
 	{"id": "bomber", "name": "Bomber", "scene": "res://scenenodethings/enemies/bomber.tscn"},
 	{"id": "splitter", "name": "Splitter", "scene": "res://scenenodethings/enemies/splitter.tscn"},
-	{"id": "saboteur", "name": "Saboteur", "scene": "res://scenenodethings/enemies/saboteur.tscn"},
+	{"id": "shooter", "name": "Shooter", "scene": "res://scenenodethings/enemies/shooter.tscn"},
 	{"id": "sprayer", "name": "Sprayer", "scene": "res://scenenodethings/enemies/sprayer.tscn"},
 ]
 
@@ -29,7 +29,7 @@ const ENEMIES := [
 ## removed enemies for the right number of the kept ones.
 const THREAT := {
 	"grunt": 10.0, "runner": 6.0, "swarmling": 2.0, "brute": 80.0,
-	"charger": 25.0, "bomber": 12.0, "splitter": 35.0, "saboteur": 18.0,
+	"charger": 25.0, "bomber": 12.0, "splitter": 35.0, "shooter": 18.0,
 	"sprayer": 20.0,
 }
 

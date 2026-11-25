@@ -6,6 +6,50 @@ Answered items move to the bottom with your answer.
 
 Design doc: https://claude.ai/artifact/DczSfRHizDwo5siPRsWK3u
 
+## Airstrike pads and mounted turrets (2026-11-23)
+
+You decided: turrets sit in their own gun ports (not at windows), 1-2 per
+lane per act, no limit apart from the tide, and the airstrike is a carpet
+box. Claude's calls (unplaytested):
+
+- **Interact button:** X on a controller, **E** on the keyboard (new
+  "interact" action). The X bubble is drawn as pixel art (blue X button, or
+  an E key for the keyboard player), not the menu's X.svg.
+- **Airstrike:** hold X for 1 s in the pad's circle (it used to be standing
+  on it). Release and hold again for another once it recharges (12 s, as
+  before). 0.9 s blinking warning box, then 4 columns x 3 staggered bombs
+  land left to right over 240 x 300 px (the crusher was 160 x 300). Each
+  enemy is hit once for the same 400 x enemy health. The other squad sees
+  the warning, so their enemies may walk out (or be herded in). Never hurts
+  players. Blast sound is the bomber's. Its kills go to the player who
+  held the pad, like their shots' through a window: they get the points,
+  and the drops land where the enemy died (across the window, so they
+  reach that squad when the chapter ends; the bombed squad gets none).
+- **Turret numbers:** 6 damage x the segment's enemy health multiplier
+  every 0.08 s (about 75 x mult per second, roughly 5x a starting pistol at
+  wave 1 and the same share of an enemy's health at any wave), 5 degree
+  spread, 480 px range, slight knockback. It ignores the gunner's upgrades,
+  attributes and Class Mods.
+- **Turret rules:** press X within 22 px of the seat to get on, X again or
+  B (E or Q on the keyboard) to get off. Knocked out, or shoved off the seat (the tide does this), lets
+  go. While on it: no moving, own gun, melee or equipment. The camera zooms
+  out to show both lanes while anyone of yours is on a turret (not when
+  just walking past).
+- **Kills and drops** from turret shots go to the gunner's squad (as
+  window shots do already); drops land where the enemy died, in its lane.
+- **Placement:** in a slot where the wall to the neighbour is plain (not
+  a window or junction), spread over different segments, at most two per
+  wall per slot. Segments are only 2-3 slots long and windows, junctions
+  and slices take most of them (a 2-lane act often has no plain normal
+  slot), so ports can also go in openers (start/calm strips) and in the
+  walls of vertical slices, firing sideways; normal slots are tried first.
+  The spot along the slot avoids door spots and strip blocks (gunner room
+  on the seat side, a clear muzzle on the other); with no clear spot the
+  turret is skipped.
+- **Only with 2+ squads,** like windows (a solo run has one lane).
+- **Not synced:** other squads see the turret's shots but its barrel
+  doesn't turn on their screens.
+
 ## Playtest round 2 (2026-11-17): calls Claude made
 
 - **Caltrop Trail and Dash Pack, in both modes** (you asked). Caltrops: 10 s
@@ -30,14 +74,14 @@ Design doc: https://claude.ai/artifact/DczSfRHizDwo5siPRsWK3u
   blocks on the arena's grass. What are the 4 (or 5) settings, and do you
   want to draw the tiles, or should Claude make placeholder pixel tiles?
 - **All four bosses now have Braid versions,** in the doc's order: Crusher,
-  Lighthouse, Quartet, Vault (act 1 to 4). Changes for the shared room:
-  - Quartet: every piece is in everyone's reach, so pieces spread round the
+  Lighthouse, Fruit Bowl, Vault (act 1 to 4). Changes for the shared room:
+  - Fruit Bowl: every piece is in everyone's reach, so pieces spread round the
     room as in a solo game (the doc's "each piece heads toward a lane
     mouth" isn't done).
   - Vault: each squad's keypad turns up in the first third of the room, in
     its own lane's band (near its mouth).
   - Lighthouse: unchanged.
-  The bots beat the Crusher, Lighthouse and Quartet in the room; the Vault
+  The bots beat the Crusher, Lighthouse and Fruit Bowl in the room; the Vault
   needs codes typed at its keypad, which only a person can test.
 - **15 normal greybox strips** now (+ start + rest): added columns,
   courtyard (a walled yard with a vent inside: an ambush), bunkers, pinch,
@@ -98,7 +142,7 @@ Design doc: https://claude.ai/artifact/DczSfRHizDwo5siPRsWK3u
   that act's boss wave (waves 10, 15, 20) and its own health scaled by how
   much tougher that act's enemies are: 2100, ~3640, 5600, 7000 for one
   player (+85% per extra player, every squad counted). The Lighthouse,
-  Quartet and Vault come in Phase 6. OK, or port the Lighthouse now too?
+  Fruit Bowl and Vault come in Phase 6. OK, or port the Lighthouse now too?
 - **A shop before the boss.** The last segment of an act ends at a checkpoint
   with a shop like any other, then the boss fight starts in the room (like
   the arena's wave 4 → shop → wave 5 boss). So an act is 4 segments + 1 boss

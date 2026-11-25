@@ -9,10 +9,6 @@ extends Node2D
 
 const Blast := preload("res://scripts/equipment/blast.gd")
 const BossBody := preload("res://scripts/bosses/boss_body.gd")
-## Seconds of a saboteur's attention that wreck it (see sabotage).
-const WRECK_TIME := 1.5
-## How it's tinted as a saboteur wrecks it.
-const WRECK_TINT := Color(1.0, 0.3, 0.25)
 
 ## Which equipment this is (an id from Equipment.LIST).
 var kind := ""
@@ -24,8 +20,6 @@ var stats := {}
 var duration := 0.0
 
 var _age := 0.0
-## Seconds saboteurs have spent wrecking it (see sabotage).
-var _wrecked := 0.0
 
 
 func _ready() -> void:
@@ -47,23 +41,6 @@ func _tick(_delta: float) -> void:
 ## Gives it `seconds` more to last (never more than its full duration).
 func add_time(seconds: float) -> void:
 	_age = maxf(_age - seconds, 0.0)
-
-
-## Saboteurs (scripts/enemyai/saboteur.gd) go after equipment that returns
-## true here: things that stay put where they were placed.
-func can_be_sabotaged() -> bool:
-	return false
-
-
-## A saboteur spent `delta` seconds wrecking it. Wrecking adds up (it's not
-## undone if the saboteur is driven off) and it breaks after WRECK_TIME.
-func sabotage(delta: float) -> void:
-	if is_queued_for_deletion():
-		return
-	_wrecked += delta
-	modulate = Color.WHITE.lerp(WRECK_TINT, clampf(_wrecked / WRECK_TIME, 0.0, 1.0))
-	if _wrecked >= WRECK_TIME:
-		expire()
 
 
 ## Its owner can pack it away again by using their equipment beside it, if

@@ -50,6 +50,3 @@ func _draw() -> void:
 	draw_time_ring(DRONE_SIZE + 4.0, color.lightened(0.3), 1.0)
 
 
-## Too quick for saboteurs to catch, unlike a Turret.
-func can_be_sabotaged() -> bool:
-	return false

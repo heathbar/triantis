@@ -8,7 +8,7 @@ extends Enemy
 ## sprays, and faces its target the whole time (the art faces right; it's mirrored to face left).
 ##
 ## Art (meadow: a soda cup): sprayer-1.png (33x60) is the cup. In Braid
-## act 1 the body is a fire extinguisher and in act 4 a robot canister
+## act 3 the body is a fire extinguisher and in act 4 a robot canister
 ## instead (THEMED_LAYOUTS).
 ## sprayer-spray-1..9.png (131x26) are the stream, drawn pointing right from
 ## its left edge: 1-3 start, 4-6 flow (looped), 7-9 wind down.
@@ -26,7 +26,7 @@ const SPRITE_OFFSET := Vector2(-16.0, -37.0)
 ## rectangle ("body", centred on the enemy). The stream art stays the same.
 ## Robot (act 4, 40x55): the canister is x 2-23, y 8-54 of the art; the
 ## cannon's muzzle ends at x 40, rows 25-30.
-## Junkyard (act 1, 24x44): the extinguisher's cylinder and valve are
+## Junkyard (act 3, 24x44): the extinguisher's cylinder and valve are
 ## x 6-21, y 4-43; the nozzle points right, ending at x 23, rows 0-2.
 const THEMED_LAYOUTS := {
 	"junkyard": {"offset": Vector2(-13.0, -24.0), "nozzle": Vector2(10.0, -23.0), "body": Vector2(16.0, 40.0)},
@@ -126,6 +126,7 @@ func _ready() -> void:
 
 func make_elite(scaling: PlayerScaling) -> void:
 	super(scaling)
+	spray_damage = maxi(spray_damage, ELITE_DAMAGE)
 	# Elites tint the sprite (no ColorRect for the base class to recolour).
 	# self_modulate, so it stacks with the Freeze Ray's modulate.
 	var sprite := get_node_or_null("Visual/Sprite2D") as Sprite2D

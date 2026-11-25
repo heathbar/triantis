@@ -18,6 +18,7 @@ extends Node2D
 ## poison / fire / bleed, spike traps, burning lines and puddles, and heals
 ## for our players (and other squads', through the link).
 
+const CharacterClasses := preload("res://scripts/character_classes.gd")
 const BraidClassMod := preload("res://scripts/braid/braid_class_mod.gd")
 const BraidShot := preload("res://scripts/braid/braid_shot.gd")
 const BraidTuning := preload("res://scripts/braid/braid_tuning.gd")
@@ -137,7 +138,8 @@ func _tick_player(p: Node, delta: float) -> void:
 	var ev := BraidClassMod.mechanics(p)
 	var s: Dictionary = _st[p]
 	var alive: bool = not p.is_dead() and game.is_wave_running()
-	var aim: Vector2 = p._read_aim() if alive else Vector2.ZERO
+	# No shooting while meleeing (Player.melee_busy), so no aim for gun mods.
+	var aim: Vector2 = p._read_aim() if alive and not p.melee_busy() else Vector2.ZERO
 	var moving: bool = alive and p._read_direction() != Vector2.ZERO
 
 	if ev.has("charge"):
@@ -194,7 +196,8 @@ func _tick_charge(p: Node, s: Dictionary, st: Dictionary, aim: Vector2, alive: b
 		s["charge"] = minf(s["charge"] + delta, st["time"])
 		s["charge_dir"] = aim
 		s["charging"] = true
-	elif s["charging"] and s["cool"] <= 0.0:
+	elif s["charging"] and s["cool"] <= 0.0 and not p.melee_busy():
+		# (Meleeing holds a charge until the swing is over and the button let go.)
 		_fire_charged(p, s, st)
 
 
@@ -227,10 +230,11 @@ func _fire_charged(p: Node, s: Dictionary, st: Dictionary) -> void:
 
 # --- Attribute boosts --------------------------------------------------------------
 
-## The attribute boost that gives x (1 + pct) (CharacterClasses.stat_multiplier
-## is 4x at +100, exponential).
-static func _attr(pct: float) -> int:
-	return roundi(100.0 * log(1.0 + pct) / log(4.0)) if pct > 0.0 else 0
+## The `attribute_id` boost that gives x (1 + pct) (CharacterClasses.stat_multiplier
+## is exponential up to its +100 multiplier).
+static func _attr(pct: float, attribute_id: String = "") -> int:
+	var top := CharacterClasses.mult_limits(attribute_id).y
+	return roundi(100.0 * log(1.0 + pct) / log(top)) if pct > 0.0 else 0
 
 
 func _boost_key(p: Node, kind: String) -> Object:
@@ -812,7 +816,7 @@ func on_enemy_died(killer: Node, at: Vector2, enemy: Node) -> void:
 	if ev.has("hitrun"):
 		var st: Dictionary = ev["hitrun"]
 		s["hitrun"] = mini(s["hitrun"] + 1, int(st["stacks"]))
-		_timed(killer, "hitrun", {"speed": _attr(st["speed"] * s["hitrun"])}, st["secs"])
+		_timed(killer, "hitrun", {"speed": _attr(st["speed"] * s["hitrun"], "speed")}, st["secs"])
 		if st.get("shield", false):
 			killer.set_contact_shield(_boost_key(killer, "hitrun_shield"), true)
 	if ev.has("overclock") and ev["overclock"].has("kill_extend"):
@@ -1012,8 +1016,9 @@ func ally_along(shot: Node, from: Vector2, to: Vector2) -> void:
 			Visuals.ring(game, p.global_position, 12.0, TINTS["heal"])
 		if shot.stim and ev.has("stim") and not shot.allies_passed.has(p):
 			shot.allies_passed[p] = true
-			var amount := _attr(ev["stim"]["boost"])
-			_timed(p, "stim", {"speed": amount, "fire_rate": amount}, ev["stim"]["secs"])
+			var boost: float = ev["stim"]["boost"]
+			_timed(p, "stim", {"speed": _attr(boost, "speed"), "fire_rate": _attr(boost)},
+					ev["stim"]["secs"])
 	if shot.heal and shot.heal_remote and game.link:
 		for key in game.link.remote_player_keys():
 			var proxy: Node2D = game.link.remote_player(key)

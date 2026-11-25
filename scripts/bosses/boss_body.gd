@@ -1,6 +1,6 @@
 extends StaticBody2D
 ## A boss's body in the world (scripts/bosses/boss.gd): the Lighthouse, or
-## the Quartet's core and each of its pieces. It's shot, swung at and hit by
+## the Fruit Bowl's bowl and each of its fruit. It's shot, swung at and hit by
 ## equipment like an enemy (it's in the "enemies" group, on the enemy layer),
 ## hurts players who touch it (contact_damage), and blocks players and
 ## enemies. It holds no health itself: every hit goes to its boss, which
@@ -16,6 +16,8 @@ extends StaticBody2D
 ## on_body_slow / on_body_pull; it decides how much of them to feel.
 
 const HIT_FLASH := 0.12
+## Corners of the polygon standing in for an oval body's shape.
+const OVAL_POINTS := 20
 
 ## The boss this belongs to (set before it enters the tree).
 var boss: Node2D
@@ -24,6 +26,10 @@ var part := 0
 var radius := 30.0
 ## A box instead of a circle (full size, along its rotation), or zero.
 var box_size := Vector2.ZERO
+## An oval instead of a circle (half width and height), or zero. Players are
+## kept out of the oval too (Boss._keep_players_out); `radius` is still its
+## rough size for anything that only knows circles.
+var oval := Vector2.ZERO
 ## Half hearts a player loses touching it.
 var contact_damage := 2
 ## Barricades it leans on don't wear down (it isn't trying to get through).
@@ -32,7 +38,7 @@ var barricade_wear := 0
 var painter := Callable()
 ## Seconds left of the red flash from the last hit.
 var flash := 0.0
-## Out of the fight (a cracked Quartet piece): shots pass through, it
+## Out of the fight (a smashed Fruit Bowl fruit): shots pass through, it
 ## doesn't hurt to touch, and nothing targets it.
 var dormant := false:
 	set(value):
@@ -63,6 +69,13 @@ func _ready() -> void:
 		var rect := RectangleShape2D.new()
 		rect.size = box_size * 0.9
 		shape.shape = rect
+	elif oval != Vector2.ZERO:
+		var poly := ConvexPolygonShape2D.new()
+		var points := PackedVector2Array()
+		for i in OVAL_POINTS:
+			points.append(Vector2.from_angle(i * TAU / OVAL_POINTS) * oval * 0.9)
+		poly.points = points
+		shape.shape = poly
 	else:
 		var circle := CircleShape2D.new()
 		circle.radius = radius * 0.9

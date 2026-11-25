@@ -29,13 +29,23 @@ extends RefCounted
 ## segment's first normal slot, and counts toward the segment's tide time;
 ## junctions and windows stay out of it (BraidLevel needs the lanes running
 ## right for those).
+## Mounted turrets: with 2+ lanes, every lane gets TURRET_PER_LANE_MIN to
+## _MAX turrets an act (by the seed, from its own random sequence so the rest
+## of the layout doesn't change), each in a slot where the wall to a
+## neighbouring lane is plain (no window or junction), in different segments
+## where it can. Normal slots first; openers and vertical slices (segments
+## are short, so a 2-lane act may have no plain normal slot) when there's
+## nothing else. BraidLevel picks the spot along the slot.
 ## BraidLevel.build then checks the result (doors, a way through, widths).
 ##
 ## Layout format (BraidLevel.build takes it):
 ##   {"lanes": n, "segments": [{"slots": [slot, ...]}, ...]}
 ##   slot: {"length": px, "strips": [name per lane, "" where a junction
 ##     covers it], "seams": [per pair of lanes k/k+1: "solid", "window" or
-##     "junction"], "junctions": {pair k: junction scene name}}
+##     "junction"], "junctions": {pair k: junction scene name}}; a normal
+##     slot (the opener has "opener": true) may also have "turrets": [{"lane":
+##     the lane its seat is in, "target": the neighbouring lane it fires
+##     into}, ...]
 ##   A slice's slots also have "slice": true; its corners are
 ##     {"corner": "up" / "down" / "right" (the way out), "length": 0, ...}
 ##     (strips all "", seams all "solid").
@@ -43,6 +53,8 @@ extends RefCounted
 const BraidTuning := preload("res://scripts/braid/braid_tuning.gd")
 
 const STRIP_DIR := "res://levels/braid/strips/"
+## Most gun ports in the wall between two lanes in one slot.
+const TURRETS_PER_WALL := 2
 const JUNCTION_DIR := "res://levels/braid/junctions/"
 
 ## Every strip: [{"name", "length", "difficulty", "zone", "theme",
@@ -148,6 +160,7 @@ static func act_layout(run_seed: int, act := 0, segments := BraidTuning.SEGMENTS
 				names.append(opener["name"])
 				last[lane] = opener["name"]
 			slots.append(_slot(opener["length"], names, lanes))
+			slots[-1]["opener"] = true
 			seconds += opener["seconds"]
 		var first_normal := slots.size()
 		# Fill to within a screen's worth of the time wanted (normal slots are
@@ -173,7 +186,64 @@ static func act_layout(run_seed: int, act := 0, segments := BraidTuning.SEGMENTS
 		if lanes > 1:
 			_add_braid(rng, slots, first_normal, lanes, i + act * segments, junctions)
 		out_segments.append({"slots": slots})
+	if lanes > 1:
+		var turret_rng := RandomNumberGenerator.new()
+		turret_rng.seed = rng.seed ^ 0x7E7E7
+		_add_turrets(turret_rng, out_segments, lanes)
 	return {"lanes": lanes, "segments": out_segments}
+
+
+## Gives every lane its turrets for the act (see above).
+static func _add_turrets(rng: RandomNumberGenerator, segments: Array, lanes: int) -> void:
+	var order := range(lanes)
+	for k in order.size():
+		var swap := rng.randi_range(k, order.size() - 1)
+		var t: int = order[k]
+		order[k] = order[swap]
+		order[swap] = t
+	for lane: int in order:
+		var want := rng.randi_range(BraidTuning.TURRET_PER_LANE_MIN, BraidTuning.TURRET_PER_LANE_MAX)
+		# [segment, slot, target, normal slot] spots this lane could have one.
+		var spots := []
+		for i in segments.size():
+			var slots: Array = segments[i]["slots"]
+			for k in slots.size():
+				var slot: Dictionary = slots[k]
+				if slot.has("corner") or String(slot["strips"][lane]).is_empty():
+					continue
+				var normal: bool = not slot.get("opener", false) and not slot.get("slice", false)
+				for target in [lane - 1, lane + 1]:
+					if target < 0 or target >= lanes or String(slot["strips"][target]).is_empty():
+						continue
+					if slot["seams"][mini(lane, target)] != "solid":
+						continue
+					# At most TURRETS_PER_WALL on one wall in a slot.
+					var on_wall := 0
+					for t: Dictionary in slot.get("turrets", []):
+						if mini(t["lane"], t["target"]) == mini(lane, target):
+							on_wall += 1
+					if on_wall < TURRETS_PER_WALL:
+						spots.append([i, k, target, normal])
+		var used_segments := []
+		for n in want:
+			# Unused segments first, normal slots first.
+			var pool := []
+			for rule in [[true, true], [true, false], [false, true], [false, false]]:
+				pool = spots.filter(func(sp: Array) -> bool:
+					return (not rule[0] or sp[0] not in used_segments) and (not rule[1] or sp[3]))
+				if not pool.is_empty():
+					break
+			if pool.is_empty():
+				break
+			var pick: Array = pool[rng.randi_range(0, pool.size() - 1)]
+			var slot: Dictionary = segments[pick[0]]["slots"][pick[1]]
+			if not slot.has("turrets"):
+				slot["turrets"] = []
+			slot["turrets"].append({"lane": lane, "target": pick[2]})
+			used_segments.append(pick[0])
+			# Not that slot again for this lane.
+			spots = spots.filter(func(sp: Array) -> bool:
+				return not (sp[0] == pick[0] and sp[1] == pick[1]))
 
 
 ## Appends a vertical slice (up or down) to `slots`: a corner, the vertical

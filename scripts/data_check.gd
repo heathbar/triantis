@@ -14,6 +14,7 @@ const Melee := preload("res://scripts/melee.gd")
 const Equipment := preload("res://scripts/equipment.gd")
 const Items := preload("res://scripts/items.gd")
 const CharacterClasses := preload("res://scripts/character_classes.gd")
+const PlayerGun := preload("res://scripts/player/player_gun.gd")
 const STANDARD_RUN := "res://data/waves/standard_run.tres"
 
 ## Keys every entry of each table must have, and the type of their values
@@ -44,6 +45,10 @@ static func problems() -> PackedStringArray:
 
 	_check_table(out, "Guns", Guns.LIST, GUN_KEYS)
 	_check_positive(out, "Guns", Guns.LIST, ["damage", "interval", "range"])
+	for type: Dictionary in Guns.TYPES:
+		if not PlayerGun.TEXTURES.has(type.get("id", "")):
+			out.append("Gun type %s: no image in PlayerGun.TEXTURES (it draws as a %s)" % [
+				type.get("id", "?"), PlayerGun.DEFAULT_TYPE])
 	_check_table(out, "Melee", Melee.LIST, MELEE_KEYS)
 	_check_positive(out, "Melee", Melee.LIST, ["damage", "interval", "range"])
 	_check_table(out, "Equipment", Equipment.LIST, EQUIPMENT_KEYS)

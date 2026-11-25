@@ -6,8 +6,9 @@ extends Enemy
 ## child_scene needn't appear in any wave: the squads game finds it here
 ## (scripts/net/squad_link.gd's _add_kind).
 ##
-## Drawn as a green ColorRect, or in Braid act 2 as a sea urchin (ActTheme):
-## the rect is swapped for a Sprite2D and the collision rectangle resized.
+## Drawn with the theme's splitter-1.png (ActTheme; the meadow's by default):
+## the scene's green ColorRect is swapped for a Sprite2D and the collision
+## rectangle resized to the art.
 
 const ActTheme := preload("res://scripts/act_theme.gd")
 

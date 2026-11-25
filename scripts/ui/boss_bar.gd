@@ -1,8 +1,8 @@
 extends Control
 ## The boss's health at the top middle of the HUD (scripts/ui/health_hud.gd),
 ## under the wave timer: its name, then one bar, or a row of bars for a boss
-## in several pieces (the Quartet once it splits), and a line of news under
-## them (enraged, venting, the Quartet's pieces left). Everything comes from
+## in several pieces (the Fruit Bowl once it bursts), and a line of news under
+## them (enraged, venting, the Fruit Bowl's fruit left). Everything comes from
 ## the boss (scripts/bosses/boss.gd: bar_segments, bar_note) every frame.
 
 const WIDTH := 1300.0
@@ -52,11 +52,10 @@ func _draw() -> void:
 		draw_rect(Rect2(rect.position, Vector2(rect.size.x * frac, rect.size.y * 0.3)),
 			Color(1, 1, 1, 0.25))
 		if count > 1:
-			var label: String = seg["label"]
-			if seg.get("dim", false):
-				label += " (cracked)"
+			# A part that's out (a smashed fruit): its name greyed, its bar empty.
+			var label_color := Color(0.55, 0.55, 0.55) if seg.get("dim", false) else Color.WHITE
 			_text(font, Vector2(rect.position.x, rect.position.y + BAR_HEIGHT * 0.78), rect.size.x,
-				label, LABEL_SIZE, Color.WHITE)
+				seg["label"], LABEL_SIZE, label_color)
 
 	var note: String = boss.bar_note()
 	if not note.is_empty():

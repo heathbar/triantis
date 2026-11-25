@@ -13,7 +13,7 @@ extends RefCounted
 
 ## Resources every player starts with (about what a standard run has earned
 ## by the first boss).
-const START_RESOURCES := 150
+const START_RESOURCES := 300
 ## Extra resources for every player after each boss but the last (about what
 ## a standard run earns between bosses).
 const STIPEND := 450

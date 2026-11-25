@@ -54,6 +54,7 @@ const BraidTuning := preload("res://scripts/braid/braid_tuning.gd")
 const BraidBlock := preload("res://scripts/braid/braid_block.gd")
 const BraidGrid := preload("res://scripts/braid/braid_grid.gd")
 const BraidFavour := preload("res://scripts/braid/braid_favour.gd")
+const BraidTurret := preload("res://scripts/braid/braid_turret.gd")
 const BraidShopBuilding := preload("res://scripts/braid/braid_shop_building.gd")
 const BraidDoor := preload("res://scripts/braid/braid_door.gd")
 const FLOOR_TEXTURE := preload("res://assets/meadow/environment/background-1.png")
@@ -75,6 +76,11 @@ const ARM_PILLAR := 64.0
 const ARM_PILLAR_INSET := 80.0
 const ARM_VENT_INSET := 64.0
 const VOID_COLOR := Color(0.06, 0.05, 0.07)
+## Where along a slot a gun port may go (fractions of its length, tried in
+## order): first spots clear of the door spots (BraidTuning.DOOR_SPOTS_*),
+## then anywhere (a door there is left out instead).
+const TURRET_SPOTS: Array[float] = [0.58, 0.33, 0.83, 0.1]
+const TURRET_FALLBACK_SPOTS: Array[float] = [0.5, 0.65, 0.4, 0.75, 0.25, 0.9, 0.15, 0.05, 0.95]
 
 ## How many lanes.
 var lanes := 1
@@ -86,6 +92,10 @@ var grid: BraidGrid
 ## gates' near edge, "gates": [BraidBlock per lane], "shops":
 ## [BraidShopBuilding per lane], "slice": true if it has a vertical slice}.
 var segments: Array[Dictionary] = []
+## Progress where the act's start strip ends (its opener slot in the first
+## segment; -1 if it has none). No doors there, and braid_game.gd holds the
+## first chapter's spawns until the squad walks past it.
+var start_end := -1.0
 ## Every spawn vent: {"pos": Vector2, "lanes": [lanes it serves], "s":
 ## progress}, by progress.
 var vents: Array[Dictionary] = []
@@ -102,6 +112,10 @@ var windows: Array[Dictionary] = []
 var slices: Array[Dictionary] = []
 ## Favour plates (scripts/braid/braid_favour.gd), by progress.
 var favours: Array[Node] = []
+## Mounted turrets (scripts/braid/braid_turret.gd), in build order.
+var turrets: Array[Node] = []
+## World points of the gun ports' slits (doors keep away from them).
+var _ports: Array[Vector2] = []
 ## The convergence room, walls excluded (Rect2() if there isn't one), the part
 ## of it past the lane mouths (where the boss fights), and the progress where
 ## it starts.
@@ -152,7 +166,9 @@ func build(layout: Dictionary, with_room := true) -> PackedStringArray:
 	var slice := {}
 	var door_spots := []
 	_wall_run("Start", _frame_rect(origin, dir, Rect2(-wall, 0, wall, width)))
+	var seg_index := -1
 	for seg: Dictionary in layout.get("segments", []):
+		seg_index += 1
 		var start := at_s[0]
 		var has_slice := false
 		for slot: Dictionary in seg["slots"]:
@@ -196,6 +212,7 @@ func build(layout: Dictionary, with_room := true) -> PackedStringArray:
 						_add_vents(piece, [int(pair), int(pair) + 1])
 						junctions.append({"x0": s0[0], "x1": s0[0] + length, "pair": int(pair),
 							"node": piece, "rect": Rect2(jat, Vector2(length, band * 2.0))})
+			var placed := {}  # lane -> its strip in this slot
 			for lane in lanes:
 				var strip_name: String = slot["strips"][lane]
 				if strip_name.is_empty() or lane in junction_lanes:
@@ -203,6 +220,7 @@ func build(layout: Dictionary, with_room := true) -> PackedStringArray:
 				var strip := _place_turned(STRIP_DIR % strip_name, origin + p["normal"] * lane * band,
 					dir, strip_name, problems)
 				if strip:
+					placed[lane] = strip
 					slowest = minf(slowest, _speed(strip))
 					_add_vents(strip, [lane])
 			var seams: Array = slot["seams"].duplicate()
@@ -215,11 +233,32 @@ func build(layout: Dictionary, with_room := true) -> PackedStringArray:
 					seam = "solid"
 				if seam == "window":
 					_add_window(origin, s0[0], length, k)
-				else:
-					seams[k] = "solid"
+					continue
+				seams[k] = "solid"
+				var ports := []
+				for t: Dictionary in slot.get("turrets", []):
+					if mini(int(t["lane"]), int(t["target"])) != k:
+						continue
+					var at := _turret_spot(p, length, k, int(t["lane"]), placed, ports)
+					if at < 0.0:
+						problems.append("No clear spot for a turret (lane %d, segment %d)." % [
+							int(t["lane"]) + 1, segments.size() + 1])
+						continue
+					ports.append([at, int(t["lane"]), int(t["target"])])
+				ports.sort_custom(func(a: Array, b: Array) -> bool: return a[0] < b[0])
+				var from := 0.0
+				for port in ports:
+					var x0: float = port[0] - BraidTuning.TURRET_PORT / 2.0
 					_wall_run("Separator%d" % (k + 1), _frame_rect(origin, dir,
-						Rect2(0, (k + 1) * band - wall, length, BraidTuning.SEPARATOR)))
-			door_spots.append_array(_door_spots(p, slot["strips"], seams, junction_lanes))
+						Rect2(from, (k + 1) * band - wall, x0 - from, BraidTuning.SEPARATOR)))
+					_add_turret(p, k, port[0], port[1], port[2])
+					from = x0 + BraidTuning.TURRET_PORT
+				_wall_run("Separator%d" % (k + 1), _frame_rect(origin, dir,
+					Rect2(from, (k + 1) * band - wall, length - from, BraidTuning.SEPARATOR)))
+			if seg_index == 0 and slot.get("opener", false):
+				start_end = s0[0] + length  # The start strip: no doors in it.
+			else:
+				door_spots.append_array(_door_spots(p, slot["strips"], seams, junction_lanes))
 			var speed := slowest if slowest < INF else BraidTuning.TIDE_SPEED
 			if in_slice:
 				slice["speed"] = minf(slice["speed"], speed)
@@ -522,6 +561,9 @@ func _add_doors(spots: Array) -> void:
 		var along := Vector2(inward.y, -inward.x)
 		var exit := at + inward * BraidTuning.DOOR_EXIT_DEPTH
 		var clear := true
+		for port in _ports:
+			if port.distance_to(at) < BraidTuning.TURRET_PORT / 2.0 + BraidTuning.DOOR_WIDTH:
+				clear = false
 		for q in [exit - along * half, exit + along * half, exit, exit + inward * BraidTuning.FLOW_CELL * 2.0]:
 			if not grid.is_free_at(q):
 				clear = false
@@ -567,7 +609,7 @@ func _add_window(origin: Vector2, s: float, length: float, pair: int) -> void:
 	_block(Vector2(at, y), Vector2(BraidTuning.WINDOW_INSET, h), "WindowPillar")
 	at += BraidTuning.WINDOW_INSET
 	while at + BraidTuning.WINDOW_PANE + BraidTuning.WINDOW_PILLAR + BraidTuning.WINDOW_INSET <= end:
-		_block(Vector2(at, y), Vector2(BraidTuning.WINDOW_PANE, h), "WindowGlass", "glass")
+		_block(Vector2(at, y), Vector2(BraidTuning.WINDOW_PANE, h), "WindowGlass", "window")
 		at += BraidTuning.WINDOW_PANE
 		_block(Vector2(at, y), Vector2(BraidTuning.WINDOW_PILLAR, h), "WindowPillar")
 		at += BraidTuning.WINDOW_PILLAR
@@ -587,6 +629,79 @@ func _add_window(origin: Vector2, s: float, length: float, pair: int) -> void:
 		plate.crush_y = origin.y + (plate.target_lane + 0.5) * BraidTuning.BAND_HEIGHT
 		add_child(plate)
 		favours.append(plate)
+
+
+## Where along straight piece `p` (one slot, `length` long) the wall between
+## lanes `pair` and `pair` + 1 can take a gun port whose turret sits in lane
+## `lane`: clear of the strips' blocks on both sides (room for the gunner on
+## the seat side), of the door spots and of the other `ports` ([along, ...])
+## on that wall. Distance along the piece, or -1 if nowhere.
+func _turret_spot(p: Dictionary, length: float, pair: int, lane: int, placed: Dictionary,
+		ports: Array) -> float:
+	var band := BraidTuning.BAND_HEIGHT
+	# Across the piece (lane 0's edge = 0): the wall's two faces.
+	var top := (pair + 1) * band - BraidTuning.OUTER_WALL
+	var bottom := top + BraidTuning.SEPARATOR
+	var port := BraidTuning.TURRET_PORT
+	var seat_depth := BraidTurret.SEAT_DEPTH + 24.0
+	var seat_width := port + 20.0
+	var door_fs: Array[float] = []
+	door_fs.append_array(BraidTuning.DOOR_SPOTS_TOP)
+	door_fs.append_array(BraidTuning.DOOR_SPOTS_BOTTOM)
+	var tries: Array[float] = []
+	tries.append_array(TURRET_SPOTS)
+	tries.append_array(TURRET_FALLBACK_SPOTS)
+	for n in tries.size():
+		var x := length * tries[n]
+		var crowded := x < seat_width / 2.0 or x > length - seat_width / 2.0
+		if n < TURRET_SPOTS.size():
+			for df in door_fs:
+				if absf(length * df - x) < port / 2.0 + BraidTuning.DOOR_WIDTH:
+					crowded = true
+		for other in ports:
+			if absf(float(other[0]) - x) < port + seat_width:
+				crowded = true
+		if crowded:
+			continue
+		var seat_first := lane == pair  # the seat on the lane-0 side of the wall
+		var seat_local := Rect2(x - seat_width / 2.0, top - seat_depth, seat_width, seat_depth) if seat_first \
+			else Rect2(x - seat_width / 2.0, bottom, seat_width, seat_depth)
+		var fire_local := Rect2(x - port / 2.0, bottom, port, 24.0) if seat_first \
+			else Rect2(x - port / 2.0, top - 24.0, port, 24.0)
+		var seat_rect := _frame_rect(p["origin"], p["dir"], seat_local)
+		var fire_rect := _frame_rect(p["origin"], p["dir"], fire_local)
+		var clear := true
+		for strip: Node2D in placed.values():
+			for child in strip.get_children():
+				if child.get_script() != BraidBlock:
+					continue
+				var r := Rect2(strip.position + child.position, child.size)
+				if r.intersects(seat_rect) or r.intersects(fire_rect):
+					clear = false
+		if clear:
+			return x
+	return -1.0
+
+
+## A gun port `x` along straight piece `p` in the wall between lanes `pair`
+## and `pair` + 1: a slit of glass with a turret seated in `lane` firing into
+## `target`.
+func _add_turret(p: Dictionary, pair: int, x: float, lane: int, target: int) -> void:
+	var top := (pair + 1) * BraidTuning.BAND_HEIGHT - BraidTuning.OUTER_WALL
+	var port := BraidTuning.TURRET_PORT
+	var r := _frame_rect(p["origin"], p["dir"], Rect2(x - port / 2.0, top, port, BraidTuning.SEPARATOR))
+	_block(r.position, r.size, "PortGlass", "glass")
+	var turret := BraidTurret.new()
+	turret.name = "Turret"
+	turret.lane = lane
+	turret.target_lane = target
+	var normal: Vector2 = p["normal"]
+	turret.facing = normal if target > lane else -normal
+	turret.position = p["origin"] + p["dir"] * x + normal * (top + BraidTuning.SEPARATOR / 2.0)
+	turret.s = float(p["s0"][lane]) + x
+	add_child(turret)
+	turrets.append(turret)
+	_ports.append(turret.position)
 
 
 # --- Junctions and lanes ----------------------------------------------------------
@@ -922,12 +1037,18 @@ func plate_rect(i: int, lane: int) -> Rect2:
 
 # --- The tide ---------------------------------------------------------------------
 
+## Every tide speed in the level is multiplied by this (the Riptide
+## modifier: scripts/braid/braid_modifiers.gd). The layout isn't: the same
+## level, crossed faster.
+var tide_speed_scale := 1.0
+
+
 ## The tide's speed (px/s) with its front at progress `x`.
 func tide_speed_at(x: float) -> float:
 	for span in _spans:
 		if x < span["to"]:
-			return span["tide_speed"]
-	return BraidTuning.TIDE_SPEED
+			return span["tide_speed"] * tide_speed_scale
+	return BraidTuning.TIDE_SPEED * tide_speed_scale
 
 
 ## Seconds the tide takes from progress `from_x` to `to_x`.
@@ -935,7 +1056,7 @@ func tide_time(from_x: float, to_x: float) -> float:
 	var t := 0.0
 	var x := from_x
 	if x < 0.0:
-		t += minf(-x, to_x - x) / BraidTuning.TIDE_SPEED  # before the first slot
+		t += minf(-x, to_x - x) / (BraidTuning.TIDE_SPEED * tide_speed_scale)  # before the first slot
 		x = 0.0
 	for span in _spans:
 		if x >= to_x:
@@ -943,7 +1064,7 @@ func tide_time(from_x: float, to_x: float) -> float:
 		if span["to"] <= x:
 			continue
 		var end := minf(span["to"], to_x)
-		t += (end - x) / span["tide_speed"]
+		t += (end - x) / (span["tide_speed"] * tide_speed_scale)
 		x = end
 	return t
 

@@ -27,9 +27,16 @@ extends Control
 ## A Boss Test (set up from the custom game screen, scripts/waves/boss_test.gd)
 ## shows in the heading.
 ##
+## Campaign runs, once the Campaign has been won here
+## (BraidModifiers.page_unlocked): beginning opens the modifiers page
+## (scripts/ui/modifiers_menu.gd) first, and the run starts from there. In a
+## Squads game only the host gets it.
+##
 ## In a Squads game (see scripts/net/squads.gd) this screen picks the players
 ## for this instance's squad. The squads in the session are shown across the
-## top; the host (always Alpha) starts once every squad is ready.
+## top; the host (always Alpha) starts once every squad is ready. While
+## Global.sandbox_enabled() the host also gets a "+ Dummy squad" button, for
+## testing alone (scripts/net/dummy_squad.gd).
 
 const MenuInput := preload("res://scripts/ui/menu_input.gd")
 const CharacterClasses := preload("res://scripts/character_classes.gd")
@@ -43,6 +50,12 @@ const PlayerSkins := preload("res://scripts/player/player_skins.gd")
 const ButtonPrompts := preload("res://scripts/ui/button_prompts.gd")
 const SandboxEditor := preload("res://scripts/ui/sandbox_editor.gd")
 const BossTest := preload("res://scripts/waves/boss_test.gd")
+const DummySquad := preload("res://scripts/net/dummy_squad.gd")
+const ModifiersMenu := preload("res://scripts/ui/modifiers_menu.gd")
+const BraidModifiers := preload("res://scripts/braid/braid_modifiers.gd")
+## After starting a dummy squad, its button waits this long (seconds) for it
+## to join before another can be added.
+const DUMMY_JOIN_WAIT := 4.0
 const EMPTY_COLOR := Color(0.18, 0.2, 0.18)
 ## Slot cards are the title screen's wooden sign boards (the theme's
 ## PanelContainer style); an empty slot's board is darker.
@@ -90,6 +103,13 @@ var menu_input := MenuInput.new()
 ## the slot it was opened for.
 var sandbox_editor: Control
 var sandbox_slot := -1
+## The Campaign modifiers page while it's open (else null).
+var modifiers_menu: Control
+## Hosting with the sandbox on: the "+ Dummy squad" button (else null), and
+## seconds left waiting for the last one started to join.
+var dummy_button: Button
+var _dummy_wait := 0.0
+var _squads_before_dummy := 0
 
 
 func _ready() -> void:
@@ -119,11 +139,14 @@ func _setup_squads() -> void:
 		squad_views.append(_build_squad_view(i))
 	Squads.roster_changed.connect(_refresh)
 	Squads.game_starting.connect(_start_game)
+	if Squads.is_host() and Global.sandbox_enabled():
+		_build_dummy_button()
 
 
 func _input(event: InputEvent) -> void:
-	# The sandbox loadout screen takes all input while it's open.
-	if sandbox_editor:
+	# The sandbox loadout screen (or the modifiers page) takes all input
+	# while it's open.
+	if sandbox_editor or modifiers_menu:
 		return
 	# The keyboard player typing a name gets every key.
 	var kb := _slot_of(Global.KEYBOARD)
@@ -192,11 +215,13 @@ func _handle(device: int, intent: String) -> void:
 					slot["ready"] = true
 			elif _all_ready():
 				if not Squads.is_active():
-					_start_game()
+					if not _open_modifiers():
+						_start_game()
 					return
 				# Squads: the host starts everyone at once (via game_starting).
-				if Squads.is_host() and Squads.start_game():
-					return
+				if Squads.is_host() and Squads.all_squads_ready():
+					if _open_modifiers() or Squads.start_game():
+						return
 		"back":
 			if slot["ready"]:
 				slot["ready"] = false
@@ -414,6 +439,35 @@ func _start_game() -> void:
 	Global.start_game(chosen)
 
 
+## Whether beginning goes through the modifiers page: a Campaign run, once
+## it's unlocked (in a Squads game, the host's choice).
+func _wants_modifiers() -> bool:
+	return Global.current_mode() == Global.MODE_BRAID and BraidModifiers.page_unlocked() \
+		and (not Squads.is_active() or Squads.is_host())
+
+
+## Opens the modifiers page if this run gets one (true), else false.
+func _open_modifiers() -> bool:
+	if not _wants_modifiers() or modifiers_menu:
+		return false
+	modifiers_menu = ModifiersMenu.new()
+	modifiers_menu.finished.connect(_on_modifiers_finished)
+	add_child(modifiers_menu)
+	return true
+
+
+func _on_modifiers_finished(confirmed: bool) -> void:
+	modifiers_menu = null
+	if confirmed and _all_ready():
+		if not Squads.is_active():
+			_start_game()
+			return
+		# (Someone may have un-readied meanwhile: then we stay here.)
+		if Squads.start_game(Global.campaign_modifiers):
+			return
+	_refresh()
+
+
 func _on_joy_connection_changed(device: int, connected: bool) -> void:
 	if connected:
 		return
@@ -509,6 +563,51 @@ func _build_back_button() -> void:
 	back.position = Vector2(40, 40)
 	back.pressed.connect(func() -> void: _handle(Global.KEYBOARD, "back"))
 	add_child(back)
+
+
+## Testing a squads game alone: starts another copy of the game that joins
+## as a squad of one player who stands still (scripts/net/dummy_squad.gd).
+func _build_dummy_button() -> void:
+	dummy_button = Button.new()
+	dummy_button.text = "+ Dummy squad"
+	dummy_button.tooltip_text = "Testing: start another copy of the game that joins as a squad of one idle player."
+	dummy_button.focus_mode = Control.FOCUS_NONE
+	dummy_button.add_theme_font_size_override("font_size", 48)
+	dummy_button.custom_minimum_size = Vector2(480, 100)
+	dummy_button.anchor_left = 1.0
+	dummy_button.anchor_right = 1.0
+	dummy_button.offset_left = -520
+	dummy_button.offset_right = -40
+	dummy_button.offset_top = 40
+	dummy_button.offset_bottom = 140
+	dummy_button.pressed.connect(_add_dummy_squad)
+	add_child(dummy_button)
+
+
+func _add_dummy_squad() -> void:
+	if DummySquad.launch() == -1:
+		dummy_button.text = "Couldn't start one"
+		return
+	_dummy_wait = DUMMY_JOIN_WAIT
+	_squads_before_dummy = Squads.roster.size()
+	_refresh_dummy_button()
+
+
+func _refresh_dummy_button() -> void:
+	if dummy_button == null:
+		return
+	if Squads.roster.size() > _squads_before_dummy:
+		_dummy_wait = 0.0  # it's in
+	var full := Squads.roster.size() >= Squads.MAX_SQUADS
+	dummy_button.disabled = full or _dummy_wait > 0.0
+	dummy_button.text = "Joining..." if _dummy_wait > 0.0 and not full else "+ Dummy squad"
+
+
+func _process(delta: float) -> void:
+	if _dummy_wait > 0.0:
+		_dummy_wait -= delta
+		if _dummy_wait <= 0.0:
+			_refresh_dummy_button()
 
 
 # --- UI ---------------------------------------------------------------------
@@ -700,6 +799,7 @@ func _boss_test_name() -> String:
 func _refresh() -> void:
 	if Squads.is_active():
 		_refresh_squads()
+	_refresh_dummy_button()
 	var test_name := _boss_test_name()
 	if not Squads.is_active():
 		heading_label.text = "Boss Test  -  %s" % test_name if test_name != "" \
@@ -783,11 +883,11 @@ func _refresh() -> void:
 		if not Squads.is_host():
 			hint = "Ready! Waiting for Alpha squad (the host) to start     {B} un-ready"
 		elif Squads.all_squads_ready():
-			hint = "All squads are ready! Press {A} or Start to begin"
+			hint = "All squads are ready! Press {A} or Start to %s" % _begin_word()
 		else:
 			hint = "Ready! Waiting for the other squads     {B} un-ready"
 	elif _all_ready():
-		hint = "Everyone's ready! Press {A} or Start to begin"
+		hint = "Everyone's ready! Press {A} or Start to %s" % _begin_word()
 	elif _joined_count() == 0 and Squads.is_active():
 		hint = "Press {A} to join     {B} leave squads game"
 	elif _joined_count() == 0:
@@ -799,6 +899,11 @@ func _refresh() -> void:
 	if Squads.is_active():
 		hint = "%s mode     %s" % [_mode_name(), hint]
 	ButtonPrompts.set_text(hint_label, hint)
+
+
+## "pick modifiers" when beginning opens the modifiers page, else "begin".
+func _begin_word() -> String:
+	return "pick modifiers" if _wants_modifiers() else "begin"
 
 
 func _editing_count() -> int:

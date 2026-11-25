@@ -46,7 +46,8 @@ const CODE_ACTIONS := {&"code_a": "A", &"code_b": "B", &"code_x": "X", &"code_y"
 const DASH_GRACE := 0.15
 
 ## Health, in half hearts, before the class is applied. Touching an enemy
-## costs its contact_damage (half a heart for every current enemy).
+## costs its contact_damage (half a heart for most; a full heart for
+## Brutes, Chargers and elites).
 ## (The real cap is max_health: the "lives" attribute, in hearts, x2.)
 const MAX_HEALTH := CharacterClasses.LIVES_DEFAULT * CharacterClasses.HALVES_PER_HEART
 ## Seconds of invulnerability after a hit (or a hit armor ignored), so a
@@ -245,6 +246,8 @@ var banked_price_waves := {}
 
 var _hit_cooldown := 0.0
 var _fire_cooldown := 0.0
+## The melee swing in progress (freed when it ends); see melee_busy().
+var _active_swing: Node
 var _melee_cooldown := 0.0
 ## Players for the QUICK_SWING_SOUNDS and SLOW_SWING_SOUNDS (each picks one
 ## at random per play, so overlapping swings don't cut each other off).
@@ -283,6 +286,16 @@ var carrying: Node = null
 ## the keyboard) go to it as code presses: keypad.code_press(player, button)
 ## with "A", "B", "X" or "Y". It also stops them using their equipment.
 var keypad: Node = null
+## A fixed gun this player is manning (Braid's mounted turrets,
+## scripts/braid/braid_turret.gd), or null. While set they can't move, their
+## own gun, melee and equipment stay idle, and each physics frame their aim
+## (right stick, or the mouse while firing) goes to mount.mounted_aim(self,
+## aim, delta). Set it with set_mount().
+var mount: Node = null
+## A dummy squad's stand-in player (scripts/net/dummy_squad.gd, set before it
+## joins the tree): nothing hurts it, and walls and enemies don't stop it (so
+## the Campaign's tide can always push it along).
+var dummy := false
 
 ## The player's square: invisible now, but it still sets the size and its
 ## rotation is the facing direction.
@@ -299,6 +312,8 @@ func _ready() -> void:
 	# player) and gets carried along by it.
 	motion_mode = CharacterBody2D.MOTION_MODE_FLOATING
 	add_to_group("players")
+	if dummy:
+		collision_mask = 0
 	_quick_swing_sound = _swing_player(QUICK_SWING_SOUNDS)
 	_slow_swing_sound = _swing_player(SLOW_SWING_SOUNDS)
 	# Unlike "players", knocked-out players stay in this one.
@@ -341,7 +356,8 @@ func _physics_process(delta: float) -> void:
 			if is_dead():
 				return
 
-	var direction := _read_direction()
+	var mounted := is_mounted()
+	var direction := Vector2.ZERO if mounted else _read_direction()
 	if direction:
 		velocity = direction * move_speed * (CARRY_SPEED if is_carrying() else 1.0)
 	else:
@@ -369,7 +385,12 @@ func _physics_process(delta: float) -> void:
 	# Not while idle: the trigger can't bank shots.
 	_fire_cooldown -= delta
 	var aim := _read_aim()
-	var firing := aim and not is_carrying() and not overheated
+	# Melee and shooting don't mix: the gun is quiet while the melee button
+	# is held or a swing is still going (aiming still turns the player, so
+	# swings go where they aim).
+	var firing := aim and not is_carrying() and not overheated and not mounted and not melee_busy()
+	if mounted:
+		mount.mounted_aim(self, aim, delta)
 	if not firing:
 		_fire_cooldown = maxf(_fire_cooldown, 0.0)
 	if aim:
@@ -385,7 +406,7 @@ func _physics_process(delta: float) -> void:
 		gun_sprite.aim(body.rotation)
 
 	_melee_cooldown -= delta
-	var swinging := _melee_held() and not is_carrying()
+	var swinging := _melee_held() and not is_carrying() and not mounted
 	if not swinging:
 		_melee_cooldown = maxf(_melee_cooldown, 0.0)
 	elif _melee_cooldown <= 0.0:
@@ -483,6 +504,37 @@ func _code_button(event: InputEvent) -> String:
 	return ""
 
 
+## True while this player holds their interact button: X on their
+## controller, E on the keyboard (Braid's airstrike pads and turrets).
+func interact_held() -> bool:
+	if device == Global.KEYBOARD:
+		return Input.is_action_pressed(&"interact")
+	return Input.is_joy_button_pressed(device, JOY_BUTTON_X)
+
+
+## True while this player holds their "drop" button: B on their controller,
+## Q on the keyboard (also how they get off a Braid turret).
+func drop_held() -> bool:
+	if device == Global.KEYBOARD:
+		return Input.is_action_pressed(&"drop")
+	return Input.is_joy_button_pressed(device, JOY_BUTTON_B)
+
+
+## Mans fixed gun `node` (null to let go): see `mount`. Their own gun is
+## hidden while they're on it.
+func set_mount(node: Node) -> void:
+	mount = node
+	gun_sprite.visible = node == null
+	if node != null:
+		_recoil_velocity = Vector2.ZERO
+
+
+func is_mounted() -> bool:
+	if mount != null and not is_instance_valid(mount):
+		set_mount(null)
+	return mount != null
+
+
 ## True while this player is pushing to move.
 func wants_to_move() -> bool:
 	return _read_direction() != Vector2.ZERO
@@ -524,7 +576,7 @@ func recharge_equipment() -> void:
 ## out stays (equipment is never used up). Returns true if it was used.
 func use_equipment() -> bool:
 	if equipment.is_empty() or is_dead() or not is_inside_tree() \
-			or is_carrying() or (keypad != null and is_instance_valid(keypad)):
+			or is_carrying() or (keypad != null and is_instance_valid(keypad)) or is_mounted():
 		return false
 	if _pack_up_deployable():
 		return true
@@ -581,7 +633,8 @@ func is_dashing() -> bool:
 func _end_dash() -> void:
 	_dash_left = 0.0
 	velocity = _dash_velocity.normalized() * move_speed
-	collision_mask |= PhysicsLayers.ENEMIES
+	if not dummy:
+		collision_mask |= PhysicsLayers.ENEMIES
 
 
 ## Something (`source`, a Riot Shield) starts or stops keeping enemies from
@@ -728,6 +781,14 @@ func _melee_held() -> bool:
 	return Input.get_joy_axis(device, JOY_AXIS_TRIGGER_RIGHT) > MELEE_TRIGGER_THRESHOLD
 
 
+## True while the melee button is held (when a swing could happen) or a
+## swing is still sweeping: no shooting then.
+func melee_busy() -> bool:
+	if is_instance_valid(_active_swing):
+		return true
+	return _melee_held() and not is_carrying() and not is_mounted() and not is_dead()
+
+
 ## Swings the melee weapon where the player faces. The swing hits enemies
 ## as the weapon passes through them (scripts/melee_swing.gd), within the
 ## weapon's arc (centred on where they face) and reach. A swing that hits
@@ -750,6 +811,7 @@ func _try_melee() -> void:
 	swing.damage = melee_damage
 	swing.knockback = melee_knockback
 	add_child(swing)
+	_active_swing = swing
 
 
 ## A random whoosh, quick or slow to match how fast this player swings.
@@ -871,8 +933,13 @@ func gun_stats(of_gun: Dictionary, level: int = 0) -> Dictionary:
 	}
 
 
+## Every point this player earns is multiplied by this (the Campaign's
+## modifiers raise it: scripts/braid/braid_modifiers.gd).
+var score_multiplier := 1.0
+
+
 func add_points(amount: int) -> void:
-	points += amount
+	points += roundi(amount * score_multiplier)
 	points_changed.emit(points)
 
 
@@ -962,9 +1029,7 @@ func _recalculate_stats() -> void:
 
 
 func _stat_mult(attribute_id: String) -> float:
-	var min_mult := CharacterClasses.SPEED_MULT_MIN if attribute_id == "speed" \
-			else CharacterClasses.STAT_MULT_MIN
-	return CharacterClasses.stat_multiplier(boosted_attribute(attribute_id), min_mult)
+	return CharacterClasses.stat_multiplier(boosted_attribute(attribute_id), attribute_id)
 
 
 ## The attribute with any temporary boosts on top (kept in its range). The
@@ -1040,7 +1105,7 @@ func revive(with_health: int = CharacterClasses.HALVES_PER_HEART) -> void:
 ## Takes `amount` half hearts of damage (at least 1), then is briefly
 ## invulnerable.
 func take_hit(amount: int = 1, hit_position: Vector2 = global_position) -> void:
-	if is_dead():
+	if is_dead() or dummy:
 		return
 	health = maxi(health - maxi(amount, 1), 0)
 	_hit_cooldown = hit_cooldown
@@ -1054,7 +1119,7 @@ func take_hit(amount: int = 1, hit_position: Vector2 = global_position) -> void:
 ## An enemy attack (a touch, a blast) worth `amount` half hearts: ignored
 ## while still invulnerable from the last hit, and armor may block it.
 func hurt_by(amount: int, hit_position: Vector2 = global_position) -> void:
-	if is_dead() or _hit_cooldown > 0.0:
+	if is_dead() or dummy or _hit_cooldown > 0.0:
 		return
 	if hit_filter.is_valid() and hit_filter.call(amount, hit_position):
 		_block_hit()

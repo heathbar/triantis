@@ -40,7 +40,3 @@ func _draw() -> void:
 		draw_set_transform(Vector2.ZERO, 0.0)
 	draw_time_ring(radius + 2.0, Color(1, 1, 1, 0.5), 1.0)
 
-
-## Saboteurs go after it (see Deployable.can_be_sabotaged).
-func can_be_sabotaged() -> bool:
-	return true

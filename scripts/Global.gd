@@ -52,6 +52,7 @@ const MUSIC_BUS := &"Music"
 const SFX_BUS := &"SFX"
 
 const CharacterClasses := preload("res://scripts/character_classes.gd")
+const DummySquad := preload("res://scripts/net/dummy_squad.gd")
 
 ## Device id used for the keyboard player (joypad ids are always >= 0).
 const KEYBOARD := -1
@@ -125,6 +126,15 @@ var custom_settings := {}
 var boss_test := {}
 ## Picks each wave's objective in objective mode; every squad uses the host's.
 var run_seed := 0
+## The Campaign has been won on this machine (saved): unlocks the Campaign
+## modifiers page (scripts/braid/braid_modifiers.gd).
+var campaign_cleared := false
+## Campaign modifiers (BraidModifiers ids) picked on the modifiers page for
+## the next local or hosted Campaign run. This session only; none at launch.
+var campaign_modifiers: Array = []
+## This copy of the game is a dummy squad, a testing stand-in for another
+## squad started from the host's character select (scripts/net/dummy_squad.gd).
+var dummy_squad := false
 
 # Settings (persisted to user://settings.cfg)
 var master_volume : float = 1.0   # 0.0 - 1.0
@@ -147,6 +157,13 @@ func _ready() -> void:
 	_apply_base_resolution()
 	_setup_controller_ui_input()
 	load_settings()
+	dummy_squad = DummySquad.requested()
+	if dummy_squad:
+		# Windowed, silent, no tutorials to wait through; never saved.
+		fullscreen = false
+		master_volume = 0.0
+		show_objective_tutorials = false
+		add_child(DummySquad.new())
 	_setup_buses()
 	_setup_music()
 	apply_settings()
@@ -220,6 +237,10 @@ func _setup_controller_ui_input() -> void:
 	_ensure_joy_button("code_x", JOY_BUTTON_X)
 	_ensure_key("code_y", KEY_I)
 	_ensure_joy_button("code_y", JOY_BUTTON_Y)
+	# Braid: hold at an airstrike pad, press to man / leave a turret
+	# (scripts/braid/braid_favour.gd, braid_turret.gd).
+	_ensure_key("interact", KEY_E)
+	_ensure_joy_button("interact", JOY_BUTTON_X)
 	# Shared screens where every player drives their own column
 	# (scripts/ui/menu_input.gd: the shop, character select).
 	_ensure_joy_button("menu_start", JOY_BUTTON_START)
@@ -395,6 +416,8 @@ func fullscreen_supported() -> bool:
 
 
 func save_settings() -> void:
+	if dummy_squad:
+		return
 	var config := ConfigFile.new()
 	config.set_value("audio", "master_volume", master_volume)
 	config.set_value("video", "fullscreen", fullscreen)
@@ -405,6 +428,7 @@ func save_settings() -> void:
 	config.set_value("audio", "sfx_volume", sfx_volume)
 	if not custom_loadout.is_empty():
 		config.set_value("sandbox", "loadout", custom_loadout)
+	config.set_value("progress", "campaign_cleared", campaign_cleared)
 	config.save(SETTINGS_PATH)
 
 
@@ -422,6 +446,7 @@ func load_settings() -> void:
 	var music_default := music_volume if bool(config.get_value("audio", "music", true)) else 0.0
 	music_volume = clampf(float(config.get_value("audio", "music_volume", music_default)), 0.0, 1.0)
 	sfx_volume = clampf(float(config.get_value("audio", "sfx_volume", sfx_volume)), 0.0, 1.0)
+	campaign_cleared = bool(config.get_value("progress", "campaign_cleared", campaign_cleared))
 	var loadout: Variant = config.get_value("sandbox", "loadout", {})
 	if loadout is Dictionary:
 		custom_loadout = loadout
@@ -500,6 +525,20 @@ func objective_every() -> int:
 				return 0
 			return maxi(0, int(settings.get("objective_every", 0)))
 	return 0
+
+
+## The Campaign modifiers in play (BraidModifiers ids): the host's in a
+## squads game.
+func current_modifiers() -> Array:
+	return Squads.modifiers if Squads.is_active() else campaign_modifiers
+
+
+## The Campaign was just won: remember it (unlocks the modifiers page).
+func mark_campaign_cleared() -> void:
+	if campaign_cleared:
+		return
+	campaign_cleared = true
+	save_settings()
 
 
 ## The custom game settings in play: the host's in a squads game.

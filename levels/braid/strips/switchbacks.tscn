@@ -11,11 +11,11 @@ difficulty = 3
 
 [node name="Block5" type="StaticBody2D" parent="." unique_id=2692483]
 texture_repeat = 2
-position = Vector2(300, 0)
+position = Vector2(300, 16)
 collision_layer = 16
 collision_mask = 0
 script = ExtResource("2_block")
-size = Vector2(40, 230)
+size = Vector2(40, 214)
 
 [node name="Block6" type="StaticBody2D" parent="." unique_id=1014768921]
 texture_repeat = 2
@@ -23,15 +23,15 @@ position = Vector2(540, 130)
 collision_layer = 16
 collision_mask = 0
 script = ExtResource("2_block")
-size = Vector2(40, 230)
+size = Vector2(40, 214)
 
 [node name="Block7" type="StaticBody2D" parent="." unique_id=596022392]
 texture_repeat = 2
-position = Vector2(780, 0)
+position = Vector2(780, 16)
 collision_layer = 16
 collision_mask = 0
 script = ExtResource("2_block")
-size = Vector2(40, 230)
+size = Vector2(40, 214)
 
 [node name="Block8" type="StaticBody2D" parent="." unique_id=1405489190]
 texture_repeat = 2
@@ -39,7 +39,7 @@ position = Vector2(1020, 130)
 collision_layer = 16
 collision_mask = 0
 script = ExtResource("2_block")
-size = Vector2(40, 230)
+size = Vector2(40, 214)
 
 [node name="Vent1" type="Node2D" parent="." unique_id=592339047]
 z_index = -10

@@ -152,6 +152,13 @@ func _prepare_enemy(_enemy: Enemy) -> void:
 	pass
 
 
+## Every point earned this run is multiplied by this (each player's
+## score_multiplier); the end-of-run cash-in shows leftover resources worth
+## POINTS_PER_LEFTOVER_RESOURCE times it.
+func score_multiplier() -> float:
+	return 1.0
+
+
 ## One of our players killed one of our enemies at `at` (after the points and
 ## drops were handed out).
 func _after_enemy_killed(_killer: Node, _at: Vector2, _enemy: Enemy) -> void:
@@ -159,7 +166,8 @@ func _after_enemy_killed(_killer: Node, _at: Vector2, _enemy: Enemy) -> void:
 
 
 ## Where drops from another squad's enemy that one of our players killed at
-## `at` land on our side.
+## `at` land: where it died (in Braid that can be across a window, in
+## another lane; leftovers are handed out when the wave ends anyway).
 func _remote_drop_point(at: Vector2) -> Vector2:
 	return at
 
@@ -178,6 +186,7 @@ func _spawn_players(bounds: Rect2) -> void:
 		player.player_index = p["slot"]
 		player.player_name = p.get("name", "")
 		player.device = p["device"]
+		player.dummy = Global.dummy_squad
 		var character: Dictionary = Global.CHARACTERS[p["character"]]
 		player.color = character["color"]
 		player.skin = p.get("skin", 0)
@@ -409,7 +418,7 @@ func _show_final_summary(title: String, title_color: Color, subtitle: String,
 	add_child(summary)
 	_final_summary = summary
 	summary.show_final(title, title_color, subtitle, bonus, prompt,
-		POINTS_PER_LEFTOVER_RESOURCE, pages)
+		POINTS_PER_LEFTOVER_RESOURCE * score_multiplier(), pages)
 	return summary
 
 

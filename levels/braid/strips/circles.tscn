@@ -1,0 +1,295 @@
+[gd_scene format=3 uid="uid://bc4ui0wga4ty8"]
+
+[ext_resource type="Script" uid="uid://cxdh76gh1h5sy" path="res://scripts/braid/braid_strip.gd" id="1_xu1r5"]
+[ext_resource type="Script" uid="uid://rjebii07ei8a" path="res://scripts/braid/braid_block.gd" id="2_n4oym"]
+[ext_resource type="Script" uid="uid://cxawcvhuwddeq" path="res://scripts/braid/braid_spawn.gd" id="3_cbxqy"]
+
+[node name="Gallery" type="Node2D" unique_id=802271431]
+script = ExtResource("1_xu1r5")
+difficulty = 3
+
+[node name="Block4" type="StaticBody2D" parent="." unique_id=1103294683]
+texture_repeat = 2
+position = Vector2(1120, 16)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_n4oym")
+size = Vector2(160, 80)
+
+[node name="Block7" type="StaticBody2D" parent="." unique_id=1464536581]
+texture_repeat = 2
+position = Vector2(1120, 264)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_n4oym")
+size = Vector2(160, 80)
+
+[node name="Block5" type="StaticBody2D" parent="." unique_id=1663401287]
+texture_repeat = 2
+position = Vector2(0, 264)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_n4oym")
+size = Vector2(120, 80)
+
+[node name="Block10" type="StaticBody2D" parent="." unique_id=154936838]
+texture_repeat = 2
+position = Vector2(0, 16)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_n4oym")
+size = Vector2(120, 80)
+
+[node name="Block13" type="StaticBody2D" parent="." unique_id=207302685]
+texture_repeat = 2
+position = Vector2(120, 16)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_n4oym")
+size = Vector2(36, 36)
+
+[node name="Block14" type="StaticBody2D" parent="." unique_id=997854539]
+texture_repeat = 2
+position = Vector2(276, 16)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_n4oym")
+size = Vector2(36, 36)
+
+[node name="Block17" type="StaticBody2D" parent="." unique_id=2115267445]
+texture_repeat = 2
+position = Vector2(824, 16)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_n4oym")
+size = Vector2(36, 36)
+
+[node name="Block18" type="StaticBody2D" parent="." unique_id=1104962283]
+texture_repeat = 2
+position = Vector2(1084, 16)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_n4oym")
+size = Vector2(36, 36)
+
+[node name="Block19" type="StaticBody2D" parent="." unique_id=331602521]
+texture_repeat = 2
+position = Vector2(1084, 308)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_n4oym")
+size = Vector2(36, 36)
+
+[node name="Block20" type="StaticBody2D" parent="." unique_id=1044698200]
+texture_repeat = 2
+position = Vector2(824, 308)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_n4oym")
+size = Vector2(36, 36)
+
+[node name="Block15" type="StaticBody2D" parent="." unique_id=1642967433]
+texture_repeat = 2
+position = Vector2(276, 308)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_n4oym")
+size = Vector2(36, 36)
+
+[node name="Block16" type="StaticBody2D" parent="." unique_id=431017693]
+texture_repeat = 2
+position = Vector2(120, 308)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_n4oym")
+size = Vector2(36, 36)
+
+[node name="Block6" type="StaticBody2D" parent="." unique_id=1405689877]
+texture_repeat = 2
+position = Vector2(312, 264)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_n4oym")
+size = Vector2(128, 80)
+
+[node name="Block11" type="StaticBody2D" parent="." unique_id=411155216]
+texture_repeat = 2
+position = Vector2(312, 16)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_n4oym")
+size = Vector2(128, 80)
+
+[node name="Block8" type="StaticBody2D" parent="." unique_id=775446246]
+texture_repeat = 2
+position = Vector2(696, 264)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_n4oym")
+size = Vector2(128, 80)
+
+[node name="Block21" type="StaticBody2D" parent="." unique_id=95620189]
+texture_repeat = 2
+position = Vector2(696, 16)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_n4oym")
+size = Vector2(128, 80)
+
+[node name="Block9" type="StaticBody2D" parent="." unique_id=1496285634]
+texture_repeat = 2
+position = Vector2(185, 153)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_n4oym")
+variant = 2
+
+[node name="Block22" type="StaticBody2D" parent="." unique_id=349568636]
+texture_repeat = 2
+position = Vector2(440, 280)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_n4oym")
+size = Vector2(24, 64)
+
+[node name="Block23" type="StaticBody2D" parent="." unique_id=2086377784]
+texture_repeat = 2
+position = Vector2(440, 16)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_n4oym")
+size = Vector2(24, 64)
+
+[node name="Block26" type="StaticBody2D" parent="." unique_id=1938815004]
+texture_repeat = 2
+position = Vector2(464, 16)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_n4oym")
+size = Vector2(24, 48)
+
+[node name="Block29" type="StaticBody2D" parent="." unique_id=1168709789]
+texture_repeat = 2
+position = Vector2(648, 16)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_n4oym")
+size = Vector2(24, 48)
+
+[node name="Block31" type="StaticBody2D" parent="." unique_id=1981715356]
+texture_repeat = 2
+position = Vector2(464, 296)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_n4oym")
+size = Vector2(24, 48)
+
+[node name="Block32" type="StaticBody2D" parent="." unique_id=994776494]
+texture_repeat = 2
+position = Vector2(648, 296)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_n4oym")
+size = Vector2(24, 48)
+
+[node name="Block27" type="StaticBody2D" parent="." unique_id=1627556712]
+texture_repeat = 2
+position = Vector2(488, 16)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_n4oym")
+size = Vector2(24, 32)
+
+[node name="Block30" type="StaticBody2D" parent="." unique_id=2014583637]
+texture_repeat = 2
+position = Vector2(624, 16)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_n4oym")
+size = Vector2(24, 32)
+
+[node name="Block28" type="StaticBody2D" parent="." unique_id=265107379]
+texture_repeat = 2
+position = Vector2(512, 16)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_n4oym")
+size = Vector2(112, 16)
+
+[node name="Block33" type="StaticBody2D" parent="." unique_id=2003811300]
+texture_repeat = 2
+position = Vector2(488, 312)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_n4oym")
+size = Vector2(24, 32)
+
+[node name="Block34" type="StaticBody2D" parent="." unique_id=938115582]
+texture_repeat = 2
+position = Vector2(624, 312)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_n4oym")
+size = Vector2(24, 32)
+
+[node name="Block35" type="StaticBody2D" parent="." unique_id=1473936765]
+texture_repeat = 2
+position = Vector2(512, 328)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_n4oym")
+size = Vector2(112, 16)
+
+[node name="Block24" type="StaticBody2D" parent="." unique_id=1464108250]
+texture_repeat = 2
+position = Vector2(672, 280)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_n4oym")
+size = Vector2(24, 64)
+
+[node name="Block25" type="StaticBody2D" parent="." unique_id=1442223241]
+texture_repeat = 2
+position = Vector2(672, 16)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_n4oym")
+size = Vector2(24, 64)
+
+[node name="Block12" type="StaticBody2D" parent="." unique_id=88063281]
+texture_repeat = 2
+position = Vector2(922, 135)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_n4oym")
+size = Vector2(96, 96)
+
+[node name="Vent1" type="Node2D" parent="." unique_id=2047519282]
+z_index = -10
+position = Vector2(174, 33)
+script = ExtResource("3_cbxqy")
+
+[node name="Vent2" type="Node2D" parent="." unique_id=720890760]
+z_index = -10
+position = Vector2(495, 207)
+script = ExtResource("3_cbxqy")
+
+[node name="Vent3" type="Node2D" parent="." unique_id=2006685638]
+z_index = -10
+position = Vector2(1031, 76)
+script = ExtResource("3_cbxqy")
+
+[node name="Vent4" type="Node2D" parent="." unique_id=464331257]
+z_index = -10
+position = Vector2(256, 325)
+script = ExtResource("3_cbxqy")
+
+[node name="Vent5" type="Node2D" parent="." unique_id=48758676]
+z_index = -10
+position = Vector2(663, 147)
+script = ExtResource("3_cbxqy")
+
+[node name="Vent6" type="Node2D" parent="." unique_id=2035057662]
+z_index = -10
+position = Vector2(925, 307)
+script = ExtResource("3_cbxqy")

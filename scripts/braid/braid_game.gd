@@ -44,8 +44,9 @@ extends GameBase
 ## everyone, and starts the next once every squad has left the shop. Squads
 ## swap lanes at junctions (each game seals the junction exits its own squad
 ## mustn't take: BraidLevel.add_seals), see each other through windows (the
-## camera zooms out there and in junctions), and can drop a crusher on the
-## neighbouring lane from a favour plate. scripts/braid/braid_link.gd shows
+## camera zooms out there and in junctions), can call an airstrike on the
+## neighbouring lane from a pad by a window, and can man turrets in gun ports
+## that fire into it. scripts/braid/braid_link.gd shows
 ## the other squads and settles hits and kills. A squad that's wiped out sits
 ## out the rest of the segment watching another squad (its enemies stay),
 ## and is back at the next checkpoint with everyone. It's game over only when
@@ -66,6 +67,14 @@ extends GameBase
 ##
 ## Class Mods: picked between acts (scripts/braid/braid_class_mod_picker.gd)
 ## and played out by scripts/braid/braid_class_mod_fx.gd.
+##
+## Modifiers (scripts/braid/braid_modifiers.gd): optional harder rules picked
+## after character select once the Campaign has been won, for a score
+## multiplier. Read once at the start (mods) and applied here: elite chance
+## and enemy counts in _segment_wave / _boss_wave, tide speed in _build_act,
+## spawn shares in _spawn_group, enemy health in _emit_group, drops in
+## _drop_resources, hearts and the score multiplier in _prepare_player, and
+## the bosses' mortars in their Braid versions (scripts/braid/bosses/).
 
 enum State { RUNNING, CHECKPOINT, WAITING, GAME_OVER, VICTORY }
 
@@ -82,6 +91,8 @@ const BraidFavour := preload("res://scripts/braid/braid_favour.gd")
 const BraidShopBuilding := preload("res://scripts/braid/braid_shop_building.gd")
 const BraidClassModFx := preload("res://scripts/braid/braid_class_mod_fx.gd")
 const BraidClassModPicker := preload("res://scripts/braid/braid_class_mod_picker.gd")
+const BraidModifiers := preload("res://scripts/braid/braid_modifiers.gd")
+const CharacterClasses := preload("res://scripts/character_classes.gd")
 const BossBody := preload("res://scripts/bosses/boss_body.gd")
 const BossIntro := preload("res://scripts/bosses/boss_intro.gd")
 
@@ -154,12 +165,16 @@ var _watching := -1
 ## The run's seed, and the strip test going on ({} = none: see DEBUG_FILE).
 var run_seed := 0
 var _debug := {}
+## The run's modifiers (BraidModifiers ids): the host's in a squads game.
+var mods: Array = []
 
 var _schedule: Array[Dictionary] = []
 var _next_spawn := 0
 ## Seconds into the segment: drives spawning and (from where it started) the
 ## tide. The host's in a squads game.
 var _clock := 0.0
+## Seconds left of an act's opening calm (see BraidTuning.START_CALM_TIME).
+var _start_calm := 0.0
 var _tide_start := 0.0
 var _segment_start_stats := {}
 var _flow_timer := 0.0
@@ -195,6 +210,7 @@ func _ready() -> void:
 	# Strip tests only come from the Braid dock, in the editor.
 	_debug = _read_debug_file() if OS.has_feature("editor") and not squads_game else {}
 	run_seed = int(_debug.get("seed", Global.run_seed))
+	mods = Global.current_modifiers().duplicate()
 	if not _debug.get("strip", "").is_empty():
 		acts = 1
 	print_verbose("Braid: seed %d, %d lane(s), we're in lane %d" % [
@@ -303,6 +319,10 @@ func _build_act(a: int) -> void:
 	level.set_shop_squads(lane_order, lane_order.map(_squad_color))
 	for plate in level.favours:
 		plate.triggered.connect(_on_favour)
+	for turret in level.turrets:
+		turret.game = self
+	if _mod("riptide"):
+		level.tide_speed_scale = BraidModifiers.TIDE_SPEED_MULT
 	tide.level = level
 	# Each act's level is its own length: keep players inside this one.
 	for player in all_players:
@@ -375,6 +395,8 @@ func _start_segment(i: int) -> void:
 	_clock = 0.0
 	_flow_timer = 0.0
 	_clock_sync_timer = 0.0
+	# An act's start strip is safe: nothing spawns until the squad leaves it.
+	_start_calm = BraidTuning.START_CALM_TIME if i == 0 and level.start_end > 0.0 else 0.0
 	_segment_start_stats.clear()
 	for player in all_players:
 		_segment_start_stats[player] = {
@@ -395,6 +417,8 @@ func _start_segment(i: int) -> void:
 		subtitle = "Reach the checkpoint before the tide"
 		if lane_order.size() > 1:
 			subtitle = "Lane %d of %d. Reach the checkpoint before the tide" % [act_lane() + 1, lane_order.size()]
+		if act == 0 and not mods.is_empty():
+			subtitle += "\nModifiers: %s" % BraidModifiers.names(mods)
 	var title := "CHAPTER %d" % (i + 1)
 	if i == 0 and acts > 1:
 		title = "ACT %d" % (act + 1)
@@ -451,7 +475,13 @@ func _boss_wave(a: int) -> WaveDefinition:
 				wave.boss_health = roundi(own.boss_health * base.enemy_health_multiplier
 					/ maxf(own.enemy_health_multiplier, 0.01))
 				break
+	if _mod("tyrants") and wave.boss_health > 0:
+		wave.boss_health = roundi(wave.boss_health * BraidModifiers.BOSS_HEALTH_MULT)
+	if _mod("champions"):
+		wave.base_elite_chance += BraidModifiers.ELITE_CHANCE_BONUS
 	var adds: float = BraidTuning.BOSS_ADD_MULTIPLIER.get(wave.boss_id, 1.0)
+	if _mod("horde"):
+		adds *= BraidModifiers.ENEMY_COUNT_MULT
 	if adds != 1.0:
 		# duplicate() shares the wave set's groups: copy them before scaling.
 		var groups: Array[WaveEnemyGroup] = []
@@ -473,6 +503,8 @@ func _segment_wave(i: int, seconds: float) -> WaveDefinition:
 	var waves := BraidTuning.SEGMENT_WAVES
 	var base: WaveDefinition = wave_set.waves[waves[mini(i, waves.size() - 1)]]
 	var stretch := seconds / maxf(base.duration, 1.0) * BraidTuning.ENEMY_DENSITY
+	if _mod("horde"):
+		stretch *= BraidModifiers.ENEMY_COUNT_MULT
 	var wave := WaveDefinition.new()
 	wave.display_name = base.display_name
 	wave.duration = seconds
@@ -481,6 +513,8 @@ func _segment_wave(i: int, seconds: float) -> WaveDefinition:
 	wave.enemy_health_multiplier = base.enemy_health_multiplier
 	wave.enemy_speed_multiplier = base.enemy_speed_multiplier
 	wave.base_elite_chance = base.base_elite_chance
+	if _mod("champions"):
+		wave.base_elite_chance += BraidModifiers.ELITE_CHANCE_BONUS
 	wave.completion_bonus = base.completion_bonus
 	wave.bonus_hearts = base.bonus_hearts
 	var groups: Array[WaveEnemyGroup] = []
@@ -503,7 +537,13 @@ func _physics_process(delta: float) -> void:
 	if state != State.RUNNING:
 		return
 	_clock += delta
-	if not squad_out and _unlock_timer < 0.0:
+	if _start_calm > 0.0:
+		_start_calm -= delta
+		if _squad_s() >= level.start_end:
+			_start_calm = 0.0
+	# (Held spawns come out together once the calm ends: the opening burst,
+	# just as the squad heads into the first real strip.)
+	if not squad_out and _unlock_timer < 0.0 and _start_calm <= 0.0:
 		while _next_spawn < _schedule.size() and _schedule[_next_spawn]["time"] <= _clock:
 			var entry: Dictionary = _schedule[_next_spawn]
 			_next_spawn += 1
@@ -544,6 +584,10 @@ func _end_segment() -> void:
 func _squad_plate_state() -> int:
 	if squad_out:
 		return BraidShopBuilding.Light.OUT
+	# A dummy squad (scripts/net/dummy_squad.gd) stands still: it never holds
+	# up the shop.
+	if Global.dummy_squad:
+		return BraidShopBuilding.Light.ON_PLATE
 	var gate := level.gate_x(segment)
 	var plate := level.plate_rect(segment, level.lane_at(act_lane(), gate)).grow(PLATE_REACH)
 	for p: Node2D in _living_players():
@@ -808,9 +852,11 @@ func _reach_checkpoint() -> void:
 	var last_round := act == acts - 1 and segment == _last_segment_of_act()
 	if last_round:
 		state = State.VICTORY
+		if acts == BraidTuning.ACTS and _debug.is_empty():
+			Global.mark_campaign_cleared()
 		var won := "All %d acts crossed" % acts if acts > 1 else "All %d chapters crossed" % level.segment_count()
 		var summary := _show_final_summary("VICTORY!", Color(1, 0.85, 0.3),
-			"%s  (seed %d)" % [won, run_seed], bonus, _end_prompt("{A}"))
+			"%s  (seed %d)%s" % [won, run_seed, _modifiers_note()], bonus, _end_prompt("{A}"))
 		await summary.continued
 		if squads_game and not Squads.is_host():
 			hud.show_notice("Waiting for the host...")
@@ -947,7 +993,7 @@ func _clear_field() -> void:
 	_remove_own_enemies()
 	for pickup in get_tree().get_nodes_in_group("pickups"):
 		pickup.collect()
-	for shot in get_tree().get_nodes_in_group("projectiles"):
+	for shot in get_tree().get_nodes_in_group("projectiles") + get_tree().get_nodes_in_group("enemy_bullets"):
 		shot.queue_free()
 	for deployed in get_tree().get_nodes_in_group("deployables"):
 		deployed.remove_from_group("decoys")
@@ -1007,7 +1053,7 @@ func _game_over(subtitle: String) -> void:
 	pause_menu.close()
 	pause_menu.enabled = false
 	get_tree().paused = true
-	var summary := _show_final_summary("GAME OVER", Color(1, 0.25, 0.25), subtitle, 0,
+	var summary := _show_final_summary("GAME OVER", Color(1, 0.25, 0.25), subtitle + _modifiers_note(), 0,
 		_end_prompt("{B}"), true)
 	await summary.continued
 	_leave()
@@ -1039,12 +1085,12 @@ func _leave() -> void:
 
 # --- Favours ---------------------------------------------------------------------
 
-## One of our players held a favour plate down.
-func _on_favour(plate: Node2D) -> void:
+## One of our players called an airstrike from a pad.
+func _on_favour(plate: Node2D, caller: Node2D) -> void:
 	if state != State.RUNNING:
 		return
 	if link:
-		link.send_favour(plate)
+		link.send_favour(plate, caller.player_index)
 	else:
 		BraidFavour.show_crush(self, plate.crush_rect())
 
@@ -1061,12 +1107,23 @@ func squad_failed_objective(_reason: String) -> void:
 	pass
 
 
-## Another squad dropped a crusher on `rect`: it lands on our enemies there.
-func receive_favour(rect: Rect2) -> void:
+## Another squad (`squad`, player `slot` of theirs called it) called an
+## airstrike on `rect`: show it; each column of bombs hurts our enemies under
+## it as it lands (each enemy once). Its kills are theirs, as their shots'
+## are: their points, and the drops come out in their lane (braid_link.gd).
+func receive_favour(rect: Rect2, squad: int, slot: int) -> void:
+	BraidFavour.show_crush(link if link else self, rect, _favour_column.bind({}, squad, slot))
+
+
+func _favour_column(column: Rect2, already_hit: Dictionary, squad: int, slot: int) -> void:
+	if not is_wave_running():
+		return
 	var damage := roundi(BraidTuning.FAVOUR_DAMAGE * segment_wave.enemy_health_multiplier)
 	for enemy in get_tree().get_nodes_in_group("enemies"):
-		if enemy is Enemy and not enemy.is_mirror and rect.has_point(enemy.global_position):
-			enemy.take_damage(damage, null)
+		if enemy is Enemy and not enemy.is_mirror and not already_hit.has(enemy) \
+				and column.has_point(enemy.global_position):
+			already_hit[enemy] = true
+			enemy.take_remote_damage(damage, squad, slot)
 
 
 # --- Enemies and drops ----------------------------------------------------------
@@ -1077,20 +1134,24 @@ func receive_favour(rect: Rect2) -> void:
 func _spawn_group(group: WaveEnemyGroup, elite: bool, count: int) -> void:
 	if not is_boss_round():
 		var roll := randf()
-		if roll < BraidTuning.BEHIND_SPAWN_SHARE:
+		var behind_share := BraidModifiers.AMBUSH_BEHIND_SHARE if _mod("ambush") \
+			else BraidTuning.BEHIND_SPAWN_SHARE
+		var door_share := BraidModifiers.AMBUSH_DOOR_SHARE if _mod("ambush") \
+			else BraidTuning.DOOR_SPAWN_SHARE
+		if roll < behind_share:
 			var behind := _behind_spawn_point()
 			if behind != Vector2.INF:
 				_emit_group(group, elite, count, behind)
 				return
-		elif roll < BraidTuning.BEHIND_SPAWN_SHARE + BraidTuning.DOOR_SPAWN_SHARE:
+		elif roll < behind_share + door_share:
 			var door := _pick_door()
 			if door:
-				door.open(BraidTuning.DOOR_WARNING)
+				door.open(_door_warning())
 				var seg := round_index()
 				# The point, not the door: the level (and its doors) may be
 				# gone by then (a new act).
 				var exit: Vector2 = door.exit_point()
-				get_tree().create_timer(BraidTuning.DOOR_WARNING, false).timeout.connect(func() -> void:
+				get_tree().create_timer(_door_warning(), false).timeout.connect(func() -> void:
 					if state == State.RUNNING and not squad_out and round_index() == seg:
 						_emit_group(group, elite, count, exit))
 				return
@@ -1113,7 +1174,7 @@ func _emit_group(group: WaveEnemyGroup, elite: bool, count: int, at: Vector2) ->
 					p = q
 					break
 		_add_enemy(group.enemy_scene, p,
-			segment_wave.enemy_health_multiplier * group.health_multiplier,
+			segment_wave.enemy_health_multiplier * group.health_multiplier * _enemy_health_mult(),
 			segment_wave.enemy_speed_multiplier * group.speed_multiplier, elite)
 
 
@@ -1192,7 +1253,7 @@ func _behind_spawn_point() -> Vector2:
 func _pick_door() -> Node:
 	# (Counting how far the tide comes on while the door flashes.)
 	var from_x := maxf(_view_edge(-1), tide.front + BraidTuning.DOOR_TIDE_MARGIN
-		+ level.tide_speed_at(tide.front) * BraidTuning.DOOR_WARNING)
+		+ level.tide_speed_at(tide.front) * _door_warning())
 	var to_x := minf(_view_edge(1) + BraidTuning.DOOR_AHEAD,
 		level.gate_x(segment) - BraidTuning.SPAWN_GATE_MARGIN)
 	var min_d := BraidTuning.DOOR_MIN_PLAYER_DISTANCE
@@ -1249,7 +1310,7 @@ func spawn_enemy_at(scene: PackedScene, at: Vector2, elite := false,
 		return null
 	# (Pieces pushed out of a wall can land on the same cell centre: not stacked.)
 	at = level.nearest_open(at) + Vector2.RIGHT.rotated(randf() * TAU) * randf_range(1.0, SPAWN_JITTER)
-	var enemy := _add_enemy(scene, at, segment_wave.enemy_health_multiplier,
+	var enemy := _add_enemy(scene, at, segment_wave.enemy_health_multiplier * _enemy_health_mult(),
 		segment_wave.enemy_speed_multiplier, elite)
 	enemy.apply_knockback(knockback)
 	_calm_piece(enemy)
@@ -1293,17 +1354,6 @@ func _after_enemy_killed(killer: Node, at: Vector2, enemy: Enemy) -> void:
 		class_mod_fx.on_enemy_died(killer, at, enemy)
 
 
-## Squads game: another squad's enemy our player killed may be on the other
-## side of a window: its drops land on our side.
-func _remote_drop_point(at: Vector2) -> Vector2:
-	return _near_our_squad(at)
-
-
-## `at` if it's in our lane, else the nearest point of our lane to it.
-func _near_our_squad(at: Vector2) -> Vector2:
-	return level.nearest_open(level.clamp_to_lane(at, my_lane()))
-
-
 # --- Players and camera ---------------------------------------------------------
 
 ## Players bump into walls and window glass, keep their class's weapons, and
@@ -1312,6 +1362,50 @@ func _prepare_player(player: Player) -> void:
 	player.collision_mask |= BraidTuning.WALL_LAYER | BraidTuning.WINDOW_LAYER
 	player.weapons_locked = true
 	player.equipment_tuning = BraidTuning.EQUIPMENT_TUNING
+	player.score_multiplier = score_multiplier()
+	if _mod("glass_heart"):
+		player.attributes["lives"] = CharacterClasses.clamp_attribute("lives",
+			int(player.attributes["lives"]) - BraidModifiers.HEARTS_LOST)
+
+
+# --- Modifiers -------------------------------------------------------------------
+
+## Whether modifier `id` (scripts/braid/braid_modifiers.gd) is on this run.
+func _mod(id: String) -> bool:
+	return id in mods
+
+
+func score_multiplier() -> float:
+	return BraidModifiers.score_multiplier(mods)
+
+
+## Seconds a door flashes before its enemies come out.
+func _door_warning() -> float:
+	return BraidModifiers.AMBUSH_DOOR_WARNING if _mod("ambush") else BraidTuning.DOOR_WARNING
+
+
+func _enemy_health_mult() -> float:
+	return BraidModifiers.ENEMY_HEALTH_MULT if _mod("ironhide") else 1.0
+
+
+## Famine: each resource is only dropped with DROP_KEEP_CHANCE.
+func _drop_resources(at: Vector2, count: int) -> void:
+	if _mod("famine"):
+		var kept := 0
+		for i in count:
+			if randf() < BraidModifiers.DROP_KEEP_CHANCE:
+				kept += 1
+		count = kept
+	super(at, count)
+
+
+## A second line for the end screens: "Riptide, Horde:  score x1.40" ("" without
+## any modifiers).
+func _modifiers_note() -> String:
+	if mods.is_empty():
+		return ""
+	return "\n%s:  score %s" % [BraidModifiers.names(mods),
+		BraidModifiers.multiplier_text(score_multiplier())]
 
 
 ## Puts every player (knocked out or not) at x `x`, in formation across the
@@ -1328,7 +1422,9 @@ func _place_players(x: float) -> void:
 
 
 ## Follows the squad along its lane (round corners too), centred across it.
-## At a window, or in (and near) a junction, it zooms out to show both lanes.
+## At a window, or in (and near) a junction, it zooms out to show both lanes;
+## while one of ours is on a turret it zooms out the same, centred on the
+## squad.
 ## Through a vertical slice it zooms out a little (VERTICAL_ZOOM) and looks
 ## VERTICAL_CAMERA_LEAD ahead. In the convergence room it zooms out and
 ## follows the squad up and down. Whatever the place, it always shows every
@@ -1373,6 +1469,11 @@ func _update_camera(weight: float) -> void:
 	if pair >= 0:
 		zoom = BraidTuning.ZOOM_OUT
 		target = level.point_at(pair, x, BraidTuning.BAND_HEIGHT)
+	elif not watched and _anyone_mounted():
+		# Someone of ours on a turret: zoomed out to show the lane it fires
+		# into too, but centred on the squad (no lead: nobody's moving).
+		zoom = BraidTuning.ZOOM_OUT
+		target = _squad_centre()
 	# In (or at) the convergence room: zoomed out, following the squad up and
 	# down too.
 	if level.room.has_area() and x >= level.room_start - ZOOM_LEAD:
@@ -1405,6 +1506,22 @@ func _update_camera(weight: float) -> void:
 		pos = Vector2(_frame_axis(pos.x, frame.position.x, frame.end.x, half.x),
 			_frame_axis(pos.y, frame.position.y, frame.end.y, half.y))
 	camera.global_position = _in_bounds(pos, half)
+
+
+func _anyone_mounted() -> bool:
+	for p: Node2D in _living_players():
+		if p.is_mounted():
+			return true
+	return false
+
+
+## The middle of our living players.
+func _squad_centre() -> Vector2:
+	var sum := Vector2.ZERO
+	var living := _living_players()
+	for p: Node2D in living:
+		sum += p.global_position
+	return sum / maxf(living.size(), 1)
 
 
 ## Camera centre `c` moved so the screen (`half` either side of it) stays

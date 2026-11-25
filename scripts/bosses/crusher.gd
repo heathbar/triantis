@@ -1,12 +1,12 @@
 extends Boss
-## The Crusher (boss of wave 5): a monster truck that tears round the map
+## The Crusher (boss of wave 15, Campaign act 3): a monster truck that tears round the map
 ## and runs players over.
 ##
 ## Charges: it picks a target, revs for REV_TIME (turning to follow them and
 ## showing its lane on the ground), locks its aim LOCK_TIME before it goes,
 ## then floors it down the lane: OVERSHOOT past where the target was, then it
 ## brakes. While charging it steers after its target (CHARGE_TURN) until
-## it's within COMMIT_DIST of them, then it's committed and drives straight:
+## it's within commit_dist() of them, then it's committed and drives straight:
 ## stepping aside early isn't enough, dodge once it's close. Anyone it drives
 ## over (while it's going faster than HURT_SPEED)
 ## loses RUN_OVER_DAMAGE and is thrown out to the side. Regular enemies in
@@ -21,13 +21,30 @@ extends Boss
 ## anyone close (DONUT_RADIUS) and flinging ROCKS rocks that land on marked
 ## spots around it (some aimed at nearby players).
 ##
+## Fire (scripts/bosses/crusher_fire.gd): once it's down to 75% health, a
+## strip of fire down the middle of every charge, and a ring of it round where
+## it did donuts. Half a heart a second to stand in, for a few seconds
+## (CrusherFire.LONG_BURN_MULT times as long below 40% health).
+##
+## Slam: anyone standing close (SLAM_RANGE) when it picks its next move is
+## too close to charge at (it couldn't build up speed), so it pops a wheelie
+## instead: a ring (SLAM_RADIUS) shows on the ground for SLAM_WIND, then it
+## slams down, hurting everyone in the ring (SLAM_DAMAGE) and throwing them
+## out past it, which leaves room for the next charge. Never two slams in a
+## row: the move after one is always a charge (or donuts), so walking straight
+## back in gets you run over, and it never sits slamming in one spot.
+## Hugging it isn't safe.
+## (Parked or revving, it doesn't hurt to touch: a brush used to give the
+## player hit cooldown that let the charge straight after pass harmlessly,
+## 2026-11-24.)
+##
 ## Pace: each charge is driven to suit the player it's after. Its top speed,
 ## acceleration and steering are scaled by that player's move speed over
 ## PACE_SPEED (clamped to PACE_MIN..PACE_MAX), so a slow class gets the same
 ## time to sidestep as a fast one.
 ##
 ## Enraged (ENRAGE_AT): shorter revs, a faster top speed, a second charge
-## straight after each one, and more rocks.
+## straight after each one, more rocks, and longer-burning fire.
 ##
 ## Freeze Ray: slows its top speed and acceleration (at boss strength,
 ## Boss.STATUS_STRENGTH). Knockback and pulls don't move it.
@@ -39,19 +56,22 @@ extends Boss
 ## map. Squads report where their players are; the host sends where the
 ## truck is, which way it faces, its speed and what it's doing, and every
 ## copy carries it on between updates. Each copy runs over only its own
-## players and crushes only its own enemies; the rocks are hazards.
+## players and crushes only its own enemies; the rocks and fire are hazards.
+
+const CrusherFire := preload("res://scripts/bosses/crusher_fire.gd")
 
 const DEFAULT_HEALTH := 2100
 const ENRAGE_AT := 90.0
 
-## The truck, tyres included: its length (along its facing) and width.
-const SIZE := Vector2(48, 38)
+## The truck, tyres included: its length (along its facing) and width (the
+## art, assets/junkyard/boss/crusher.png, is drawn facing up: 52 wide, 72 long).
+const SIZE := Vector2(72, 52)
 const HALF := SIZE / 2.0
 ## Anything whose centre is within this of the truck's outline is under it
 ## (it shoves things a little ahead of its bumper as it goes).
 const FOOT_MARGIN := 6.0
 ## Its centre stays this far inside the map edges.
-const ARENA_INSET := 30.0
+const ARENA_INSET := 42.0
 
 const FIRST_MOVE := 2.5
 const REV_TIME := 0.8
@@ -70,10 +90,17 @@ const OVERSHOOT := 110.0
 ## they're still ahead of it.
 const CHARGE_TURN := 0.9
 const ENRAGED_CHARGE_TURN := 1.3
-## Once its target is this close ahead, it stops steering: the sidestep
-## window. (It used to steer right up to its bumper, which no class could
-## outrun: 2026-11-16.)
-const COMMIT_DIST := 120.0
+## Once its target is close ahead, it stops steering: the sidestep window.
+## How close is worked out from its size (commit_dist), so the target has
+## DODGE_SLACK times the time they need to walk out of its path (HALF.y +
+## FOOT_MARGIN sideways) before its bumper (plus FOOT_MARGIN) reaches them,
+## at its unenraged top speed against PACE_SPEED (each charge's pace scales
+## both, so that holds for every class). Enraged, it's faster, so the window
+## is tighter. 4/3 is what the old 48x38 truck gave (90 px of road at 270 px/s
+## for a 25 px sidestep at 100 px/s). (It used to steer right up to its
+## bumper, which no class could outrun: 2026-11-16. A fixed 120 px from its
+## middle left no window at all once the truck grew to 72x52: 2026-11-25.)
+const DODGE_SLACK := 4.0 / 3.0
 const PAUSE := 0.45
 ## Pace (see above): the player speed the numbers above are tuned for (the
 ## base player speed), and the limits on how far a charge is scaled.
@@ -94,10 +121,21 @@ const STALL_TIME := 3.0
 const STALL_MULT := 2.0
 const RECOVER := 0.5
 
+const SLAM_RANGE := 76.0
+const SLAM_WIND := 0.8
+const ENRAGED_SLAM_WIND := 0.6
+const SLAM_RADIUS := 72.0
+const SLAM_DAMAGE := 2
+## How far past the ring's edge a slammed player is thrown.
+const SLAM_THROW := 14.0
+const SLAM_LINGER := 0.4
+## How high the wheelie lifts it (pixels, drawn).
+const SLAM_LIFT := 8.0
+
 const DONUT_EVERY := 4
 const DONUT_TIME := 2.4
 const DONUT_SPIN := 9.0
-const DONUT_RADIUS := 34.0
+const DONUT_RADIUS := 50.0
 const DONUT_DAMAGE := 2
 const ROCKS := 6
 const ENRAGED_ROCKS := 10
@@ -108,6 +146,7 @@ const ROCK_MIN := 50.0
 const ROCK_MAX := 150.0
 const ROCK_FLIGHT := 1.2
 const ROCK_RADIUS := 16.0
+const TargetMarker := preload("res://scripts/target_marker.gd")
 const ROCK_DAMAGE := 2
 const ROCK_LINGER := 0.35
 
@@ -116,21 +155,18 @@ const TRACK_STEP := 5.0
 const TRACK_FADE := 5.0
 const MAX_TRACKS := 400
 
-const PAINT := Color(0.88, 0.25, 0.16)
-const PAINT_DARK := Color(0.55, 0.13, 0.1)
-const TYRE := Color(0.1, 0.1, 0.11)
-const TREAD := Color(0.26, 0.26, 0.28)
-const CHROME := Color(0.78, 0.8, 0.84)
-const GLASS := Color(0.45, 0.7, 0.85)
-const LAMP := Color(1.0, 0.95, 0.6)
+const TEXTURE := preload("res://assets/junkyard/boss/crusher.png")
+const FLASH_TINT := Color(1.0, 0.55, 0.5)
+## Where the exhausts are (behind the rear bumper, either side).
+const EXHAUST := Vector2(-37.0, 12.0)
 
-enum Mode { IDLE, REV, CHARGE, BRAKE, STALL, DONUT }
+enum Mode { IDLE, REV, CHARGE, BRAKE, STALL, DONUT, SLAM }
 
 var body: BossBody
 var hp := 1
 var max_hp := 1
 var mode := Mode.IDLE
-## When the current mode ends (wave seconds; idle, rev, stall and donut).
+## When the current mode ends (wave seconds; idle, rev, stall, donut, slam).
 var mode_end := FIRST_MOVE
 ## Facing (radians) and speed (pixels a second) of the truck (our copy).
 var heading := 0.0
@@ -155,6 +191,10 @@ var target := -1
 var _moves := 0
 var _charge_left := 0.0
 var _second := false
+## Host: whether the last move was a slam (the next one can't be).
+var _slammed := false
+## Host: the fire it's laying behind it.
+var _fire := CrusherFire.new()
 
 ## Not the host: the truck as the host last told us, and when.
 var _host_pos := Vector2.ZERO
@@ -173,7 +213,7 @@ func boss_begin() -> void:
 	max_hp = scaled_health(base_health(DEFAULT_HEALTH))
 	hp = max_hp
 	body = add_body(0, shared_centre(), HALF.y, _paint, SIZE)
-	body.contact_damage = 1
+	body.contact_damage = 0
 	var players := living_players()
 	if not players.is_empty():
 		heading = body.global_position.angle_to_point(players[0].global_position)
@@ -243,7 +283,7 @@ func boss_tick(delta: float) -> void:
 	# Brushing it while it's going fast counts as being run over (or the
 	# smaller touch would land first and its hit cooldown would eat the run-over).
 	var fast := is_driving() and speed >= HURT_SPEED
-	body.contact_damage = _run_over_damage() if fast else 1
+	body.contact_damage = _run_over_damage() if fast else 0
 	_update_presence()
 	_lay_tracks(before, delta)
 	if not is_defeated():
@@ -291,6 +331,24 @@ func _host_think(delta: float) -> void:
 			heading = wrapf(heading + DONUT_SPIN * delta, -PI, PI)
 			if elapsed >= mode_end:
 				_idle(ENRAGED_PAUSE if is_enraged() else PAUSE)
+		Mode.SLAM:
+			if elapsed >= mode_end:
+				_idle(ENRAGED_PAUSE if is_enraged() else PAUSE)
+	var burn := _burn_time()
+	_fire.lay(self, burn > 0.0 and is_driving() and speed >= HURT_SPEED,
+		body.global_position - facing() * CrusherFire.REAR, burn)
+
+
+## Seconds new fire burns now (0: none yet).
+func _burn_time() -> float:
+	return CrusherFire.burn_time(float(hp) / maxf(max_hp, 1.0), is_enraged())
+
+
+## How far ahead of its middle its target is when it stops steering (see
+## DODGE_SLACK): ~157 px for the 72x52 truck.
+static func commit_dist() -> float:
+	var sidestep := (HALF.y + FOOT_MARGIN) / PACE_SPEED
+	return HALF.x + FOOT_MARGIN + sidestep * TOP_SPEED * DODGE_SLACK
 
 
 ## Host: turns a charge towards its target, if they're still ahead.
@@ -298,7 +356,7 @@ func _steer(delta: float) -> void:
 	if target < 0 or not _positions.has(target):
 		return
 	var to := to_local_pos(_positions[target][0]) - body.global_position
-	if to.dot(facing()) <= COMMIT_DIST:
+	if to.dot(facing()) <= commit_dist():
 		return
 	var turn := (ENRAGED_CHARGE_TURN if is_enraged() else CHARGE_TURN) * slow_mult * pace
 	heading = rotate_toward(heading, to.angle(), turn * delta)
@@ -348,15 +406,41 @@ func _idle(seconds: float) -> void:
 	speed = 0.0
 
 
-## Host: the next charge, or donuts every DONUT_EVERY-th move.
+## Host: a slam if anyone's close, else the next charge, or donuts every
+## DONUT_EVERY-th move.
 func _next_move() -> void:
+	if not _slammed and _anyone_within(SLAM_RANGE):
+		_slammed = true
+		_slam()
+		return
+	_slammed = false
 	_moves += 1
 	if _moves % DONUT_EVERY == 0:
 		mode = Mode.DONUT
 		mode_end = elapsed + DONUT_TIME
 		_fling_rocks()
+		if _burn_time() > 0.0:
+			CrusherFire.ring(self, body.global_position, mode_end, _burn_time())
 		return
 	_rev(ENRAGED_REV if is_enraged() else REV_TIME)
+
+
+## Host: whether any player (any squad's) is within `reach` of it.
+func _anyone_within(reach: float) -> bool:
+	for key in _positions:
+		if to_local_pos(_positions[key][0]).distance_to(body.global_position) <= reach:
+			return true
+	return false
+
+
+## Host: a wheelie, then down it slams (a hazard, so every copy plays it out).
+func _slam() -> void:
+	var wind := ENRAGED_SLAM_WIND if is_enraged() else SLAM_WIND
+	mode = Mode.SLAM
+	mode_end = elapsed + wind
+	speed = 0.0
+	lane = 0.0
+	emit_hazard("slam", body.global_position, mode_end + SLAM_LINGER, {"land": mode_end})
 
 
 func _rev(seconds: float) -> void:
@@ -611,6 +695,11 @@ func markers() -> Array:
 # --- Hazards ------------------------------------------------------------------------
 
 func hazard_tick(h: Dictionary, _delta: float) -> void:
+	if CrusherFire.hazard_tick(self, h):
+		return
+	if h["kind"] == "slam" and not h.get("landed", false) and elapsed >= float(h["land"]):
+		h["landed"] = true
+		_slam_down(h["pos"])
 	if h["kind"] == "rock" and not h.get("landed", false) and elapsed >= float(h["land"]):
 		h["landed"] = true
 		var at: Vector2 = h["pos"]
@@ -618,7 +707,27 @@ func hazard_tick(h: Dictionary, _delta: float) -> void:
 			return p.distance_to(at) <= ROCK_RADIUS + PLAYER_HALF * 0.5, ROCK_DAMAGE)
 
 
+## The slam lands: our players in the ring are hurt and thrown out of it.
+func _slam_down(at: Vector2) -> void:
+	var reach := SLAM_RADIUS + PLAYER_HALF * 0.5
+	for player in living_players():
+		var away: Vector2 = player.global_position - at
+		if away.length_squared() > reach * reach:
+			continue
+		player.hurt_by(SLAM_DAMAGE, player.global_position)
+		if away.is_zero_approx():
+			away = Vector2.RIGHT
+		player.global_position = at + away.normalized() * (reach + SLAM_THROW)
+		if player is Player:
+			player.stay_in_bounds()
+
+
 func draw_hazard(h: Dictionary) -> void:
+	if CrusherFire.draw(self, h):
+		return
+	if h["kind"] == "slam":
+		_draw_slam(h)
+		return
 	if h["kind"] != "rock":
 		return
 	var at: Vector2 = h["pos"]
@@ -627,7 +736,7 @@ func draw_hazard(h: Dictionary) -> void:
 		var k := clampf((elapsed - float(h["born"])) / maxf(land - float(h["born"]), 0.01), 0.0, 1.0)
 		draw_circle(at, ROCK_RADIUS, Color(0.55, 0.4, 0.25, 0.15))
 		draw_circle(at, ROCK_RADIUS * k, Color(0.6, 0.42, 0.25, 0.3))
-		draw_arc(at, ROCK_RADIUS, 0.0, TAU, 32, Color(0.85, 0.6, 0.35, 0.85), 1.0)
+		TargetMarker.draw(self, at, ROCK_RADIUS)
 		var height := sin(k * PI) * 60.0 + (1.0 - k) * 20.0
 		draw_rect(Rect2(at + Vector2(-2, -2 - height), Vector2(5, 4)), Color(0.4, 0.33, 0.27))
 	else:
@@ -637,6 +746,24 @@ func draw_hazard(h: Dictionary) -> void:
 			var p := at + Vector2.from_angle(a) * ROCK_RADIUS * (0.4 + 0.8 * t)
 			draw_rect(Rect2(p.round() - Vector2.ONE, Vector2(3, 3)),
 				Color(0.5, 0.4, 0.3, 1.0 - t))
+
+
+## The slam's ring filling in, then a dust ring bursting out.
+func _draw_slam(h: Dictionary) -> void:
+	var at: Vector2 = h["pos"]
+	var land := float(h["land"])
+	if elapsed < land:
+		var k := clampf((elapsed - float(h["born"])) / maxf(land - float(h["born"]), 0.01), 0.0, 1.0)
+		var flicker := 0.7 + 0.3 * sin(elapsed * 30.0)
+		draw_circle(at, SLAM_RADIUS, Color(1.0, 0.3, 0.15, 0.12))
+		draw_circle(at, SLAM_RADIUS * k, Color(1.0, 0.35, 0.15, 0.22))
+		draw_arc(at, SLAM_RADIUS, 0.0, TAU, 48, Color(1.0, 0.4, 0.2, 0.9 * flicker), 1.0)
+	else:
+		var t := clampf((elapsed - land) / SLAM_LINGER, 0.0, 1.0)
+		draw_arc(at, SLAM_RADIUS * (0.6 + 0.5 * t), 0.0, TAU, 48, Color(0.75, 0.6, 0.4, 1.0 - t), 3.0)
+		for i in 10:
+			var p := at + Vector2.from_angle(i * TAU / 10.0 + float(h["id"])) * SLAM_RADIUS * (0.5 + 0.6 * t)
+			draw_rect(Rect2(p.round() - Vector2.ONE, Vector2(3, 3)), Color(0.55, 0.45, 0.32, 1.0 - t))
 
 
 # --- Drawing ------------------------------------------------------------------------
@@ -689,62 +816,63 @@ func _paint(b: BossBody) -> void:
 	var shake := Vector2.ZERO
 	if rev or is_stalled():
 		shake = Vector2(roundf(sin(b.age * 70.0)), 0.0)
-	paint_truck(b, b.age, shake, b.flash > 0.0, is_stalled(), rev or is_driving(),
+	if mode == Mode.SLAM:
+		# The wheelie: up it goes (screen-up, whichever way it faces), bigger
+		# as it rises, then drops at the end.
+		var wind := ENRAGED_SLAM_WIND if is_enraged() else SLAM_WIND
+		var k := clampf(1.0 - (mode_end - elapsed) / wind, 0.0, 1.0)
+		var lift := SLAM_LIFT * sin(minf(k * 1.15, 1.0) * PI * 0.5) if k < 0.92 else 0.0
+		shake += (Vector2.UP * lift).rotated(-b.rotation).round()
+		b.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE * (1.0 + 0.012 * lift))
+	paint_truck(b, b.age, shake, b.flash > 0.0, is_stalled(), rev or is_driving() or mode == Mode.SLAM,
 		speed / TOP_SPEED)
+	b.draw_set_transform(Vector2.ZERO)
 
 
 static func paint_preview(c: CanvasItem, age: float) -> void:
-	c.draw_set_transform(Vector2.ZERO, -PI / 2.0 + sin(age * 0.9) * 0.25, Vector2.ONE * 1.5)
+	c.draw_set_transform(Vector2.ZERO, -PI / 2.0 + sin(age * 0.9) * 0.25)
 	paint_truck(c, age, Vector2(roundf(sin(age * 50.0)), 0.0), false, false, true, 0.0)
 	c.draw_set_transform(Vector2.ZERO)
 
 
-## The truck facing +x: four huge tyres, a red body with a roll bar and a
-## windscreen, chrome bumper and lamps at the front, exhausts at the back.
+## TEXTURE turned a quarter clockwise to face +x (made once, on first use).
+static var _turned: Texture2D
+
+
+static func _turned_art() -> Texture2D:
+	if _turned == null:
+		var image := TEXTURE.get_image()
+		if image.is_compressed():
+			image.decompress()
+		image.rotate_90(CLOCKWISE)
+		_turned = ImageTexture.create_from_image(image)
+	return _turned
+
+
+## The truck facing +x (its art turned a quarter: it's drawn facing up),
+## its shadow, exhaust puffs while it revs or drives, and steam and stars
+## while it's stalled. `roll` is unused (the art has no moving treads).
 static func paint_truck(c: CanvasItem, age: float, shake: Vector2, flashing: bool, stalled: bool,
-		revving: bool, roll: float) -> void:
+		revving: bool, _roll: float) -> void:
 	var o := shake
-	c.draw_rect(Rect2(o + Vector2(-HALF.x + 2, -HALF.y + 4), SIZE), Color(0, 0, 0, 0.3))
-	# Tyres, treads scrolling as it rolls.
-	for fx in [-1.0, 1.0]:
+	var art := _turned_art()
+	var corner := o - art.get_size() / 2.0
+	# Shadow: the truck's own outline, dark, a little down and right.
+	c.draw_texture(art, corner + Vector2(2, 4), Color(0, 0, 0, 0.3))
+	# Exhausts, puffing while it revs or drives (under the truck).
+	if revving:
 		for fy in [-1.0, 1.0]:
-			var centre := o + Vector2(fx * 14.0, fy * 14.0)
-			var tyre := Rect2(centre - Vector2(8, 5), Vector2(16, 10))
-			c.draw_rect(tyre, TYRE)
-			var scroll := fmod(age * 40.0 * roll, 4.0)
-			var x := -8.0 + scroll
-			while x < 8.0:
-				c.draw_rect(Rect2(centre + Vector2(x, -5), Vector2(1, 10)), TREAD)
-				x += 4.0
-	# Chassis and body.
-	var paint := Color(1, 0.75, 0.7) if flashing else PAINT
-	c.draw_rect(Rect2(o + Vector2(-21, -10), Vector2(42, 20)), PAINT_DARK)
-	c.draw_rect(Rect2(o + Vector2(-20, -9), Vector2(40, 18)), paint)
-	# Bonnet stripe, cab and windscreen.
-	c.draw_rect(Rect2(o + Vector2(4, -2), Vector2(14, 4)), Color(1.0, 0.85, 0.3))
-	c.draw_rect(Rect2(o + Vector2(-8, -7), Vector2(11, 14)), PAINT_DARK)
-	c.draw_rect(Rect2(o + Vector2(1, -6), Vector2(3, 12)), GLASS)
-	# Roll bar.
-	c.draw_rect(Rect2(o + Vector2(-11, -8), Vector2(2, 16)), CHROME)
-	# Bumper and lamps.
-	c.draw_rect(Rect2(o + Vector2(20, -9), Vector2(3, 18)), CHROME)
-	var lamp := LAMP if not stalled else Color(0.4, 0.38, 0.3)
-	c.draw_rect(Rect2(o + Vector2(19, -8), Vector2(2, 3)), lamp)
-	c.draw_rect(Rect2(o + Vector2(19, 5), Vector2(2, 3)), lamp)
-	# Exhausts, puffing while it revs or drives.
-	for fy in [-1.0, 1.0]:
-		c.draw_rect(Rect2(o + Vector2(-24, fy * 6.0 - 1.0), Vector2(4, 2)), CHROME)
-		if revving:
 			var k := fmod(age * 3.0 + (0.5 if fy > 0 else 0.0), 1.0)
-			c.draw_circle(o + Vector2(-26.0 - 10.0 * k, fy * (6.0 + 4.0 * k)), 2.0 + 3.0 * k,
+			c.draw_circle(o + Vector2(EXHAUST.x - 10.0 * k, fy * (EXHAUST.y + 4.0 * k)), 2.0 + 3.0 * k,
 				Color(0.35, 0.35, 0.38, 0.6 * (1.0 - k)))
+	c.draw_texture(art, corner, FLASH_TINT if flashing else Color.WHITE)
 	if stalled:
 		# Steam from the bonnet and stars round it.
 		for i in 3:
 			var k := fmod(age * 1.2 + i * 0.33, 1.0)
-			c.draw_circle(o + Vector2(10.0 + 6.0 * k, -4.0 + i * 4.0 - 8.0 * k), 2.0 + 4.0 * k,
+			c.draw_circle(o + Vector2(18.0 + 6.0 * k, -4.0 + i * 4.0 - 8.0 * k), 2.0 + 4.0 * k,
 				Color(0.9, 0.9, 0.95, 0.55 * (1.0 - k)))
 		for i in 4:
 			var a := age * 4.0 + i * TAU / 4.0
-			var p := (Vector2.from_angle(a) * Vector2(12, 8)).round()
+			var p := (Vector2.from_angle(a) * Vector2(18, 12)).round()
 			c.draw_rect(Rect2(p - Vector2(1, 1), Vector2(3, 3)), Color(1.0, 0.95, 0.4))

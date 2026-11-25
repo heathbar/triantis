@@ -70,7 +70,3 @@ func _draw() -> void:
 	draw_centered(TEXTURE)
 	draw_time_ring(radius - 3.0, Color(1, 1, 1, 0.6), 1.0)
 
-
-## Saboteurs go after it (see Deployable.can_be_sabotaged).
-func can_be_sabotaged() -> bool:
-	return true

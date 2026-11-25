@@ -86,7 +86,3 @@ func _draw() -> void:
 			draw_rect(Rect2(-SIZE.x / 2.0 + 1.0 + i * pip, -SIZE.y / 2.0 - 5.0, pip - 0.6, 3.0), pip_color)
 	draw_time_ring(SIZE.x * 0.75, Color(1, 1, 1, 0.5), 1.0)
 
-
-## Saboteurs go after it (see Deployable.can_be_sabotaged).
-func can_be_sabotaged() -> bool:
-	return true

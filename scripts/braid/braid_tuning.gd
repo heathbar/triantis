@@ -49,16 +49,47 @@ const WINDOW_INSET := 64.0
 ## The camera zooms out to this while the squad is at a window or in a
 ## junction, so both lanes fit on screen.
 const ZOOM_OUT := 0.5
-## Favour plates (scripts/braid/braid_favour.gd): stand on one this long to
-## drop a crusher on this much of the neighbouring lane, across the window.
+## Airstrike pads (scripts/braid/braid_favour.gd, one each side of a
+## window): stand in the circle and hold X (E on the keyboard) this long to
+## call a carpet bombing on this much of the neighbouring lane, across the
+## window. (They were "favour plates" dropping a 160 x 300 crusher.)
 const FAVOUR_HOLD := 1.0
-const FAVOUR_CRUSH_SIZE := Vector2(160.0, 300.0)
-## Damage a crusher deals each enemy it lands on (x the segment's enemy
-## health multiplier).
+const FAVOUR_CRUSH_SIZE := Vector2(240.0, 300.0)
+## Seconds the target box shows before the first bombs land, and between
+## each column of bombs (left to right; FAVOUR_COLUMNS of them, each
+## FAVOUR_ROWS bombs tall, staggered).
+const FAVOUR_WARNING := 0.9
+const FAVOUR_COLUMNS := 4
+const FAVOUR_ROWS := 3
+const FAVOUR_COLUMN_GAP := 0.08
+## Damage the airstrike deals each enemy it catches, once (x the segment's
+## enemy health multiplier).
 const FAVOUR_DAMAGE := 400
-## Seconds a favour plate takes to recharge after dropping its crusher (was
-## one use per plate before playtesting).
+## Seconds a pad takes to recharge after calling a strike (was one use per
+## plate before playtesting).
 const FAVOUR_RECHARGE := 12.0
+
+## Mounted turrets (scripts/braid/braid_turret.gd): each act, every lane gets
+## TURRET_PER_LANE_MIN to _MAX of them, each in a gun port (a slit of glass
+## TURRET_PORT wide in the wall to a neighbouring lane) that fires into that
+## lane. A player within TURRET_REACH of its seat presses X (E) to man it:
+## they can't move, and the right stick (mouse) aims it across the 180
+## degrees of the other lane (TURRET_EDGE_MARGIN radians short of the wall
+## each side). Unlimited ammo, no overheat; the tide arriving throws the
+## gunner off. Shots deal TURRET_DAMAGE x the segment's enemy health
+## multiplier, so it kills the same share of a lane at any wave.
+const TURRET_PER_LANE_MIN := 1
+const TURRET_PER_LANE_MAX := 2
+const TURRET_PORT := 40.0
+const TURRET_REACH := 22.0
+const TURRET_EDGE_MARGIN := 0.1
+const TURRET_DAMAGE := 6
+const TURRET_INTERVAL := 0.08
+const TURRET_SPREAD := 0.09  # radians, ~5 degrees
+const TURRET_RANGE := 480.0
+const TURRET_SHOT_SPEED := 640.0
+const TURRET_KNOCKBACK := 4.0
+const TURRET_SHOT_SIZE := Vector2(6, 2)
 
 # --- Players and equipment -----------------------------------------------------
 
@@ -106,6 +137,9 @@ const TIDE_SWALLOW_DEPTH := 12.0
 ## boss fight in the convergence room.
 const ACTS := 4
 const SEGMENTS_PER_ACT := 4
+## An act's first chapter holds all its spawns (its opening burst too) until
+## the squad walks out of the start strip, or this many seconds pass.
+const START_CALM_TIME := 5.0
 ## Act a's boss fight borrows standard-run wave BOSS_WAVES[a] (its boss,
 ## health, prize and the enemies that trickle in).
 const BOSS_WAVES: Array[int] = [4, 9, 14, 19]
@@ -114,7 +148,7 @@ const BOSS_WAVES: Array[int] = [4, 9, 14, 19]
 const BRAID_BOSSES := {
 	"crusher": "res://scripts/braid/bosses/braid_crusher.gd",
 	"lighthouse": "res://scripts/braid/bosses/braid_lighthouse.gd",
-	"quartet": "res://scripts/braid/bosses/braid_quartet.gd",
+	"fruit_bowl": "res://scripts/braid/bosses/braid_fruit_bowl.gd",
 	"vault": "res://scripts/braid/bosses/braid_vault.gd",
 }
 const FALLBACK_BOSS := "crusher"

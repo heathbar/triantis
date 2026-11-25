@@ -6,15 +6,22 @@ extends StaticBody2D
 ##
 ## In the editor: drag it to move it, set `size` in the inspector.
 ##
-## `style`: "wall" (solid), "glass" (a window pane: bodies can't pass, shots
-## can, BraidTuning.WINDOW_LAYER) or "seal" (a junction exit closed to this
-## squad only: like glass, drawn as a force field in `tint`).
+## `style`: "wall" (solid), "glass" (a pane, e.g. a gun port: bodies can't
+## pass, shots can, BraidTuning.WINDOW_LAYER), "window" (a pane in a window
+## between lanes: like glass, drawn with the act's window-1.png tiled from the
+## block's top-left, or as plain glass if the act has none) or "seal" (a
+## junction exit closed to this squad only: like glass, drawn with the act's
+## window art turned 90 degrees clockwise, or as a force field in `tint` if
+## the act has none).
 
 const BraidTuning := preload("res://scripts/braid/braid_tuning.gd")
 
-## Wall blocks are this tile, repeated on a world-aligned grid so the
-## bricks line up across blocks that touch.
-const TEXTURE := preload("res://assets/meadow/environment/block-1.png")
+## The last-resort wall tile (the meadow's own lettered tiles are normally
+## used: see ActTheme.environment_options), repeated on a world-aligned grid
+## so the bricks line up across blocks that touch.
+const TEXTURE := preload("res://assets/meadow/environment/block-1a.png")
+## Lettered block art is mixed per cell of this size (TEXTURE's size).
+const TILE := 24.0
 ## The act's own block texture replaces TEXTURE, when it has one.
 const ActTheme := preload("res://scripts/act_theme.gd")
 const OUTLINE := Color(0.14, 0.13, 0.16)
@@ -27,13 +34,15 @@ const GLASS_SHINE := Color(0.85, 0.95, 1.0, 0.6)
 		_update_shape()
 		queue_redraw()
 
-@export_enum("wall", "glass", "seal") var style: String = "wall":
+@export_enum("wall", "glass", "window", "seal") var style: String = "wall":
 	set(value):
 		style = value
 		_update_layer()
 		queue_redraw()
 ## Which of the act's block textures a wall uses: 1 = block-1.png,
-## 2 = block-2.png, 3 = block-3.png (assets/<theme>/environment). Only the
+## 2 = block-2.png, 3 = block-3.png (assets/<theme>/environment; if lettered
+## ones like block-1a.png .. block-1d.png exist, a random mix of those: one
+## per 24px cell for variants 1 and 3, one per picture for variant 2). Only the
 ## look changes; a missing file falls back to the meadow's, then block-1.
 ## Variants 1 and 3 tile on the world grid (bricks line up across blocks);
 ## variant 2 starts at the block's own top-left corner (a picture, tiling
@@ -85,12 +94,28 @@ func world_rect() -> Rect2:
 
 
 func _draw() -> void:
-	if style == "glass":
+	if style == "window":
+		var pane := ActTheme.optional_environment("window")
+		if pane:
+			draw_texture_rect_region(pane, Rect2(Vector2.ZERO, size), Rect2(Vector2.ZERO, size))
+			return
+	if style == "glass" or style == "window":
 		draw_rect(Rect2(Vector2.ZERO, size), GLASS)
 		draw_line(Vector2(2, size.y - 3), Vector2(minf(10.0, size.x), 3), GLASS_SHINE, 1.0)
 		draw_rect(Rect2(Vector2.ZERO, size), GLASS_SHINE, false, 1.0)
 		return
 	if style == "seal":
+		var art := ActTheme.optional_environment("window")
+		if art:
+			# The act's window art turned 90 degrees clockwise (its top edge on
+			# the right), tiling down from the top, centred across the seal
+			# (it may be wider than the seal: it overhangs both sides).
+			var art_h := art.get_size().y
+			draw_set_transform(Vector2((size.x + art_h) / 2.0, 0.0), PI / 2.0)
+			var turned := Rect2(0.0, 0.0, size.y, art_h)
+			draw_texture_rect_region(art, turned, turned)
+			draw_set_transform(Vector2.ZERO)
+			return
 		draw_rect(Rect2(Vector2.ZERO, size), Color(tint, 0.25))
 		var y := 2.0
 		while y < size.y:
@@ -98,10 +123,53 @@ func _draw() -> void:
 			y += 6.0
 		draw_rect(Rect2(Vector2.ZERO, size), Color(tint, 0.9), false, 1.0)
 		return
-	var texture := ActTheme.environment("block", TEXTURE, variant)
-	var from := global_position
-	if variant == 2:
-		from = Vector2.ZERO
-	draw_texture_rect_region(texture, Rect2(Vector2.ZERO, size), Rect2(from, size))
+	var options := ActTheme.environment_options("block", TEXTURE, variant)
+	if variant == 2 and options.size() > 1:
+		_draw_pictures(options)
+	elif variant == 2:
+		draw_texture_rect_region(options[0], Rect2(Vector2.ZERO, size), Rect2(Vector2.ZERO, size))
+	elif options.size() == 1:
+		draw_texture_rect_region(options[0], Rect2(Vector2.ZERO, size), Rect2(global_position, size))
+	else:
+		_draw_tiles(options)
 	if variant == 1:  # Variants 2 and 3 have no outline (their art may be see-through).
 		draw_rect(Rect2(Vector2.ZERO, size), OUTLINE, false, 1.0)
+
+
+## Lettered block art (block-1a.png, ...): each TILE-sized cell of the world
+## grid the block covers gets its own pick, from the cell's coordinates, so
+## the mix is stable across redraws and the same for every player. Each cell
+## shows its texture's world-aligned part, so the art lines up as before.
+## Only drawn when the block appears or moves, not every frame.
+func _draw_tiles(options: Array) -> void:
+	var origin := global_position.round()
+	var rect := Rect2(origin, size)
+	var first := Vector2i((origin / TILE).floor())
+	var last := Vector2i(((origin + size) / TILE).ceil())
+	for cy in range(first.y, last.y):
+		for cx in range(first.x, last.x):
+			var cell := Rect2(Vector2(cx, cy) * TILE, Vector2(TILE, TILE)).intersection(rect)
+			if cell.has_area():
+				var texture: Texture2D = options[posmod(hash(Vector2i(cx, cy)), options.size())]
+				draw_texture_rect_region(texture, Rect2(cell.position - origin, cell.size), cell)
+
+
+## Lettered pictures (block-2a.png, ...): laid out from the block's top-left
+## in cells as big as the largest of them, each cell its own pick (from the
+## block's position and the cell's, so stable and the same for every player).
+## A picture smaller than the cell sits centred in it; the block's edges
+## crop the last row and column.
+func _draw_pictures(options: Array) -> void:
+	var cell_size := Vector2.ZERO
+	for texture: Texture2D in options:
+		cell_size = cell_size.max(texture.get_size())
+	var origin := Vector2i(global_position.round())
+	var block := Rect2(Vector2.ZERO, size)
+	var cells := Vector2i((size / cell_size).ceil())
+	for cy in cells.y:
+		for cx in cells.x:
+			var texture: Texture2D = options[posmod(hash([origin, cx, cy]), options.size())]
+			var at := (Vector2(cx, cy) * cell_size + ((cell_size - texture.get_size()) / 2.0).floor())
+			var shown := Rect2(at, texture.get_size()).intersection(block)
+			if shown.has_area():
+				draw_texture_rect_region(texture, shown, Rect2(shown.position - at, shown.size))

@@ -95,7 +95,3 @@ func _draw() -> void:
 	draw_rect(Rect2(side + 2.0, length / 2.0 - length * time_left, 2.0, length * time_left),
 		Color(1, 1, 1, 0.5))
 
-
-## Saboteurs go after it (see Deployable.can_be_sabotaged).
-func can_be_sabotaged() -> bool:
-	return true

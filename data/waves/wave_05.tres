@@ -16,13 +16,13 @@ count = 4
 
 [resource]
 script = ExtResource("2_wave")
-display_name = "The Crusher"
+display_name = "The Fruit Bowl"
 duration = 40.0
 enemy_groups = Array[ExtResource("1_group")]([SubResource("Group_grunt"), SubResource("Group_runner")])
 opening_spawn = 2
 enemy_health_multiplier = 1.5
 enemy_speed_multiplier = 1.16
-boss_id = "crusher"
-boss_health = 2100
+boss_id = "fruit_bowl"
+boss_health = 2890
 completion_bonus = 15
 bonus_hearts = 1

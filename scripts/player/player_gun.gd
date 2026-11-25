@@ -10,9 +10,18 @@ extends Sprite2D
 
 const Guns := preload("res://scripts/guns.gd")
 
-## Gun type id -> its image. Types missing here use DEFAULT_TYPE's.
+## Gun type id -> its image (some file names differ from the type id).
+## Every type in Guns.TYPES should be here; any missing uses DEFAULT_TYPE's.
 const TEXTURES := {
 	"pistol": preload("res://assets/weapons/guns/pistol.png"),
+	"smg": preload("res://assets/weapons/guns/smg.png"),
+	"rivet_gun": preload("res://assets/weapons/guns/rivet.png"),
+	"revolver": preload("res://assets/weapons/guns/revolver.png"),
+	"shotgun": preload("res://assets/weapons/guns/shotgun.png"),
+	"hand_cannon": preload("res://assets/weapons/guns/hand_cannon.png"),
+	"assault_rifle": preload("res://assets/weapons/guns/assault_rifle.png"),
+	"sniper_rifle": preload("res://assets/weapons/guns/sniper.png"),
+	"minigun": preload("res://assets/weapons/guns/minigun.png"),
 }
 const DEFAULT_TYPE := "pistol"
 ## The sound every gun makes when fired.

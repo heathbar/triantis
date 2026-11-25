@@ -5,7 +5,9 @@ extends Deployable
 ## `knockback`). It never hurts players. Engineering raises the damage and
 ## the bomb count (scripts/equipment.gd).
 
-const COLOR := Color(1.0, 0.35, 0.2)
+const TargetMarker := preload("res://scripts/target_marker.gd")
+## The aim marks blink between their art and this tint.
+const BLINK_DIM := Color(0.6, 0.6, 0.6)
 ## Seconds the target line shows before the first bomb.
 const WARNING := 0.9
 ## Seconds between bombs.
@@ -51,10 +53,7 @@ func _draw() -> void:
 	var lit := fmod(_clock, 0.2) < 0.1
 	for i in range(_dropped, _targets.size()):
 		var at := to_local(_targets[i])
-		var c := COLOR if lit else COLOR.darkened(0.4)
-		draw_arc(at, 6.0, 0.0, TAU, 12, c, 1.0)
-		draw_line(at + Vector2(-4, 0), at + Vector2(4, 0), c, 1.0)
-		draw_line(at + Vector2(0, -4), at + Vector2(0, 4), c, 1.0)
+		TargetMarker.draw(self, at, TargetMarker.AIM_SIZE / 2.0, Color.WHITE if lit else BLINK_DIM)
 	# The plane's shadow sweeping along the line as the bombs fall.
 	if _clock >= WARNING and _dropped < _targets.size():
 		var at := to_local(_targets[_dropped])

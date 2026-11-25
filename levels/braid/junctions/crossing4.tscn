@@ -1,0 +1,210 @@
+[gd_scene format=3 uid="uid://cow7mwk360k1d"]
+
+[ext_resource type="Script" uid="uid://dpwgdn1kr3u22" path="res://scripts/braid/braid_junction.gd" id="1_nnacc"]
+[ext_resource type="Script" uid="uid://rjebii07ei8a" path="res://scripts/braid/braid_block.gd" id="2_3habv"]
+[ext_resource type="Script" uid="uid://cxawcvhuwddeq" path="res://scripts/braid/braid_spawn.gd" id="3_m20n2"]
+
+[node name="Crossing" type="Node2D" unique_id=1273088582]
+script = ExtResource("1_nnacc")
+difficulty = 3
+
+[node name="Block1" type="StaticBody2D" parent="." unique_id=1064175856]
+texture_repeat = 2
+position = Vector2(0, 344)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_3habv")
+size = Vector2(360, 32)
+
+[node name="Block2" type="StaticBody2D" parent="." unique_id=356026648]
+texture_repeat = 2
+position = Vector2(920, 344)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_3habv")
+size = Vector2(360, 32)
+
+[node name="Block3" type="StaticBody2D" parent="." unique_id=1581763565]
+texture_repeat = 2
+position = Vector2(872, 16)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_3habv")
+size = Vector2(48, 160)
+
+[node name="Block5" type="StaticBody2D" parent="." unique_id=174899471]
+texture_repeat = 2
+position = Vector2(361, 544)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_3habv")
+size = Vector2(48, 160)
+
+[node name="Vent1" type="Node2D" parent="." unique_id=626479653]
+z_index = -10
+position = Vector2(200, 60)
+script = ExtResource("3_m20n2")
+
+[node name="Vent2" type="Node2D" parent="." unique_id=562922904]
+z_index = -10
+position = Vector2(200, 660)
+script = ExtResource("3_m20n2")
+
+[node name="Vent3" type="Node2D" parent="." unique_id=1887411557]
+z_index = -10
+position = Vector2(912, 432)
+script = ExtResource("3_m20n2")
+
+[node name="Vent4" type="Node2D" parent="." unique_id=569913389]
+z_index = -10
+position = Vector2(815, 55)
+script = ExtResource("3_m20n2")
+
+[node name="Vent5" type="Node2D" parent="." unique_id=1771268289]
+z_index = -10
+position = Vector2(621, 364)
+script = ExtResource("3_m20n2")
+
+[node name="Block4" type="StaticBody2D" parent="." unique_id=1150909935]
+texture_repeat = 2
+position = Vector2(361, 328)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_3habv")
+size = Vector2(24, 48)
+
+[node name="Block6" type="StaticBody2D" parent="." unique_id=415007834]
+texture_repeat = 2
+position = Vector2(385, 304)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_3habv")
+size = Vector2(24, 48)
+
+[node name="Block8" type="StaticBody2D" parent="." unique_id=92173959]
+texture_repeat = 2
+position = Vector2(409, 280)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_3habv")
+size = Vector2(24, 48)
+
+[node name="Block9" type="StaticBody2D" parent="." unique_id=1604407629]
+texture_repeat = 2
+position = Vector2(433, 256)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_3habv")
+size = Vector2(24, 48)
+
+[node name="Block10" type="StaticBody2D" parent="." unique_id=617796299]
+texture_repeat = 2
+position = Vector2(457, 232)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_3habv")
+size = Vector2(24, 48)
+
+[node name="Block7" type="StaticBody2D" parent="." unique_id=1253939229]
+texture_repeat = 2
+position = Vector2(481, 208)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_3habv")
+size = Vector2(24, 48)
+
+[node name="Block16" type="StaticBody2D" parent="." unique_id=1897785296]
+texture_repeat = 2
+position = Vector2(505, 184)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_3habv")
+size = Vector2(24, 48)
+
+[node name="Block17" type="StaticBody2D" parent="." unique_id=848706244]
+texture_repeat = 2
+position = Vector2(529, 160)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_3habv")
+size = Vector2(24, 48)
+
+[node name="Block18" type="StaticBody2D" parent="." unique_id=1079421869]
+texture_repeat = 2
+position = Vector2(553, 160)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_3habv")
+size = Vector2(24, 24)
+
+[node name="Block11" type="StaticBody2D" parent="." unique_id=588579465]
+texture_repeat = 2
+position = Vector2(800, 440)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_3habv")
+size = Vector2(24, 48)
+
+[node name="Block12" type="StaticBody2D" parent="." unique_id=526321100]
+texture_repeat = 2
+position = Vector2(824, 416)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_3habv")
+size = Vector2(24, 48)
+
+[node name="Block13" type="StaticBody2D" parent="." unique_id=1109477253]
+texture_repeat = 2
+position = Vector2(848, 392)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_3habv")
+size = Vector2(24, 48)
+
+[node name="Block14" type="StaticBody2D" parent="." unique_id=901892360]
+texture_repeat = 2
+position = Vector2(872, 368)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_3habv")
+size = Vector2(24, 48)
+
+[node name="Block15" type="StaticBody2D" parent="." unique_id=1806576970]
+texture_repeat = 2
+position = Vector2(896, 344)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_3habv")
+size = Vector2(24, 48)
+
+[node name="Block21" type="StaticBody2D" parent="." unique_id=442478884]
+texture_repeat = 2
+position = Vector2(704, 535)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_3habv")
+size = Vector2(24, 24)
+
+[node name="Block22" type="StaticBody2D" parent="." unique_id=414595462]
+texture_repeat = 2
+position = Vector2(728, 511)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_3habv")
+size = Vector2(24, 48)
+
+[node name="Block23" type="StaticBody2D" parent="." unique_id=2107826449]
+texture_repeat = 2
+position = Vector2(752, 487)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_3habv")
+size = Vector2(24, 48)
+
+[node name="Block24" type="StaticBody2D" parent="." unique_id=516800868]
+texture_repeat = 2
+position = Vector2(776, 463)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_3habv")
+size = Vector2(24, 48)

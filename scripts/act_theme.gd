@@ -2,35 +2,49 @@
 extends RefCounted
 ## Per-act art for the Braid campaign. braid_game.gd calls set_act() as it
 ## builds each act's level; enemies (when they spawn) and level pieces (when
-## they draw) ask here for their textures. The arena game never sets an act:
-## it uses the default (meadow) art, or the theme a custom game picked
-## (set_theme, from game.gd).
+## they draw) ask here for their textures. The arena game (game.gd) goes
+## through the same themes in the same order, one every 5 waves (each ending
+## on its boss), or uses the theme a custom game picked (set_theme).
 ##
 ## Art lives in assets/<theme>/enemies and assets/<theme>/environment, named
 ## after what it's for, numbered per variation (grunt-1.png, grunt-2.png;
 ## animation frames get a letter: swarmling-1a.png, swarmling-1b.png).
 ##
 ## Act themes:
-##   act 1: "junkyard"
+##   act 1: "meadow", the default art (each script preloads it itself)
 ##   act 2: "ocean"
-##   act 3: "meadow", the default art (each script preloads it itself)
+##   act 3: "junkyard"
 ##   act 4: "robot"
+## (Junkyard and meadow swapped places 2026-11-24, their bosses with them:
+## see data/waves/wave_05.tres and wave_15.tres.)
 ##
 ## Environment textures are optional: environment() looks for the theme's
 ## file for a role and falls back to the meadow art when there isn't one,
 ## so new tiles can just be dropped in. Roles: "block" (wall blocks),
-## "brick" and "store-mat" (checkpoint shop), "background" (the ground, also
-## behind the shop). A role's file is assets/<theme>/environment/
-## <role>-1.png; "block" also has variations block-2.png and block-3.png
-## (picked per block with its `variant`).
+## "roof" and "store-mat" (checkpoint shop), "background" (the ground, also
+## behind the shop), "window" (32x32 tile for the panes of windows between
+## lanes; see optional_environment: plain drawn glass when there's none).
+## A role's file is assets/<theme>/environment/<role>-1.png; "block" also
+## has variations block-2.png and block-3.png (picked per block with its
+## `variant`). Any variation can instead come as lettered alternatives
+## (block-1a.png, block-1b.png, ...; any role, gaps in the letters are
+## fine): environment_options() lists them, and environment() picks one with
+## its `pick`. Blocks mix them (braid_block.gd: per 24px cell, or per
+## picture for block-2). The plain file is only used when there are no
+## lettered ones.
 
 ## Theme name per act (0-based); "" = default art.
-const ACT_THEMES: Array[String] = ["junkyard", "ocean", "", "robot"]
+const ACT_THEMES: Array[String] = ["", "ocean", "junkyard", "robot"]
 
 ## Enemy looks per theme: kind -> the textures one is picked from at random.
-## Kinds missing here keep their default art (saboteur; sprayer outside
-## junkyard and robot).
+## "" is the default (meadow) art for kinds whose scenes don't carry it
+## (splitter, shooter). Kinds missing here keep their scene's art (sprayer
+## outside junkyard and robot).
 const ENEMY_LOOKS := {
+	"": {
+		"splitter": [preload("res://assets/meadow/enemies/splitter-1.png")],
+		"shooter": [preload("res://assets/meadow/enemies/shooter-1.png")],
+	},
 	"junkyard": {
 		"grunt": [
 			preload("res://assets/junkyard/enemies/grunt-1.png"),
@@ -47,6 +61,7 @@ const ENEMY_LOOKS := {
 		"charger": [preload("res://assets/junkyard/enemies/charger-1.png")],
 		"bomber": [preload("res://assets/junkyard/enemies/bomber-1.png")],
 		"splitter": [preload("res://assets/junkyard/enemies/splitter-1.png")],
+		"shooter": [preload("res://assets/junkyard/enemies/shooter-1.png")],
 		"sprayer": [preload("res://assets/junkyard/enemies/sprayer-1.png")],
 	},
 	"ocean": {
@@ -63,6 +78,7 @@ const ENEMY_LOOKS := {
 		"charger": [preload("res://assets/ocean/enemies/charger-1.png")],
 		"bomber": [preload("res://assets/ocean/enemies/bomber-1.png")],
 		"splitter": [preload("res://assets/ocean/enemies/splitter-1.png")],
+		"shooter": [preload("res://assets/ocean/enemies/shooter-1.png")],
 	},
 	"robot": {
 		"grunt": [
@@ -85,6 +101,7 @@ const ENEMY_LOOKS := {
 			preload("res://assets/robot/enemies/bomber-4.png"),
 		],
 		"splitter": [preload("res://assets/robot/enemies/splitter-1.png")],
+		"shooter": [preload("res://assets/robot/enemies/shooter-1.png")],
 		"sprayer": [preload("res://assets/robot/enemies/sprayer-1.png")],
 	},
 }
@@ -100,7 +117,8 @@ const THEMES := [
 
 ## The current theme ("" = default art).
 static var current := ""
-## "theme/role-variant" -> Texture2D (or null when the file doesn't exist).
+## "theme/role-variant" (and ".../lettered") -> Array of Texture2Ds (see
+## _env_textures and _lettered_textures; empty when there's no file).
 static var _env_cache := {}
 ## Texture -> its opaque Rect2i (see used_rect), worked out once per image:
 ## reading an image back is far too slow to do for every enemy that spawns.
@@ -138,21 +156,64 @@ static func enemy_look(kind: String) -> Texture2D:
 
 
 ## The current theme's environment texture for `role` (e.g. "block"),
-## variation `variant` (its <role>-<variant>.png). Falls back to the meadow
-## art's file for that variation, then to `fallback` (the meadow's <role>-1).
-static func environment(role: String, fallback: Texture2D, variant := 1) -> Texture2D:
-	var texture := _env_texture(current, role, variant) if current != "" else null
-	if texture == null and variant != 1:
-		texture = _env_texture("meadow", role, variant)
-	return texture if texture else fallback
+## variation `variant` (its <role>-<variant>.png, or one of its lettered
+## alternatives chosen by `pick`). Falls back to the meadow art's file for
+## that variation, then to `fallback` (the meadow's <role>-1).
+static func environment(role: String, fallback: Texture2D, variant := 1, pick := 0) -> Texture2D:
+	var options := environment_options(role, fallback, variant)
+	return options[posmod(pick, options.size())]
+
+
+## Every texture environment() can pick from for `role`/`variant` (never
+## empty): the lettered alternatives when there are any, else one texture.
+static func environment_options(role: String, fallback: Texture2D, variant := 1) -> Array:
+	var options := _env_textures(current, role, variant) if current != "" else []
+	if options.is_empty() and variant != 1:
+		options = _env_textures("meadow", role, variant)
+	if options.is_empty() and current == "" and variant == 1:
+		# No theme: `fallback` is the default art, unless the meadow has
+		# lettered alternatives for it.
+		options = _lettered_textures("meadow", role, 1)
+	return options if not options.is_empty() else [fallback]
+
+
+## The current theme's <role>-1.png (the meadow's when no act theme is set),
+## or null if there's none: for roles with no default art.
+static func optional_environment(role: String) -> Texture2D:
+	return _env_texture(current if current != "" else "meadow", role, 1)
 
 
 ## assets/<theme>/environment/<role>-<variant>.png, or null if there's none.
-static func _env_texture(theme: String, role: String, variant: int) -> Texture2D:
+## When lettered alternatives exist (<role>-<variant>a.png, b, c, ...), one
+## of them instead: number `pick` of them (wrapping round).
+static func _env_texture(theme: String, role: String, variant: int, pick := 0) -> Texture2D:
+	var options := _env_textures(theme, role, variant)
+	return options[posmod(pick, options.size())] if not options.is_empty() else null
+
+
+## Every texture for <role>-<variant> in `theme`: its lettered alternatives
+## if it has any, else just the plain file (or none).
+static func _env_textures(theme: String, role: String, variant: int) -> Array:
 	var key := "%s/%s-%d" % [theme, role, variant]
 	if not _env_cache.has(key):
-		var path := "res://assets/%s/environment/%s-%d.png" % [theme, role, variant]
-		_env_cache[key] = load(path) if ResourceLoader.exists(path) else null
+		var options := _lettered_textures(theme, role, variant)
+		var plain := "res://assets/%s/environment/%s-%d.png" % [theme, role, variant]
+		if options.is_empty() and ResourceLoader.exists(plain):
+			options = [load(plain)]
+		_env_cache[key] = options
+	return _env_cache[key]
+
+
+## <role>-<variant>a.png, b, c, ... z in `theme` (gaps allowed), or [].
+static func _lettered_textures(theme: String, role: String, variant: int) -> Array:
+	var key := "%s/%s-%d/lettered" % [theme, role, variant]
+	if not _env_cache.has(key):
+		var options := []
+		for code in range("a".unicode_at(0), "z".unicode_at(0) + 1):
+			var path := "res://assets/%s/environment/%s-%d%s.png" % [theme, role, variant, String.chr(code)]
+			if ResourceLoader.exists(path):
+				options.append(load(path))
+		_env_cache[key] = options
 	return _env_cache[key]
 
 

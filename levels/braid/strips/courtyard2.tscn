@@ -1,0 +1,120 @@
+[gd_scene format=3 uid="uid://bop3dusmkq2y3"]
+
+[ext_resource type="Script" uid="uid://cxdh76gh1h5sy" path="res://scripts/braid/braid_strip.gd" id="1_strip"]
+[ext_resource type="Script" uid="uid://rjebii07ei8a" path="res://scripts/braid/braid_block.gd" id="2_block"]
+[ext_resource type="Script" uid="uid://cxawcvhuwddeq" path="res://scripts/braid/braid_spawn.gd" id="3_spawn"]
+
+[node name="Courtyard" type="Node2D" unique_id=1734046805]
+script = ExtResource("1_strip")
+difficulty = 2
+
+[node name="Block1" type="StaticBody2D" parent="." unique_id=1438745290]
+texture_repeat = 2
+position = Vector2(480, 60)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_block")
+size = Vector2(100, 24)
+
+[node name="Block2" type="StaticBody2D" parent="." unique_id=1773662699]
+texture_repeat = 2
+position = Vector2(700, 60)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_block")
+size = Vector2(100, 24)
+
+[node name="Block3" type="StaticBody2D" parent="." unique_id=581391782]
+texture_repeat = 2
+position = Vector2(480, 276)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_block")
+size = Vector2(100, 24)
+
+[node name="Block4" type="StaticBody2D" parent="." unique_id=1548259981]
+texture_repeat = 2
+position = Vector2(700, 276)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_block")
+size = Vector2(100, 24)
+
+[node name="Block5" type="StaticBody2D" parent="." unique_id=961841347]
+texture_repeat = 2
+position = Vector2(460, 60)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_block")
+size = Vector2(24, 80)
+
+[node name="Block6" type="StaticBody2D" parent="." unique_id=550577307]
+texture_repeat = 2
+position = Vector2(796, 60)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_block")
+size = Vector2(24, 80)
+
+[node name="Block9" type="StaticBody2D" parent="." unique_id=488665883]
+texture_repeat = 2
+position = Vector2(820, 69)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_block")
+variant = 2
+
+[node name="Block10" type="StaticBody2D" parent="." unique_id=2004237665]
+texture_repeat = 2
+position = Vector2(820, 228)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_block")
+variant = 2
+
+[node name="Block11" type="StaticBody2D" parent="." unique_id=1842924236]
+texture_repeat = 2
+position = Vector2(395, 69)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_block")
+variant = 2
+
+[node name="Block12" type="StaticBody2D" parent="." unique_id=389311597]
+texture_repeat = 2
+position = Vector2(395, 228)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_block")
+variant = 2
+
+[node name="Block7" type="StaticBody2D" parent="." unique_id=1430017777]
+texture_repeat = 2
+position = Vector2(460, 220)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_block")
+size = Vector2(24, 80)
+
+[node name="Block8" type="StaticBody2D" parent="." unique_id=1028964161]
+texture_repeat = 2
+position = Vector2(796, 220)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_block")
+size = Vector2(24, 80)
+
+[node name="Vent1" type="Node2D" parent="." unique_id=1066833121]
+z_index = -10
+position = Vector2(640, 180)
+script = ExtResource("3_spawn")
+
+[node name="Vent2" type="Node2D" parent="." unique_id=627964982]
+z_index = -10
+position = Vector2(250, 60)
+script = ExtResource("3_spawn")
+
+[node name="Vent3" type="Node2D" parent="." unique_id=250393395]
+z_index = -10
+position = Vector2(1050, 300)
+script = ExtResource("3_spawn")

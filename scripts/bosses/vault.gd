@@ -64,6 +64,7 @@ const FIRST_VOLLEY := 3.0
 const VOLLEY_EVERY := 3.2
 const ENRAGED_VOLLEY := 2.0
 const SHELL_RADIUS := 24.0
+const TargetMarker := preload("res://scripts/target_marker.gd")
 const SHELL_FLIGHT := 1.6
 const ENRAGED_SHELL_FLIGHT := 1.2
 const SHELL_DAMAGE := 2
@@ -404,7 +405,7 @@ func draw_hazard(h: Dictionary) -> void:
 		var k := clampf((elapsed - float(h["born"])) / maxf(land - float(h["born"]), 0.01), 0.0, 1.0)
 		draw_circle(at, SHELL_RADIUS, Color(1.0, 0.3, 0.15, 0.12))
 		draw_circle(at, SHELL_RADIUS * k, Color(1.0, 0.35, 0.15, 0.3))
-		draw_arc(at, SHELL_RADIUS, 0.0, TAU, 40, Color(1.0, 0.4, 0.2, 0.85), 1.0)
+		TargetMarker.draw(self, at, SHELL_RADIUS)
 		var height := (1.0 - k) * 120.0
 		draw_circle(at + Vector2(0, -height), 3.0, Color(0.15, 0.12, 0.1))
 	else:

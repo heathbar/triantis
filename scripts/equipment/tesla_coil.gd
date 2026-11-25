@@ -96,7 +96,3 @@ func _jagged(a: Vector2, b: Vector2) -> PackedVector2Array:
 	points.append(b)
 	return points
 
-
-## Saboteurs go after it (see Deployable.can_be_sabotaged).
-func can_be_sabotaged() -> bool:
-	return true

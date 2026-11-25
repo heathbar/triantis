@@ -58,6 +58,7 @@ func _ready() -> void:
 ## self_modulate, so it stacks with the Freeze Ray's modulate.
 func make_elite(scaling: PlayerScaling) -> void:
 	super(scaling)
+	blast_damage = maxi(blast_damage, ELITE_DAMAGE)
 	var sprite := get_node_or_null("Sprite2D") as Sprite2D
 	if sprite:
 		sprite.self_modulate = elite_color

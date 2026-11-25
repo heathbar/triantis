@@ -16,9 +16,9 @@ extends Node2D
 ## them go to us, as in the arena game. Whoever lands the final blow gets the
 ## kill and the drops.
 ##
-## Favours: a favour plate one of our players pressed (scripts/braid/
-## braid_favour.gd) drops a crusher on the squad across the window; we tell
-## that squad's game, which hurts its enemies there.
+## Favours: an airstrike pad one of our players held X on (scripts/braid/
+## braid_favour.gd) bombs the squad across the window; we tell that squad's
+## game, which hurts its enemies there as the bombs land.
 ##
 ## Everything here is drawn as a child of this node, at the world origin.
 
@@ -107,10 +107,12 @@ func _physics_process(delta: float) -> void:
 
 # --- Players ------------------------------------------------------------------
 
-## One of our players fired (connected to each player's shot_fired).
-func report_shot(shot: Node) -> void:
-	_pending_shots.append([shot.global_position, shot.direction, shot.lifetime,
-		shot.shooter.gun_id if is_instance_valid(shot.shooter) else ""])
+## One of our players fired (connected to each player's shot_fired), or a
+## mounted turret did (`gun_id` names the gun it looks like).
+func report_shot(shot: Node, gun_id := "") -> void:
+	if gun_id.is_empty() and is_instance_valid(shot.shooter):
+		gun_id = shot.shooter.gun_id
+	_pending_shots.append([shot.global_position, shot.direction, shot.lifetime, gun_id])
 
 
 func _send_players() -> void:
@@ -343,13 +345,15 @@ func clear_wave() -> void:
 
 # --- Favours --------------------------------------------------------------------
 
-## One of our players pressed `plate`: crush whoever's across the window.
-func send_favour(plate: Node2D) -> void:
+## Our player `slot` called an airstrike from `plate`: bomb whoever's across
+## the window (we only see it; their game hurts their enemies, and credits
+## us with the kills).
+func send_favour(plate: Node2D, slot: int) -> void:
 	var rect: Rect2 = plate.crush_rect()
 	BraidFavour.show_crush(self, rect)
 	var target: int = game.squad_in_lane(plate.target_lane, plate.s)
 	if target >= 0 and target != my_squad:
-		Squads.send_mode_message(target, ["favour", rect.position, rect.size])
+		Squads.send_mode_message(target, ["favour", rect.position, rect.size, slot])
 
 
 func _on_mode_message(squad: int, data: Array) -> void:
@@ -360,10 +364,8 @@ func _on_mode_message(squad: int, data: Array) -> void:
 			if data.size() >= 2 and data[1] is Rect2:
 				_views[squad] = data[1]
 		"favour":
-			if data.size() >= 3 and game.is_wave_running():
-				var rect := Rect2(data[1], data[2])
-				BraidFavour.show_crush(self, rect)
-				game.receive_favour(rect)
+			if data.size() >= 4 and game.is_wave_running():
+				game.receive_favour(Rect2(data[1], data[2]), squad, int(data[3]))
 		"mark":
 			# Another squad's Spotter marked one of our enemies.
 			if data.size() >= 4 and game.is_wave_running():

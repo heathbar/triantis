@@ -35,16 +35,16 @@ const BOSSES := {
 		"epithet": "It never looks away first", "color": Color(1.0, 0.82, 0.3),
 		"script": "res://scripts/bosses/lighthouse.gd",
 		"summary": "Its back is the weak spot. It turns on whoever hurts it most."},
-	"quartet": {"id": "quartet", "name": "The Quartet",
-		"epithet": "Four parts, no harmony", "color": Color(0.72, 0.45, 1.0),
-		"script": "res://scripts/bosses/quartet.gd",
-		"summary": "Break the core, then destroy all four pieces."},
+	"fruit_bowl": {"id": "fruit_bowl", "name": "The Fruit Bowl",
+		"epithet": "Part of a balanced diet", "color": Color(0.36, 0.52, 0.95),
+		"script": "res://scripts/bosses/fruit_bowl.gd",
+		"summary": "Break the bowl, then smash all four fruit."},
 	"vault": {"id": "vault", "name": "The Vault",
 		"epithet": "Nothing gets in", "color": Color(0.4, 0.95, 0.75),
 		"script": "res://scripts/bosses/vault.gd",
 		"summary": "Enter the keypad code to drop its shield, then open fire."},
 	"crusher": {"id": "crusher", "name": "The Crusher",
-		"epithet": "Never touches the brakes", "color": Color(1.0, 0.42, 0.22),
+		"epithet": "Never touches the brakes", "color": Color(0.8, 0.34, 0.95),
 		"script": "res://scripts/bosses/crusher.gd",
 		"summary": "Dodge its charges. Make it hit a wall, then let it have it."},
 }
@@ -141,7 +141,7 @@ func tick(delta: float) -> void:
 
 ## Players walk through enemies (they only get hurt touching them), but
 ## standing inside a boss would dodge its rings and beam, so our players are
-## pushed back out to its edge: whether they walked in, a Quartet piece
+## pushed back out to its edge: whether they walked in, a Fruit Bowl fruit
 ## drifted onto them or the boss appeared on top of them. Runs after the
 ## players have moved (process_physics_priority), so nobody is drawn inside.
 func _keep_players_out() -> void:
@@ -149,10 +149,14 @@ func _keep_players_out() -> void:
 		if not is_instance_valid(body) or body.dormant:
 			continue
 		var centre: Vector2 = body.global_position
-		var reach: float = body.radius + PLAYER_HALF
+		# A circle's reach both ways, or an oval body's half width and height.
+		var reach: Vector2 = Vector2.ONE * (body.radius + PLAYER_HALF)
+		if body.oval != Vector2.ZERO:
+			reach = body.oval + Vector2.ONE * PLAYER_HALF
 		for player in living_players():
-			var away: Vector2 = player.global_position - centre
-			if away.length_squared() >= reach * reach:
+			# Measured with the oval squashed round (reach 1).
+			var away: Vector2 = (player.global_position - centre) / reach
+			if away.length_squared() >= 1.0:
 				continue
 			if away.is_zero_approx():
 				# Dead centre: out the way they're facing (or right).
@@ -352,14 +356,16 @@ func squad_up(squad: int) -> bool:
 
 
 ## A body for this boss at `at`, drawn by `painter` (Callable(body)); a box
-## of `box` (along its rotation) instead of a circle if given.
+## of `box` (along its rotation) instead of a circle if given, or an oval of
+## half width and height `oval`.
 func add_body(part: int, at: Vector2, radius: float, painter: Callable,
-		box := Vector2.ZERO) -> BossBody:
+		box := Vector2.ZERO, oval := Vector2.ZERO) -> BossBody:
 	var body := BossBody.new()
 	body.boss = self
 	body.part = part
 	body.radius = radius
 	body.box_size = box
+	body.oval = oval
 	body.painter = painter
 	body.position = at  # before add_child, so it never appears at the origin
 	add_child(body)

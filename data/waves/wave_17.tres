@@ -7,7 +7,7 @@
 [ext_resource type="PackedScene" path="res://scenenodethings/enemies/charger.tscn" id="e_charger"]
 [ext_resource type="PackedScene" path="res://scenenodethings/enemy.tscn" id="e_grunt"]
 [ext_resource type="PackedScene" uid="uid://dg3ae7hgbnmjk" path="res://scenenodethings/enemies/runner.tscn" id="e_runner"]
-[ext_resource type="PackedScene" path="res://scenenodethings/enemies/saboteur.tscn" id="e_saboteur"]
+[ext_resource type="PackedScene" path="res://scenenodethings/enemies/shooter.tscn" id="e_shooter"]
 [ext_resource type="PackedScene" path="res://scenenodethings/enemies/sprayer.tscn" id="e_sprayer"]
 [ext_resource type="PackedScene" path="res://scenenodethings/enemies/splitter.tscn" id="e_splitter"]
 [ext_resource type="PackedScene" uid="uid://pgyt58w10g8f" path="res://scenenodethings/enemies/swarmling.tscn" id="e_swarmling"]
@@ -48,9 +48,9 @@ script = ExtResource("1_group")
 enemy_scene = ExtResource("e_splitter")
 count = 5
 
-[sub_resource type="Resource" id="Group_saboteur"]
+[sub_resource type="Resource" id="Group_shooter"]
 script = ExtResource("1_group")
-enemy_scene = ExtResource("e_saboteur")
+enemy_scene = ExtResource("e_shooter")
 count = 5
 
 [sub_resource type="Resource" id="Group_sprayer"]
@@ -62,7 +62,7 @@ count = 5
 script = ExtResource("2_wave")
 display_name = "Powder Keg"
 duration = 78.0
-enemy_groups = Array[ExtResource("1_group")]([SubResource("Group_grunt"), SubResource("Group_runner"), SubResource("Group_swarmling"), SubResource("Group_brute"), SubResource("Group_charger"), SubResource("Group_bomber"), SubResource("Group_splitter"), SubResource("Group_saboteur"), SubResource("Group_sprayer")])
+enemy_groups = Array[ExtResource("1_group")]([SubResource("Group_grunt"), SubResource("Group_runner"), SubResource("Group_swarmling"), SubResource("Group_brute"), SubResource("Group_charger"), SubResource("Group_bomber"), SubResource("Group_splitter"), SubResource("Group_shooter"), SubResource("Group_sprayer")])
 opening_spawn = 14
 enemy_health_multiplier = 4.4
 enemy_speed_multiplier = 1.48

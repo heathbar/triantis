@@ -34,11 +34,11 @@ size = Vector2(256, 24)
 
 [node name="Block4" type="StaticBody2D" parent="." unique_id=1828496650]
 texture_repeat = 2
-position = Vector2(796, 69)
+position = Vector2(795, 69)
 collision_layer = 16
 collision_mask = 0
 script = ExtResource("2_block")
-size = Vector2(64, 96)
+variant = 2
 
 [node name="Block5" type="StaticBody2D" parent="." unique_id=750917351]
 texture_repeat = 2
@@ -46,7 +46,7 @@ position = Vector2(369, 256)
 collision_layer = 16
 collision_mask = 0
 script = ExtResource("2_block")
-size = Vector2(24, 96)
+size = Vector2(24, 89)
 
 [node name="Block7" type="StaticBody2D" parent="." unique_id=2144849399]
 texture_repeat = 2

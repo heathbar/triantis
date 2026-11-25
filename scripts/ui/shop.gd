@@ -199,6 +199,10 @@ func open(players: Array[Node], next_wave_index: int, total_waves: int, price_wa
 	Input.joy_connection_changed.connect(_on_joy_connection_changed)
 	_ready_up_disconnected()
 	_refresh()
+	# A dummy squad (scripts/net/dummy_squad.gd) is done at once (deferred:
+	# whoever opened the shop is about to wait for all_ready).
+	if Global.dummy_squad:
+		_check_all_ready.call_deferred()
 
 
 ## The countdown: when it runs out, everyone is readied up and the shop closes.

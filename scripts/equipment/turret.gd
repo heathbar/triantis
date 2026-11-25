@@ -5,17 +5,22 @@ extends Deployable
 
 const Projectile := preload("res://scripts/projectile.gd")
 
-## The art points its barrel up; it turns about PIVOT (its base's middle, in
-## texture pixels), and shots start at the barrel's tip, BARREL px out.
+## The barrel art points right; it turns about PIVOT (texture pixels), which
+## sits on the turret's position, and is flipped upright when it aims left.
+## Shots start at its tip, BARREL px out from the pivot.
 const TEXTURE := preload("res://assets/weapons/equipment/turret.png")
-const PIVOT := Vector2(11, 21)
-const BARREL := 20.0
+const PIVOT := Vector2(9, 6)
+const BARREL := 14.0
+## The base (a stand): static, drawn under the barrel, with the top of its
+## post (BASE_ANCHOR, texture pixels) on the barrel's pivot.
+const BASE_TEXTURE := preload("res://assets/weapons/equipment/turret-base.png")
+const BASE_ANCHOR := Vector2(10, 2)
 ## For the time ring round it.
 const SIZE := 22.0
 const SHOT_SPEED := 480.0
 
 var _cooldown := 0.0
-var _aim := -PI / 2.0
+var _aim := 0.0
 
 
 func _ready() -> void:
@@ -66,14 +71,11 @@ func _draw() -> void:
 	var range_color := color
 	range_color.a = 0.15
 	draw_arc(Vector2.ZERO, stats.get("range", 0.0), 0.0, TAU, 64, range_color, 1.0)
-	# The turret, barrel towards its aim.
-	draw_set_transform(Vector2.ZERO, _aim + PI / 2.0)
+	# The base, then the barrel on top of it, towards its aim.
+	draw_texture(BASE_TEXTURE, -BASE_ANCHOR)
+	var flip := -1.0 if Vector2.from_angle(_aim).x < 0.0 else 1.0
+	draw_set_transform(Vector2.ZERO, _aim, Vector2(1.0, flip))
 	draw_texture(TEXTURE, -PIVOT)
 	draw_set_transform(Vector2.ZERO, 0.0)
 	draw_time_ring(SIZE / 2.0 + 3.0, color.lightened(0.3))
 	draw_pack_up_hint()
-
-
-## Saboteurs go after it (see Deployable.can_be_sabotaged).
-func can_be_sabotaged() -> bool:
-	return true

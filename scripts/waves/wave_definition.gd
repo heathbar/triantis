@@ -32,7 +32,7 @@ extends Resource
 
 @export_group("Boss")
 ## Makes this a boss wave: the id of its boss (an entry in
-## scripts/bosses/boss.gd BOSSES: "lighthouse", "quartet", "crusher" or "vault"), or blank for a
+## scripts/bosses/boss.gd BOSSES: "lighthouse", "fruit_bowl", "crusher" or "vault"), or blank for a
 ## normal wave. A boss wave lasts until the boss dies; its enemy groups
 ## become a trickle, their schedule (over `duration`) repeating until then.
 @export var boss_id := ""

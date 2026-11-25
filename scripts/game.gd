@@ -497,7 +497,7 @@ func _clear_field() -> void:
 		enemy.queue_free()
 	for pickup in get_tree().get_nodes_in_group("pickups"):
 		pickup.collect()
-	for shot in get_tree().get_nodes_in_group("projectiles"):
+	for shot in get_tree().get_nodes_in_group("projectiles") + get_tree().get_nodes_in_group("enemy_bullets"):
 		shot.queue_free()
 	for deployed in get_tree().get_nodes_in_group("deployables"):
 		deployed.remove_from_group("decoys")

@@ -1,74 +1,103 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://c2tpm1mkn8f5r"]
 
-[ext_resource type="Script" path="res://scripts/braid/braid_strip.gd" id="1_strip"]
-[ext_resource type="Script" path="res://scripts/braid/braid_block.gd" id="2_block"]
-[ext_resource type="Script" path="res://scripts/braid/braid_spawn.gd" id="3_spawn"]
+[ext_resource type="Script" uid="uid://cxdh76gh1h5sy" path="res://scripts/braid/braid_strip.gd" id="1_strip"]
+[ext_resource type="Script" uid="uid://rjebii07ei8a" path="res://scripts/braid/braid_block.gd" id="2_block"]
+[ext_resource type="Script" uid="uid://cxawcvhuwddeq" path="res://scripts/braid/braid_spawn.gd" id="3_spawn"]
 
-[node name="Gallery" type="Node2D"]
+[node name="Gallery" type="Node2D" unique_id=802271431]
 script = ExtResource("1_strip")
-length = 1280.0
 difficulty = 3
 
-[node name="Block1" type="StaticBody2D" parent="."]
-position = Vector2(100, 0)
+[node name="Block1" type="StaticBody2D" parent="." unique_id=2085844434]
+texture_repeat = 2
+position = Vector2(100, 16)
+collision_layer = 16
+collision_mask = 0
 script = ExtResource("2_block")
-size = Vector2(200, 100)
+size = Vector2(200, 84)
 
-[node name="Block2" type="StaticBody2D" parent="."]
-position = Vector2(380, 0)
+[node name="Block2" type="StaticBody2D" parent="." unique_id=120484974]
+texture_repeat = 2
+position = Vector2(380, 16)
+collision_layer = 16
+collision_mask = 0
 script = ExtResource("2_block")
-size = Vector2(240, 100)
+size = Vector2(240, 84)
 
-[node name="Block3" type="StaticBody2D" parent="."]
-position = Vector2(700, 0)
+[node name="Block3" type="StaticBody2D" parent="." unique_id=1627365279]
+texture_repeat = 2
+position = Vector2(700, 16)
+collision_layer = 16
+collision_mask = 0
 script = ExtResource("2_block")
-size = Vector2(240, 100)
+size = Vector2(240, 84)
 
-[node name="Block4" type="StaticBody2D" parent="."]
-position = Vector2(1020, 0)
+[node name="Block4" type="StaticBody2D" parent="." unique_id=1103294683]
+texture_repeat = 2
+position = Vector2(1020, 16)
+collision_layer = 16
+collision_mask = 0
 script = ExtResource("2_block")
-size = Vector2(160, 100)
+size = Vector2(160, 84)
 
-[node name="Block5" type="StaticBody2D" parent="."]
+[node name="Block5" type="StaticBody2D" parent="." unique_id=1663401287]
+texture_repeat = 2
 position = Vector2(100, 260)
+collision_layer = 16
+collision_mask = 0
 script = ExtResource("2_block")
-size = Vector2(120, 100)
+size = Vector2(120, 84)
 
-[node name="Block6" type="StaticBody2D" parent="."]
+[node name="Block6" type="StaticBody2D" parent="." unique_id=1405689877]
+texture_repeat = 2
 position = Vector2(300, 260)
+collision_layer = 16
+collision_mask = 0
 script = ExtResource("2_block")
-size = Vector2(240, 100)
+size = Vector2(240, 84)
 
-[node name="Block7" type="StaticBody2D" parent="."]
+[node name="Block7" type="StaticBody2D" parent="." unique_id=1443221109]
+texture_repeat = 2
 position = Vector2(620, 260)
+collision_layer = 16
+collision_mask = 0
 script = ExtResource("2_block")
-size = Vector2(240, 100)
+size = Vector2(240, 84)
 
-[node name="Block8" type="StaticBody2D" parent="."]
+[node name="Block8" type="StaticBody2D" parent="." unique_id=1369188967]
+texture_repeat = 2
 position = Vector2(940, 260)
+collision_layer = 16
+collision_mask = 0
 script = ExtResource("2_block")
-size = Vector2(240, 100)
+size = Vector2(240, 84)
 
-[node name="Vent1" type="Node2D" parent="."]
+[node name="Vent1" type="Node2D" parent="." unique_id=2047519282]
+z_index = -10
 position = Vector2(340, 50)
 script = ExtResource("3_spawn")
 
-[node name="Vent2" type="Node2D" parent="."]
+[node name="Vent2" type="Node2D" parent="." unique_id=720890760]
+z_index = -10
 position = Vector2(660, 50)
 script = ExtResource("3_spawn")
 
-[node name="Vent3" type="Node2D" parent="."]
+[node name="Vent3" type="Node2D" parent="." unique_id=2006685638]
+z_index = -10
 position = Vector2(980, 50)
 script = ExtResource("3_spawn")
 
-[node name="Vent4" type="Node2D" parent="."]
+[node name="Vent4" type="Node2D" parent="." unique_id=464331257]
+z_index = -10
 position = Vector2(260, 310)
 script = ExtResource("3_spawn")
 
-[node name="Vent5" type="Node2D" parent="."]
+[node name="Vent5" type="Node2D" parent="." unique_id=48758676]
+z_index = -10
 position = Vector2(580, 310)
 script = ExtResource("3_spawn")
 
-[node name="Vent6" type="Node2D" parent="."]
+[node name="Vent6" type="Node2D" parent="." unique_id=2035057662]
+z_index = -10
 position = Vector2(900, 310)
 script = ExtResource("3_spawn")
