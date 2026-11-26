@@ -48,6 +48,10 @@ const BOSS_MUSIC := "res://assets/%s/boss/boss.ogg"
 ## Audio buses made at startup (both send to Master): the music player plays
 ## on MUSIC_BUS, everything else (gun shots) on SFX_BUS. Their volumes are
 ## the Music and Effects sliders in Settings.
+## Frame cap while the window is out of focus (vsync off then: see
+## _keep_running_unseen).
+const UNSEEN_MAX_FPS := 60
+
 const MUSIC_BUS := &"Music"
 const SFX_BUS := &"SFX"
 
@@ -164,6 +168,8 @@ func _ready() -> void:
 		master_volume = 0.0
 		show_objective_tutorials = false
 		add_child(DummySquad.new())
+		# Its window usually sits behind others and never gets focus.
+		_keep_running_unseen(true)
 	_setup_buses()
 	_setup_music()
 	apply_settings()
@@ -383,6 +389,28 @@ func _on_scene_changed() -> void:
 	var scene := get_tree().current_scene
 	if scene and not scene is GameBase:
 		play_music(MENU_MUSIC)
+
+
+## A window covered by another (GNOME stops showing it) runs at about 1 frame
+## a second with vsync on, and the game crawls along at 8 physics steps a
+## second. In a Squads game the other squads then hear from it about once a
+## second, drop its enemies and players after half a second of silence
+## (braid_link.gd, squad_link.gd: STALE_TIME) and add them back at the next
+## update, so they blink in and out. So while the window is out of focus,
+## vsync is off and frames are capped at UNSEEN_MAX_FPS instead (a dummy
+## squad's window: always).
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_FOCUS_OUT:
+		_keep_running_unseen(true)
+	elif what == NOTIFICATION_APPLICATION_FOCUS_IN:
+		_keep_running_unseen(dummy_squad)
+
+
+func _keep_running_unseen(on: bool) -> void:
+	if DisplayServer.get_name() == "headless":
+		return
+	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED if on else DisplayServer.VSYNC_ENABLED)
+	Engine.max_fps = UNSEEN_MAX_FPS if on else 0
 
 
 func _set_bus_volume(bus_name: StringName, volume: float) -> void:

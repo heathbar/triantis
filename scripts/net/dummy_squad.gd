@@ -23,6 +23,9 @@ extends Node
 ##     isn't connected; boss intros and objective tutorials (turned off)
 ##     time out,
 ##   - it never saves settings (Global.save_settings) and starts windowed.
+##   - vsync stays off (Global._keep_running_unseen), so it runs at full speed
+##     behind other windows instead of slowing to a crawl (other squads would
+##     see its enemies blink in and out).
 ## At the end of a run it waits on the final scores like any joiner until the
 ## host returns everyone to character select, then readies up again.
 ##
