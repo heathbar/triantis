@@ -48,7 +48,7 @@ const TREES := {
 		"main": "gun",
 		"gun": [
 			{"id": "rail", "name": "Rail", "mechanic": "pierce", "stages": [
-				{"text": "Shots go through 3 enemies.", "pierce": 3, "gain": 0.0},
+				{"text": "Shots go through 3 enemies without losing damage", "pierce": 3, "gain": 0.0},
 				{"text": "Shots go through everything, +15% damage for each enemy passed.", "pierce": 99, "gain": 0.15},
 				{"text": "Shots go through everything (+15% damage for each enemy passed) and leave a burning line along their path for 3 s.",
 					"pierce": 99, "gain": 0.15, "line": 3.0}]},
@@ -58,11 +58,15 @@ const TREES := {
 				{"text": "Hits mark enemies for 5 s (+50% damage from everyone). A marked enemy that dies passes its mark to enemies within 48 px.",
 					"mult": 1.5, "secs": 5.0, "spread": 48.0}]},
 			{"id": "ricochet", "name": "Ricochet", "mechanic": "ricochet", "stages": _RICOCHET},
-			{"id": "charge", "name": "Charge Shot", "mechanic": "charge", "stages": [
-				{"text": "Hold fire to charge for up to 1 s, release to shoot: up to 2x damage.", "max": 2.0, "time": 1.0},
-				{"text": "Hold fire to charge for up to 1 s, release to shoot: up to 3x damage, and the bullet grows with it.", "max": 3.0, "time": 1.0, "grow": true},
-				{"text": "Charge for up to 3x damage (and a bigger bullet). A full charge goes through every enemy and stuns them for 0.8 s.",
-					"max": 3.0, "time": 1.0, "grow": true, "stun": 0.8}]},
+			# Each stage covers one more of the Sniper's weak spots (fire rate,
+			# then speed, then armor) while the laser is on an enemy.
+			{"id": "laser", "name": "Laser Sight", "mechanic": "laser", "stages": [
+				{"text": "A laser sight shows your line of fire. While it's on an enemy you fire 25% faster.",
+					"rate": 0.10},
+				{"text": "While your laser is on an enemy you fire 20% faster and move 20% faster.",
+					"rate": 0.2, "speed": 0.2},
+				{"text": "While your laser is on an enemy you fire 25% faster, move 25% faster and have +50 armor.",
+					"rate": 0.25, "speed": 0.25, "armor": 50}]},
 		],
 		"melee": [
 			{"id": "lunge", "name": "Lunge", "mechanic": "lunge", "stages": [

@@ -1057,12 +1057,6 @@ func is_boosted() -> bool:
 	return not _boosts.is_empty()
 
 
-## Keeps the gun from firing for `seconds` (a Braid charge shot holds it
-## while charging).
-func hold_fire(seconds: float) -> void:
-	_fire_cooldown = maxf(_fire_cooldown, seconds)
-
-
 ## The melee weapon is ready to swing again right away.
 func reset_melee_cooldown() -> void:
 	_melee_cooldown = 0.0

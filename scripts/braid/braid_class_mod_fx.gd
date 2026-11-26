@@ -6,8 +6,8 @@ extends Node2D
 ## what applies. It hooks the players' existing weapons from outside:
 ##   - each shot a player fires (their shot_fired signal) is swapped for a
 ##     BraidShot (scripts/braid/braid_shot.gd) carrying every gun Class Mod
-##     they have, plus a burst after it for Fan / Spray. Charge Shot stops
-##     the gun firing on its own and fires charged shots from here,
+##     they have, plus a burst after it for Fan / Spray,
+##   - a Laser Sight beam along each aiming player's line of fire,
 ##   - each melee swing (a MeleeSwing child added to the player) is widened
 ##     (spin), carries the player forward (lunge), throws shots (wave), sends
 ##     a ring (ring) or shoves (shove), and its hits feed Combo / Bulwark,
@@ -31,7 +31,7 @@ const TINTS := {
 	"pierce": Color(0.55, 0.9, 1.0), "mark": Color(1.0, 0.4, 0.4), "ricochet": Color(1.0, 0.9, 0.4),
 	"flak": Color(1.0, 0.75, 0.3), "nail": Color(0.8, 0.8, 0.85), "mortar": Color(1.0, 0.5, 0.2),
 	"chain": Color(0.6, 0.8, 1.0), "heal": Color(0.4, 1.0, 0.5), "toxin": Color(0.6, 1.0, 0.2),
-	"fan": Color(1.0, 0.95, 0.7), "wave": Color(0.7, 0.9, 1.0), "charge": Color(0.75, 0.9, 1.0),
+	"fan": Color(1.0, 0.95, 0.7), "wave": Color(0.7, 0.9, 1.0), "laser": Color(1.0, 0.2, 0.2),
 	"grenade": Color(1.0, 0.6, 0.25), "slow": Color(0.55, 0.8, 1.0), "drum": Color(1.0, 0.95, 0.6),
 	"shred": Color(1.0, 0.55, 0.7), "salvage": Color(0.95, 0.85, 0.4), "recycler": Color(0.6, 1.0, 0.8),
 	"overclock": Color(0.5, 0.9, 1.0), "stim": Color(1.0, 0.5, 0.9), "burn": Color(1.0, 0.45, 0.15),
@@ -56,6 +56,10 @@ const THORN_TICK := 0.5
 const RIPOSTE_REACH := 32.0
 ## Lunges: how close to the path an enemy or squadmate counts as passed.
 const PATH_REACH := 10.0
+## Laser Sight: how wide the beam is for finding enemies on it, and how long
+## its boosts stay on after it slips off an enemy (so they don't flicker).
+const LASER_WIDTH := 4.0
+const LASER_GRACE := 0.25
 
 ## The game scene (scripts/braid/braid_game.gd).
 var game: Node2D
@@ -86,6 +90,8 @@ var _hazards: Array[Node] = []
 ## Attribute boosts: "player id:kind" -> {"player", "key" (the boost's
 ## source object), "effects"}.
 var _boosts := {}
+## Laser Sight's enemy query (one, reused every frame).
+var _laser_query: PhysicsShapeQueryParameters2D
 var _time := 0.0
 
 
@@ -105,7 +111,7 @@ func watch(player: Node) -> void:
 func _new_state(player: Node) -> Dictionary:
 	return {
 		"shots": 0, "volley": -1, "drum": 0.0, "still": 0.0, "kills": 0,
-		"charge": 0.0, "charging": false, "charge_dir": Vector2.RIGHT, "cool": 0.0, "pending_charge": -1.0,
+		"laser": [], "laser_on": -INF,
 		"lunge_bonus": false, "swing_at": -INF, "next_double": false, "swings": 0,
 		"combo": 0, "combo_at": -INF, "bulwark": 0, "bulwark_at": -INF, "thorn": 0.0,
 		"hitrun": 0, "timed": {}, "res": player.resources,
@@ -142,8 +148,8 @@ func _tick_player(p: Node, delta: float) -> void:
 	var aim: Vector2 = p._read_aim() if alive and not p.melee_busy() else Vector2.ZERO
 	var moving: bool = alive and p._read_direction() != Vector2.ZERO
 
-	if ev.has("charge"):
-		_tick_charge(p, s, ev["charge"], aim, alive, delta)
+	if ev.has("laser"):
+		_tick_laser(p, s, ev["laser"], aim, alive)
 	if ev.has("drum"):
 		var st: Dictionary = ev["drum"]
 		s["drum"] = s["drum"] + delta if aim != Vector2.ZERO and not p.overheated else 0.0
@@ -183,49 +189,57 @@ func _tick_player(p: Node, delta: float) -> void:
 				p.set_contact_shield(_boost_key(p, "hitrun_shield"), false)
 
 
-## Charge Shot: the gun never fires on its own; holding fire charges and
-## letting go fires one charged volley (as soon as the gun is ready).
-func _tick_charge(p: Node, s: Dictionary, st: Dictionary, aim: Vector2, alive: bool, delta: float) -> void:
-	p.hold_fire(1.0)
-	s["cool"] = maxf(s["cool"] - delta, 0.0)
-	if not alive:
-		s["charge"] = 0.0
-		s["charging"] = false
-		return
-	if aim != Vector2.ZERO and not p.is_carrying():
-		s["charge"] = minf(s["charge"] + delta, st["time"])
-		s["charge_dir"] = aim
-		s["charging"] = true
-	elif s["charging"] and s["cool"] <= 0.0 and not p.melee_busy():
-		# (Meleeing holds a charge until the swing is over and the button let go.)
-		_fire_charged(p, s, st)
+## Laser Sight: while the player aims, a beam runs from the muzzle as far as
+## the gun reaches, stopped by walls and by the first enemy on it (it's
+## drawn in _draw). While it's on an enemy, or was within LASER_GRACE s, the
+## player gets the stage's fire rate, speed and armor.
+func _tick_laser(p: Node, s: Dictionary, st: Dictionary, aim: Vector2, alive: bool) -> void:
+	s["laser"] = []
+	if aim != Vector2.ZERO and not p.is_carrying() and not p.is_mounted():
+		var from: Vector2 = p.global_position + aim * Player.MUZZLE_DISTANCE
+		var to: Vector2 = from + aim * p.shot_speed * p.shot_lifetime
+		var space := get_world_2d().direct_space_state
+		var ray := PhysicsRayQueryParameters2D.create(from, to, BraidTuning.WALL_LAYER)
+		ray.hit_from_inside = true  # the muzzle can poke into a wall
+		var wall := space.intersect_ray(ray)
+		if not wall.is_empty():
+			to = wall["position"]
+		var target := _laser_target(space, from, to, aim)
+		if target:
+			to = from + aim * maxf(aim.dot(target.global_position - from), 0.0)
+			s["laser_on"] = _time
+		s["laser"] = [from, to, target != null]
+	var effects := {}
+	if alive and _time - s["laser_on"] <= LASER_GRACE:
+		effects["fire_rate"] = _attr(st["rate"], "fire_rate")
+		if st.has("speed"):
+			effects["speed"] = _attr(st["speed"], "speed")
+		if st.has("armor"):
+			effects["armor"] = int(st["armor"])
+	_set_boost(p, "laser", effects)
 
 
-func _fire_charged(p: Node, s: Dictionary, st: Dictionary) -> void:
-	s["pending_charge"] = clampf(s["charge"] / st["time"], 0.0, 1.0)
-	s["charge"] = 0.0
-	s["charging"] = false
-	s["cool"] = p.fire_interval
-	var aim: Vector2 = s["charge_dir"]
-	p.gun_sprite.play_shot()
-	for i in p.shot_pellets:
-		var angle := 0.0
-		if p.shot_pellets > 1:
-			angle = lerpf(-p.shot_spread / 2.0, p.shot_spread / 2.0, i / float(p.shot_pellets - 1))
-		var dir := aim.rotated(angle)
-		var shot := Projectile.new()
-		shot.direction = dir
-		shot.damage = p.damage
-		shot.lifetime = p.shot_lifetime
-		shot.speed = p.shot_speed
-		shot.size = p.shot_size
-		shot.knockback = p.shot_knockback
-		shot.overkill = p.shot_overkill
-		shot.shooter = p
-		shot.position = p.global_position + dir * Player.MUZZLE_DISTANCE
-		p.get_parent().add_child(shot)
-		p.shot_fired.emit(shot)
-	s["pending_charge"] = -1.0
+## The enemy nearest `from` on the beam from `from` to `to`, or null.
+func _laser_target(space: PhysicsDirectSpaceState2D, from: Vector2, to: Vector2, aim: Vector2) -> Node2D:
+	if _laser_query == null:
+		_laser_query = PhysicsShapeQueryParameters2D.new()
+		_laser_query.shape = RectangleShape2D.new()
+		_laser_query.collision_mask = PhysicsLayers.ENEMIES
+	(_laser_query.shape as RectangleShape2D).size = Vector2(maxf(from.distance_to(to), 1.0), LASER_WIDTH)
+	_laser_query.transform = Transform2D(aim.angle(), (from + to) / 2.0)
+	var best: Node2D = null
+	var best_dist := INF
+	for result in space.intersect_shape(_laser_query):
+		var enemy: Node2D = result.collider
+		if not (enemy.is_in_group("enemies") and enemy.has_method("take_damage")):
+			continue
+		if enemy.has_method("is_dead") and enemy.is_dead():
+			continue
+		var d := from.distance_squared_to(enemy.global_position)
+		if d < best_dist:
+			best_dist = d
+			best = enemy
+	return best
 
 
 # --- Attribute boosts --------------------------------------------------------------
@@ -294,8 +308,8 @@ func _on_shot(shot: Node, player: Node) -> void:
 
 
 ## Puts every gun Class Mod `player` has (`ev`) on shot `s`. `first` is the
-## first shot of a volley (per-volley things: every-Nth shots, charge, the
-## lunge bonus).
+## first shot of a volley (per-volley things: every-Nth shots, the lunge
+## bonus).
 func _apply(s: Node, player: Node, ev: Dictionary, first: bool) -> void:
 	var state: Dictionary = _st[player]
 	var st: Dictionary
@@ -382,15 +396,6 @@ func _apply(s: Node, player: Node, ev: Dictionary, first: bool) -> void:
 		state["lunge_bonus"] = false
 		s.damage = roundi(s.damage * ev["lunge"]["next_shot"])
 		s.size = Vector2(s.size.x, s.size.y + 1.0)
-	var t: float = state["pending_charge"]
-	if t >= 0.0 and ev.has("charge"):
-		st = ev["charge"]
-		s.damage = roundi(s.damage * (1.0 + (st["max"] - 1.0) * t))
-		if st.get("grow", false):
-			s.size = s.size * (1.0 + t)
-		if st.has("stun") and t >= 0.999:
-			s.pierce_left = 99
-			s.stun_secs = maxf(s.stun_secs, st["stun"])
 
 
 ## The colour for `ev`'s shots: its first gun branch's.
@@ -1074,18 +1079,21 @@ func clear() -> void:
 		_st[player] = fresh
 
 
-## A charge meter round each charging player, and a ring round shielded ones.
+## Each aiming player's Laser Sight beam (brighter, with a dot, while it's
+## on an enemy), and a ring round shielded players.
 func _draw() -> void:
 	for p in _st:
 		if not is_instance_valid(p) or p.is_dead():
 			continue
 		var at := to_local(p.global_position)
 		var s: Dictionary = _st[p]
-		if s["charging"]:
-			var st: Dictionary = BraidClassMod.mechanics(p).get("charge", {})
-			var t: float = s["charge"] / float(st.get("time", 1.0))
-			var c := TINTS["charge"] if t < 0.999 else Color.WHITE
-			draw_arc(at, 12.0, -PI / 2.0, -PI / 2.0 + TAU * t, 24, c, 1.5)
+		var beam: Array = s["laser"]
+		if not beam.is_empty():
+			var c: Color = TINTS["laser"]
+			c.a = 0.85 if beam[2] else 0.35
+			draw_line(to_local(beam[0]), to_local(beam[1]), c, 1.0)
+			if beam[2]:
+				draw_circle(to_local(beam[1]), 1.5, c)
 		if _shields.has(p):
 			draw_arc(at, 11.0, 0.0, TAU, 20, Color(TINTS["heal"], 0.8), 1.0)
 

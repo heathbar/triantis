@@ -120,8 +120,10 @@ box. Claude's calls (unplaytested):
   - Triage III's shield is for a squadmate already at full health that
     the shot passes; it stops one hit.
   - Lunges now pass through enemies (they used to stop at the first one).
-- **Charge Shot** stops the gun firing on its own: hold fire to charge,
-  release to shoot (a ring round the player shows the charge).
+- **Laser Sight** (Sniper; replaced Charge Shot, whose hold-and-release
+  didn't suit aim-to-fire controls): a beam along the aim, stopped by walls
+  and the first enemy. While it's on an enemy (0.25 s grace): +25% fire
+  rate; then +40% and +20% speed; then +50 armor too. Only we see the beam.
 - **Damage-over-time numbers are relative** (x the hit's damage a second),
   so "bleed", "burn" and puddles keep up with the gun.
 - **Cross-squad branches:** Spotter / Dead-Eye marks work on other squads'
