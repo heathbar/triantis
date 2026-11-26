@@ -137,7 +137,7 @@ var _stuck_from := Vector2.INF
 var _stuck_clock := 0.0
 var _stuck_want := 0.0
 ## Braid mode: damage it takes is multiplied by this (a Spotter's mark,
-## scripts/braid/braid_class_mod.gd). Always 1 in the arena game.
+## scripts/class_mods/class_mod.gd). Always 1 in the arena game.
 var damage_taken_multiplier := 1.0
 ## The hit flash material (made on the first hit) and its fade.
 var _flash_material: ShaderMaterial
@@ -209,6 +209,8 @@ func is_dead() -> bool:
 ## (before mass).
 func take_damage(amount: int, source: Node = null, knockback := Vector2.ZERO) -> void:
 	if is_mirror:
+		# Credit what the hit is worth here; the owner's copy gets no source.
+		_credit_damage(source, amount if _mirror_needed < 0 else mini(amount, _mirror_needed))
 		forward_hit.call(amount, source, knockback)
 		flash_hit()  # (its owner's copy decides if it dies; if so it vanishes)
 		if _mirror_needed > 0:
@@ -222,11 +224,19 @@ func take_damage(amount: int, source: Node = null, knockback := Vector2.ZERO) ->
 	apply_knockback(knockback)
 	if damage_taken_multiplier != 1.0:
 		amount = maxi(roundi(amount * damage_taken_multiplier), 1)
+	_credit_damage(source, mini(amount, health))
 	health = maxi(health - amount, 0)
 	if is_dead():
 		_die(source)
 	else:
 		flash_hit()
+
+
+## Counts `amount` toward `source`'s debug DPS if a player dealt it (overkill
+## left out).
+static func _credit_damage(source: Node, amount: int) -> void:
+	if is_instance_valid(source) and source is Player:
+		source.record_damage(amount)
 
 
 ## Washes its sprites red for a moment, then fades back (as a hurt player

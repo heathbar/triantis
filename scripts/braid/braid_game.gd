@@ -27,8 +27,6 @@ extends GameBase
 ## players, enemies, shop and summary screens (and, through
 ## scripts/game_base.gd, the code that spawns players, adds enemies, hands
 ## out drops and shows the end-of-run summary). Differences:
-##   - weapons are locked to the class: the shop offers no guns or melee
-##     weapons (upgrade kits still work),
 ##   - enemies walk around walls by a flow field (BraidLevel.grid, via the
 ##     enemies' `steering`), and shots stop at walls
 ##     (scripts/braid/braid_shot_walls.gd) but not window glass,
@@ -65,8 +63,8 @@ extends GameBase
 ## Bosses: the arena's bosses, through Braid versions that put them in the
 ## room (BraidTuning.BRAID_BOSSES, scripts/braid/bosses/).
 ##
-## Class Mods: picked between acts (scripts/braid/braid_class_mod_picker.gd)
-## and played out by scripts/braid/braid_class_mod_fx.gd.
+## Class Mods: picked between acts (GameBase._pick_class_mods), as in the
+## arena after every boss fight but the last.
 ##
 ## Modifiers (scripts/braid/braid_modifiers.gd): optional harder rules picked
 ## after character select once the Campaign has been won, for a score
@@ -89,8 +87,6 @@ const BraidGenerator := preload("res://scripts/braid/braid_generator.gd")
 const BraidLink := preload("res://scripts/braid/braid_link.gd")
 const BraidFavour := preload("res://scripts/braid/braid_favour.gd")
 const BraidShopBuilding := preload("res://scripts/braid/braid_shop_building.gd")
-const BraidClassModFx := preload("res://scripts/braid/braid_class_mod_fx.gd")
-const BraidClassModPicker := preload("res://scripts/braid/braid_class_mod_picker.gd")
 const BraidModifiers := preload("res://scripts/braid/braid_modifiers.gd")
 const CharacterClasses := preload("res://scripts/character_classes.gd")
 const BossBody := preload("res://scripts/bosses/boss_body.gd")
@@ -143,8 +139,6 @@ const SPREAD_SLACK := 1.0
 var level: BraidLevel
 var tide: BraidTide
 var braid_hud: BraidHud
-## Makes our players' Class Mods happen (scripts/braid/braid_class_mod_fx.gd).
-var class_mod_fx: BraidClassModFx
 var state := State.RUNNING
 ## The act, and the segment of it being played (0-based; SEGMENTS_PER_ACT
 ## is its boss fight).
@@ -203,6 +197,7 @@ func _ready() -> void:
 	_setup_pixel_view()
 	if wave_set == null:
 		wave_set = load(DEFAULT_WAVE_SET)
+	DifficultyCurve.apply(wave_set)
 
 	squads_game = Squads.in_game()
 	if squads_game:
@@ -223,6 +218,7 @@ func _ready() -> void:
 	tide = BraidTide.new()
 	tide.name = "Tide"
 	add_child(tide)
+	tide.pickups_swallowed.connect(_on_tide_pickups)
 	add_child(BraidShotWalls.new())
 	braid_hud = BraidHud.new()
 	add_child(braid_hud)
@@ -232,11 +228,6 @@ func _ready() -> void:
 
 	_spawn_players(level.bounds)
 	_place_players(START_X)
-	class_mod_fx = BraidClassModFx.new()
-	class_mod_fx.setup(self)
-	add_child(class_mod_fx)
-	for player in all_players:
-		class_mod_fx.watch(player)
 	_add_pause_menu()
 
 	if squads_game:
@@ -889,11 +880,8 @@ func _reach_checkpoint() -> void:
 
 	# After a boss: every player picks a Class Mod.
 	if is_boss_round():
-		var picker := BraidClassModPicker.new()
-		add_child(picker)
-		picker.open(all_players, run_seed + act * 7 + my_squad * 101,
+		await _pick_class_mods(run_seed + act * 7 + my_squad * 101,
 			"ACT %d CLEARED: CLASS MOD" % (act + 1))
-		await picker.all_ready
 
 	# What's next, for the shop: its enemy health (equipment scales to it),
 	# its prices, and its name.
@@ -987,8 +975,7 @@ func _summary_rows() -> Array[Dictionary]:
 ## Enemies vanish, uncollected resources are handed out, shots and
 ## everything equipment put down disappear.
 func _clear_field() -> void:
-	if class_mod_fx:
-		class_mod_fx.clear()
+	_clear_class_mods()
 	if boss:
 		boss.queue_free()
 		boss = null
@@ -1425,18 +1412,12 @@ func _in_wall(enemy: Enemy, at: Vector2) -> bool:
 	return not enemy.get_world_2d().direct_space_state.intersect_point(query, 1).is_empty()
 
 
-func _after_enemy_killed(killer: Node, at: Vector2, enemy: Enemy) -> void:
-	if class_mod_fx:
-		class_mod_fx.on_enemy_died(killer, at, enemy)
-
-
 # --- Players and camera ---------------------------------------------------------
 
-## Players bump into walls and window glass, keep their class's weapons, and
-## get Braid's equipment tuning.
+## Players bump into walls and window glass, and get Braid's equipment
+## tuning.
 func _prepare_player(player: Player) -> void:
 	player.collision_mask |= BraidTuning.WALL_LAYER | BraidTuning.WINDOW_LAYER
-	player.weapons_locked = true
 	player.equipment_tuning = BraidTuning.EQUIPMENT_TUNING
 	player.score_multiplier = score_multiplier()
 	if _mod("glass_heart"):
@@ -1462,6 +1443,13 @@ func _door_warning() -> float:
 
 func _enemy_health_mult() -> float:
 	return BraidModifiers.ENEMY_HEALTH_MULT if _mod("ironhide") else 1.0
+
+
+## The tide swallowed `count` of our pickups: a Salvage III Scavenger gets
+## them (class_mod_fx.gd); otherwise they're lost.
+func _on_tide_pickups(count: int) -> void:
+	if class_mod_fx:
+		class_mod_fx.on_tide_pickups(count)
 
 
 ## Famine: each resource is only dropped with DROP_KEEP_CHANCE.

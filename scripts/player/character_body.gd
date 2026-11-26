@@ -182,11 +182,8 @@ var wave_enemy_health := 1.0
 ## Retunes this player's equipment (see Equipment.stats for the format);
 ## {} = as listed. Braid sets it (BraidTuning.EQUIPMENT_TUNING).
 var equipment_tuning := {}
-## True when this player's gun and melee weapon can't be changed: the shop
-## never offers them weapons (Braid mode, scripts/braid/braid_game.gd).
-var weapons_locked := false
-## Braid Class Mods picked so far: {branch id: stage reached (1..3)}
-## (scripts/braid/braid_class_mod.gd).
+## Class Mods picked so far: {branch id: stage reached (1..3)}
+## (scripts/class_mods/class_mod.gd).
 var class_mod_picks := {}
 ## The full length of the current cooldown (for the HUD's pie chart).
 var equipment_cooldown_total := 0.0
@@ -296,6 +293,15 @@ var mount: Node = null
 ## joins the tree): nothing hurts it, and walls and enemies don't stop it (so
 ## the Campaign's tide can always push it along).
 var dummy := false
+
+## The debug menu's DPS readout (scripts/ui/health_hud.gd) averages the
+## damage this player dealt over the last this many seconds.
+const DPS_WINDOW := 5.0
+## Damage this player has dealt to enemies and bosses this run (every source
+## credited to them: guns, swings, equipment, class mods).
+var damage_total := 0.0
+## [seconds, amount] for each hit inside DPS_WINDOW, oldest first.
+var _damage_log: Array[Vector2] = []
 
 ## The player's square: invisible now, but it still sets the size and its
 ## rotation is the facing direction.
@@ -1108,6 +1114,33 @@ func take_hit(amount: int = 1, hit_position: Vector2 = global_position) -> void:
 	Global.play_sfx(HURT_SOUNDS.pick_random(), HURT_VOLUME)
 	if is_dead():
 		_die(hit_position)
+
+
+## This player dealt `amount` damage (for the debug DPS readout).
+func record_damage(amount: float) -> void:
+	if amount <= 0.0:
+		return
+	damage_total += amount
+	_damage_log.append(Vector2(Time.get_ticks_msec() / 1000.0, amount))
+	_prune_damage_log()
+
+
+## Damage per second over the last DPS_WINDOW seconds.
+func dps() -> float:
+	_prune_damage_log()
+	var sum := 0.0
+	for hit in _damage_log:
+		sum += hit.y
+	return sum / DPS_WINDOW
+
+
+func _prune_damage_log() -> void:
+	var cutoff := Time.get_ticks_msec() / 1000.0 - DPS_WINDOW
+	var drop := 0
+	while drop < _damage_log.size() and _damage_log[drop].x < cutoff:
+		drop += 1
+	if drop > 0:
+		_damage_log = _damage_log.slice(drop)
 
 
 ## An enemy attack (a touch, a blast) worth `amount` half hearts: ignored

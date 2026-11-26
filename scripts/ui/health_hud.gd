@@ -26,6 +26,8 @@ var debug_menu: PanelContainer
 var fps_label: Label
 var debug_visible := false
 var player_speed_labels: Dictionary = {}
+## Player -> its DPS line (Player.dps(): damage over the last DPS_WINDOW s).
+var player_dps_labels: Dictionary = {}
 
 func _build_debug_menu() -> void:
 	debug_menu = PanelContainer.new()
@@ -84,6 +86,13 @@ func _process(_delta: float) -> void:
 				player_speed_labels[player].text = "P%d Speed: %.1f" % [
 					player.player_index + 1,
 					speed
+				]
+		for player in player_dps_labels:
+			if is_instance_valid(player):
+				player_dps_labels[player].text = "P%d DPS: %.1f  (total %d)" % [
+					player.player_index + 1,
+					player.dps(),
+					roundi(player.damage_total)
 				]
 		
 
@@ -162,6 +171,13 @@ func add_player(player: Node) -> void:
 	debug_menu.get_child(0).add_child(speed_label)
 
 	player_speed_labels[player] = speed_label
+
+	var dps_label := Label.new()
+	dps_label.text = "P%d DPS: 0" % (slot + 1)
+	dps_label.add_theme_font_size_override("font_size", 20)
+	dps_label.add_theme_color_override("font_color", color)
+	debug_menu.get_child(0).add_child(dps_label)
+	player_dps_labels[player] = dps_label
 
 
 var _wave_label: Label

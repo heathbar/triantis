@@ -12,7 +12,11 @@ extends Node2D
 ##     TIDE_DAMAGE_INTERVAL while it touches them; a player pinned against a
 ##     wall until it covers them is knocked out,
 ##   - our enemies and pickups TIDE_SWALLOW_DEPTH inside it are swallowed
-##     (no kill, no drops; the pickup is lost).
+##     (no kill, no drops; the pickup is lost, though pickups_swallowed lets
+##     a Salvage III Scavenger have it: scripts/class_mods/class_mod_fx.gd).
+
+## Our pickups it swallowed this frame (only sent when there were any).
+signal pickups_swallowed(count: int)
 
 const BraidTuning := preload("res://scripts/braid/braid_tuning.gd")
 const BossBody := preload("res://scripts/bosses/boss_body.gd")
@@ -108,10 +112,14 @@ func _swallow() -> void:
 				and not enemy.get("is_mirror") and not enemy is BossBody:
 			enemy.remove_from_group("enemies")
 			enemy.queue_free()
+	var swallowed := 0
 	for pickup: Node2D in get_tree().get_nodes_in_group("pickups"):
 		if _progress(pickup.global_position) < line:
 			pickup.remove_from_group("pickups")
 			pickup.queue_free()
+			swallowed += 1
+	if swallowed > 0:
+		pickups_swallowed.emit(swallowed)
 
 
 func _progress(at: Vector2) -> float:

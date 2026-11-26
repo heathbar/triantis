@@ -1,7 +1,7 @@
 extends RefCounted
-## Braid Class Mods: the trees, the cards a player is offered, and what
-## each player has picked. (What the picks do in play is
-## scripts/braid/braid_class_mod_fx.gd.)
+## Class Mods (arena and Campaign): the trees, the cards a player is
+## offered, and what each player has picked. (What the picks do in play is
+## scripts/class_mods/class_mod_fx.gd.)
 ##
 ## Every class leans on one weapon: gun classes mod their gun, melee
 ## classes their melee weapon. Each class has five branches (TREES): four
@@ -16,7 +16,7 @@ extends RefCounted
 ## in TREES get no cards.
 ##
 ## Every branch changes how its weapon behaves through one "mechanic"
-## (braid_class_mod_fx.gd), with that stage's numbers. A mechanic appears at
+## (class_mod_fx.gd), with that stage's numbers. A mechanic appears at
 ## most once per class, so the effects code can look picks up by mechanic
 ## (mechanics()). Each stage's dict holds all of its numbers, not just what
 ## changed. Picks are kept on the player (Player.class_mod_picks) for the
@@ -115,8 +115,7 @@ const TREES := {
 			{"id": "salvage", "name": "Salvage", "mechanic": "salvage", "stages": [
 				{"text": "Your kills have a 10% chance to drop an extra resource.", "chance": 0.1},
 				{"text": "Your kills have a 20% chance to drop an extra resource.", "chance": 0.2},
-				{"text": "Your kills have a 20% chance to drop an extra resource, and picking up resources gives +20% fire rate for 2 s.",
-					"chance": 0.2, "rate": 0.2, "rate_secs": 2.0}]},
+				{"text": "Resources the tide swallows go to you instead of being lost.", "tide": true}]},
 			{"id": "shredder", "name": "Shredder", "mechanic": "shred", "stages": [
 				{"text": "Each hit makes the enemy take +5% damage from everyone (up to 5 times, for 4 s).", "per": 0.05, "max": 5},
 				{"text": "Each hit makes the enemy take +8% damage from everyone (up to 8 times, for 4 s).", "per": 0.08, "max": 8},
@@ -272,8 +271,8 @@ const TREES := {
 			{"id": "shockwave", "name": "Shockwave", "mechanic": "wave", "stages": [
 				{"text": "Swings send a short shockwave ahead.", "count": 1, "range": 0.25, "width": 24.0},
 				{"text": "Swings send a bigger shockwave that goes further.", "count": 1, "range": 0.4, "width": 40.0},
-				{"text": "Swings send a bigger, longer shockwave that goes through walls into the next lane.",
-					"count": 1, "range": 0.4, "width": 40.0, "walls": true}]},
+				{"text": "Swings send an even longer shockwave that goes through walls (into the next lane, in the Campaign).",
+					"count": 1, "range": 0.55, "width": 40.0, "walls": true}]},
 			{"id": "combo", "name": "Combo", "mechanic": "combo", "stages": [
 				{"text": "Melee hits within 1.5 s of each other add +10% melee damage (up to 5).", "per": 0.1, "max": 5, "window": 1.5},
 				{"text": "Melee hits within 1.5 s of each other add +15% melee damage (up to 6).", "per": 0.15, "max": 6, "window": 1.5},

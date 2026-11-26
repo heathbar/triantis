@@ -52,3 +52,9 @@ func test_every_gun_tier_fires_slower_than_a_frame_or_at_it() -> void:
 	var frame := 1.0 / float(ProjectSettings.get_setting("physics/common/physics_ticks_per_second", 60))
 	for gun: Dictionary in Guns.LIST:
 		check(float(gun["interval"]) >= frame, "%s fires every %s s" % [gun["id"], gun["interval"]])
+
+
+func test_weapons_are_never_sold() -> void:
+	for item: Dictionary in Items.all():
+		check(not item.has("gun") and not item.has("melee"),
+			"%s: every class keeps its starting weapons" % item.get("id", "?"))

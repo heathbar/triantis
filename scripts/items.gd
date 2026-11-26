@@ -22,22 +22,12 @@ extends RefCounted
 ##              isn't an attribute (their code checks how many the player
 ##              owns: owned()). Shown in the shop above any effects.
 ##
-## Every gun (scripts/guns.gd) is also sold, mixed in with these, as an item
-## with a "gun" key and no effects. Buying one swaps out the buyer's current
-## gun, which is lost. A player is never offered a gun of the type they're
-## holding at the same rarity tier or lower (holding an Exquisite SMG, they can
-## still be offered a Legendary SMG, or a Scrap Shotgun). Rarer tiers turn up
-## less often (Rarity.TIERS "weight"; every other item weighs 1.0). Guns of
-## the type the player already holds turn up SAME_GUN_TYPE_WEIGHT times as
-## often as other guns of their tier, so the shop leans towards upgrades of
-## the gun they've chosen. Melee weapons lean the same way, by
-## SAME_MELEE_TYPE_WEIGHT.
-##
-## Melee weapons (scripts/melee.gd) are sold the same way, with a "melee" key:
-## buying one replaces the buyer's melee weapon. The same tier rule applies.
+## Guns and melee weapons are never sold: every class keeps the gun and melee
+## weapon it starts with, in the arena and the Campaign alike. They get
+## better through the UPGRADE KIT rows below (and Class Mods after bosses).
 ##
 ## Equipment (scripts/equipment.gd) is sold too, with an "equipment" key, and
-## turns up as often as a Solid weapon. Buying it replaces the buyer's
+## turns up EQUIPMENT_WEIGHT times as often as an ordinary item. Buying it replaces the buyer's
 ## equipment; they're never offered the one they already hold.
 ##
 ## Besides the offer, every shop has an UPGRADE KIT row for the player's gun
@@ -54,16 +44,10 @@ const CharacterClasses := preload("res://scripts/character_classes.gd")
 const Guns := preload("res://scripts/guns.gd")
 const Melee := preload("res://scripts/melee.gd")
 const Equipment := preload("res://scripts/equipment.gd")
-const Rarity := preload("res://scripts/rarity.gd")
 
 const OFFER_COUNT := 4
 ## The first re-roll in a wave costs this; each one after costs double.
 const REROLL_BASE_COST := 8
-## How much likelier a gun of the held gun's type is to be offered than
-## another gun of the same tier.
-const SAME_GUN_TYPE_WEIGHT := 8.0
-## The same for melee weapons of the held melee weapon's type.
-const SAME_MELEE_TYPE_WEIGHT := 4.0
 
 const LIST := [
 	# --- Upgrades: small single-stat boosts ---------------------------------
@@ -155,40 +139,23 @@ const FANG_KILLS: Array[int] = [50, 40, 30]
 const COUPON_DISCOUNT := 0.1
 
 
-## Shop ids of gun items are the gun id with this in front.
-const GUN_PREFIX := "gun:"
-## Shop ids of melee items are the weapon id with this in front.
-const MELEE_PREFIX := "melee:"
 ## Shop ids of equipment are the equipment id with this in front.
 const EQUIPMENT_PREFIX := "equip:"
-## Equipment is offered as often as a Solid weapon (some piece of it turns
-## up in about 1 shop in 5).
-const EQUIPMENT_RARITY := "solid"
+## How likely each piece of equipment is to be offered, next to an ordinary
+## item's 1.0 (some piece of it turns up in about 1 shop in 5).
+const EQUIPMENT_WEIGHT := 0.35
 
 static var _all: Array = []
 
 
-## Every item for sale: LIST, then one per gun, one per melee weapon, then
-## each piece of equipment.
+## Every item for sale: LIST, then each piece of equipment.
 static func all() -> Array:
 	if _all.is_empty():
 		_all = LIST.duplicate()
-		for gun in Guns.LIST:
-			_all.append({"id": GUN_PREFIX + gun["id"], "name": gun["name"],
-				"cost": gun["cost"], "gun": gun["id"], "effects": {},
-				"weight": Guns.tier_of(gun)["weight"], "color": Guns.tier_of(gun)["color"]})
-		for weapon in Melee.LIST:
-			_all.append({"id": MELEE_PREFIX + weapon["id"], "name": weapon["name"],
-				"cost": weapon["cost"], "melee": weapon["id"], "effects": {},
-				"weight": Melee.tier_of(weapon)["weight"], "color": Melee.tier_of(weapon)["color"]})
-		var equipment_weight := 1.0
-		for tier in Rarity.TIERS:
-			if tier["id"] == EQUIPMENT_RARITY:
-				equipment_weight = tier["weight"]
 		for equipment in Equipment.LIST:
 			_all.append({"id": EQUIPMENT_PREFIX + equipment["id"], "name": equipment["name"],
 				"cost": equipment["cost"], "equipment": equipment["id"], "effects": {},
-				"weight": equipment_weight, "color": Equipment.COLOR})
+				"weight": EQUIPMENT_WEIGHT, "color": Equipment.COLOR})
 	return _all
 
 
@@ -199,24 +166,14 @@ static func find(id: String) -> Dictionary:
 	return {}
 
 
-static func is_gun(item: Dictionary) -> bool:
-	return item.has("gun")
-
-
-static func is_melee(item: Dictionary) -> bool:
-	return item.has("melee")
-
-
 static func is_equipment(item: Dictionary) -> bool:
 	return item.has("equipment")
 
 
-## False for guns and melee weapons of the type `player` holds at the same
-## tier or lower, for the equipment they hold, and for items that would take
-## their hearts below CharacterClasses.LIVES_MIN (so a player on 1 heart is
-## never offered one that costs a heart); everything else can be offered.
-## A player whose gun and melee weapon can't be changed (Player.weapons_locked,
-## Braid mode) is never offered weapons.
+## False for the equipment `player` holds (or can't use), and for items that
+## would take their hearts below CharacterClasses.LIVES_MIN (so a player on 1
+## heart is never offered one that costs a heart); everything else can be
+## offered.
 static func can_offer(player: Node, item: Dictionary) -> bool:
 	if item.is_empty():
 		return false
@@ -225,107 +182,38 @@ static func can_offer(player: Node, item: Dictionary) -> bool:
 	var lives_delta := int(item["effects"].get("lives", 0))
 	if lives_delta < 0 and player.get_attribute("lives") + lives_delta < CharacterClasses.LIVES_MIN:
 		return false
-	# Braid mode locks each class to its own gun and melee weapon.
-	if (is_gun(item) or is_melee(item)) and player.weapons_locked:
-		return false
-	if is_gun(item):
-		return not _same_type_no_better(Guns.get_gun(item["gun"]), player.gun)
-	if is_melee(item):
-		return not _same_type_no_better(Melee.get_weapon(item["melee"]), player.melee)
 	if is_equipment(item):
 		return item["equipment"] != player.equipment_id \
 			and Equipment.available_to(Equipment.find(item["equipment"]), player)
 	return true
 
 
-static func _same_type_no_better(weapon: Dictionary, held: Dictionary) -> bool:
-	return weapon["type"] == held["type"] and weapon["tier"] <= held["tier"]
-
-
 ## This wave's offer for `player`: their banked items (in order) followed by
 ## random others, OFFER_COUNT in all, with no repeats. Each random pick is
-## weighted by the item's "weight" (default 1.0), so rare guns are rare.
+## weighted by the item's "weight" (default 1.0).
 static func roll_offer(player: Node) -> Array[String]:
 	var offer: Array[String] = []
 	for id in player.banked_items:
 		if offer.size() < OFFER_COUNT and can_offer(player, find(id)) and id not in offer:
 			offer.append(id)
-	offer.append_array(roll_random(player, OFFER_COUNT - offer.size(), offer, offer))
+	offer.append_array(roll_random(player, OFFER_COUNT - offer.size(), offer))
 	return offer
 
 
 ## Up to `count` random item ids `player` can be offered, none of them in
-## `exclude`, weighted by offer_weight().
-##
-## An offer never holds two weapons of the same type (say a Scrap SMG and a
-## Solid SMG): `keep` are the items staying on offer beside these (banked
-## ones), and no pick shares a type with them. Between two picks of the same
-## type the higher tier stays and the other slot gets a different item.
-static func roll_random(player: Node, count: int, exclude: Array, keep: Array = []) -> Array[String]:
+## `exclude`, weighted by their "weight" (default 1.0).
+static func roll_random(player: Node, count: int, exclude: Array) -> Array[String]:
 	# Weighted sampling without replacement: give each item the key
 	# randf() ^ (1 / weight) and take the highest keys.
 	var pool := []
 	for item in all():
 		if item["id"] not in exclude and can_offer(player, item):
-			pool.append([pow(randf(), 1.0 / offer_weight(player, item)), item["id"]])
+			pool.append([pow(randf(), 1.0 / float(item.get("weight", 1.0))), item["id"]])
 	pool.sort_custom(func(a, b): return a[0] > b[0])
-	var kept_types := {}
-	for id in keep:
-		var type := weapon_type(find(id))
-		if type != "":
-			kept_types[type] = true
 	var picked: Array[String] = []
-	for entry in pool:
-		if picked.size() >= count:
-			break
-		var item := find(entry[1])
-		var type := weapon_type(item)
-		if type == "":
-			picked.append(entry[1])
-			continue
-		if kept_types.has(type):
-			continue
-		var rival := -1
-		for i in picked.size():
-			if weapon_type(find(picked[i])) == type:
-				rival = i
-		if rival == -1:
-			picked.append(entry[1])
-		elif _weapon_of(item).get("tier", 0) > _weapon_of(find(picked[rival])).get("tier", 0):
-			picked[rival] = entry[1]  # the better one takes the slot
+	for entry in pool.slice(0, count):
+		picked.append(entry[1])
 	return picked
-
-
-## "gun:<type>" / "melee:<type>" for a gun or melee weapon item, "" for
-## anything else. Two items with the same weapon type are never offered
-## together.
-static func weapon_type(item: Dictionary) -> String:
-	if is_gun(item):
-		return "gun:" + _weapon_of(item)["type"]
-	if is_melee(item):
-		return "melee:" + _weapon_of(item)["type"]
-	return ""
-
-
-## The Guns / Melee entry a weapon item sells ({} for other items).
-static func _weapon_of(item: Dictionary) -> Dictionary:
-	if is_gun(item):
-		return Guns.get_gun(item["gun"])
-	if is_melee(item):
-		return Melee.get_weapon(item["melee"])
-	return {}
-
-
-## How likely `item` is to be offered to `player`: its "weight" (default
-## 1.0), times SAME_GUN_TYPE_WEIGHT for a gun of the type they're holding
-## (SAME_MELEE_TYPE_WEIGHT for a melee weapon of the type they're holding).
-static func offer_weight(player: Node, item: Dictionary) -> float:
-	var weight := float(item.get("weight", 1.0))
-	if is_gun(item) and Guns.get_gun(item["gun"])["type"] == player.gun.get("type", ""):
-		weight *= SAME_GUN_TYPE_WEIGHT
-	elif is_melee(item) and Melee.get_weapon(item["melee"])["type"] == player.melee.get("type", ""):
-		weight *= SAME_MELEE_TYPE_WEIGHT
-	return weight
 
 
 ## Price of a player's re-roll after `rerolls` re-rolls already this wave,
@@ -412,8 +300,8 @@ static func can_buy(player: Node, item: Dictionary, waves_done: int) -> bool:
 	return player.resources >= price(item, waves_done, player)
 
 
-## Charges the player and applies the item (a gun, melee weapon or
-## equipment replaces the one they hold).
+## Charges the player and applies the item (equipment replaces the one they
+## hold).
 ## Charges price(item, waves_done). Returns false if they can't afford it.
 ## (The shop allows one purchase per offered item per wave.)
 static func buy(player: Node, item: Dictionary, waves_done: int) -> bool:
@@ -421,10 +309,6 @@ static func buy(player: Node, item: Dictionary, waves_done: int) -> bool:
 		return false
 	player.spend_resources(price(item, waves_done, player))
 	player.items.append(item["id"])
-	if is_gun(item):
-		player.equip_gun(item["gun"])
-	if is_melee(item):
-		player.equip_melee(item["melee"])
 	if is_equipment(item):
 		player.equip_equipment(item["equipment"])
 	for id in item["effects"]:

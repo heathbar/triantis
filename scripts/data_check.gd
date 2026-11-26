@@ -62,10 +62,6 @@ static func problems() -> PackedStringArray:
 		for key: String in item.get("effects", {}):
 			if not attribute_ids.has(key):
 				out.append("Item %s: effect \"%s\" isn't an attribute" % [id, key])
-		if item.has("gun") and Guns.find(item["gun"]).is_empty():
-			out.append("Item %s: no gun \"%s\"" % [id, item["gun"]])
-		if item.has("melee") and Melee.find(item["melee"]).is_empty():
-			out.append("Item %s: no melee weapon \"%s\"" % [id, item["melee"]])
 		if item.has("equipment") and Equipment.find(item["equipment"]).is_empty():
 			out.append("Item %s: no equipment \"%s\"" % [id, item["equipment"]])
 

@@ -20,6 +20,11 @@ const PlayerStats := preload("res://scripts/ui/player_stats.gd")
 const WaveSummary := preload("res://scripts/ui/wave_summary.gd")
 const CampfireWait := preload("res://scripts/ui/campfire_wait.gd")
 const ResourcePickup := preload("res://scripts/resource_pickup.gd")
+## The difficulty curve both modes share (sets each wave's enemy health).
+const DifficultyCurve := preload("res://scripts/waves/difficulty_curve.gd")
+## Class Mods, picked after every boss fight but a run's last (both modes).
+const ClassModFx := preload("res://scripts/class_mods/class_mod_fx.gd")
+const ClassModPicker := preload("res://scripts/class_mods/class_mod_picker.gd")
 const DEFAULT_WAVE_SET := "res://data/waves/standard_run.tres"
 ## Where each player (by slot) starts around the spawn point. A lone player
 ## starts on it.
@@ -63,6 +68,9 @@ var squads_game := false
 ## (scripts/net/squad_link.gd in the arena, scripts/braid/braid_link.gd in
 ## Braid), else null.
 var link: Node
+## Makes our players' Class Mods happen (scripts/class_mods/class_mod_fx.gd);
+## added by _spawn_players.
+var class_mod_fx: ClassModFx
 ## Screen pixels per world pixel in the pixel viewport itself: 1 when it
 ## renders at PIXEL_ART_RESOLUTION and is scaled up afterwards, or the
 ## whole-number scale when Global.SMOOTH_PIXEL_MOTION renders it at full size
@@ -161,8 +169,33 @@ func score_multiplier() -> float:
 
 ## One of our players killed one of our enemies at `at` (after the points and
 ## drops were handed out).
-func _after_enemy_killed(_killer: Node, _at: Vector2, _enemy: Enemy) -> void:
-	pass
+func _after_enemy_killed(killer: Node, at: Vector2, enemy: Enemy) -> void:
+	if class_mod_fx:
+		class_mod_fx.on_enemy_died(killer, at, enemy)
+
+
+# --- Class Mods ---------------------------------------------------------------
+
+## Where a bouncing Class Mod shot (Ricochet) bounces in a game without walls:
+## the playing field. Empty: walls only (the Campaign).
+func shot_bounds() -> Rect2:
+	return Rect2()
+
+
+## Every player picks a Class Mod (scripts/class_mods/class_mod_picker.gd);
+## returns once everyone is ready. Call after a boss fight, with the world
+## paused. `rng_seed` deals the cards.
+func _pick_class_mods(rng_seed: int, title: String) -> void:
+	var picker := ClassModPicker.new()
+	add_child(picker)
+	picker.open(all_players, rng_seed, title)
+	await picker.all_ready
+
+
+## Ends every Class Mod effect left on the field (marks, traps, puddles...).
+func _clear_class_mods() -> void:
+	if class_mod_fx:
+		class_mod_fx.clear()
 
 
 ## Where drops from another squad's enemy that one of our players killed at
@@ -206,6 +239,11 @@ func _spawn_players(bounds: Rect2) -> void:
 		if loadout["resources"] > 0:
 			player.add_resources(loadout["resources"])
 		player.died.connect(_on_player_died)
+	class_mod_fx = ClassModFx.new()
+	class_mod_fx.setup(self)
+	add_child(class_mod_fx)
+	for player in all_players:
+		class_mod_fx.watch(player)
 
 
 ## Adds the pause menu, with every player's stats card. Call once the players

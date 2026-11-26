@@ -383,6 +383,8 @@ func on_body_hit(body: Node, amount: int, source: Node, at: Vector2, from_equipm
 	_pending[body.part] = _pending.get(body.part, 0.0) + dmg
 	if is_instance_valid(source) and source in game.all_players:
 		record_hit(body, dmg, source)
+	if is_instance_valid(source) and source is Player:
+		source.record_damage(dmg)
 
 
 func on_body_slow(_body: Node, _mult: float, _seconds: float) -> void:

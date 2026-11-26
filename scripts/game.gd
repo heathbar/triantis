@@ -132,6 +132,7 @@ func _ready() -> void:
 
 	if wave_set == null:
 		wave_set = load(DEFAULT_WAVE_SET)
+	DifficultyCurve.apply(wave_set)
 	var test_kit := {}
 	if boss_test:
 		var test := BossTest.settings()
@@ -366,6 +367,12 @@ func _on_wave_finished(index: int, failed := false) -> void:
 			"Press {A} to continue to the shop", wave.bonus_hearts)
 	_squad_fail_reason = ""
 	await summary.continued
+	# After a boss (not the run's last wave, handled above): every player
+	# picks a Class Mod, as in the campaign.
+	if wave.is_boss_wave():
+		var squad := Squads.my_squad() if squads_game else 0
+		await _pick_class_mods(Global.run_seed + index * 7 + squad * 101,
+			"WAVE %d CLEARED: CLASS MOD" % (index + 1))
 	_go_shopping(index + 1)
 
 
@@ -482,10 +489,16 @@ func _wave_summary_rows() -> Array[Dictionary]:
 	return rows
 
 
+## Ricochet shots bounce off the edges of the map (the arena has no walls).
+func shot_bounds() -> Rect2:
+	return grass_bounds
+
+
 ## Removes the wave's leftovers: enemies vanish, uncollected resources are
 ## handed out, and shots in flight and everything equipment put down
 ## (turrets, mines, ...) disappear.
 func _clear_field() -> void:
+	_clear_class_mods()
 	if objective:
 		objective.queue_free()
 		objective = null

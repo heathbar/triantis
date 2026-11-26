@@ -1,7 +1,7 @@
 extends Node2D
-## Short-lived effect pictures for Braid Class Mods: a ring (a burst),
+## Short-lived effect pictures for Class Mods: a ring (a burst),
 ## a line (a chain jump). Each fades out and frees itself. Use the static
-## helpers: BraidFxVisuals.ring(parent, at, radius, colour), .line(...).
+## helpers: ModFxVisuals.ring(parent, at, radius, colour), .line(...).
 
 const LIFE := 0.25
 
@@ -13,7 +13,7 @@ var _t := 0.0
 
 
 static func ring(parent: Node, at: Vector2, r: float, c: Color) -> void:
-	var fx: Variant = load("res://scripts/braid/braid_fx_visuals.gd").new()
+	var fx: Variant = load("res://scripts/class_mods/mod_fx_visuals.gd").new()
 	fx.kind = "ring"
 	fx.radius = r
 	fx.color = c
@@ -22,7 +22,7 @@ static func ring(parent: Node, at: Vector2, r: float, c: Color) -> void:
 
 
 static func line(parent: Node, a: Vector2, b: Vector2, c: Color) -> void:
-	var fx: Variant = load("res://scripts/braid/braid_fx_visuals.gd").new()
+	var fx: Variant = load("res://scripts/class_mods/mod_fx_visuals.gd").new()
 	fx.kind = "line"
 	fx.to = b - a
 	fx.color = c

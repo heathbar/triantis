@@ -9,8 +9,8 @@ extends CanvasLayer
 ## next tier once fully tuned.
 ##
 ## Each column has two tabs: SHOP (the items for sale) and STATS (the player's
-## attributes and current stats), plus a third, MODS (the Braid Class Mods
-## they've picked, scripts/braid/braid_class_mod.gd), once they have one.
+## attributes and current stats), plus a third, MODS (the Class Mods
+## they've picked, scripts/class_mods/class_mod.gd), once they have one.
 ##
 ## Controls (per player):
 ##   LB / RB, Q / E     - switch between the SHOP, STATS (and MODS) tabs
@@ -45,8 +45,9 @@ const PlayerStats := preload("res://scripts/ui/player_stats.gd")
 const MenuInput := preload("res://scripts/ui/menu_input.gd")
 const ResourceIcon := preload("res://scripts/ui/resource_icon.gd")
 const ButtonPrompts := preload("res://scripts/ui/button_prompts.gd")
-const BraidClassMod := preload("res://scripts/braid/braid_class_mod.gd")
+const ClassMod := preload("res://scripts/class_mods/class_mod.gd")
 const ActTheme := preload("res://scripts/act_theme.gd")
+const FitToScreen := preload("res://scripts/ui/fit_to_screen.gd")
 ## Darkens the act's floor behind the shop.
 const BACKGROUND_DIM := Color(0, 0, 0, 0.75)
 
@@ -55,6 +56,9 @@ const ROW_BG := Color(0.12, 0.15, 0.12)
 const ROW_SELECTED_BG := Color(0.22, 0.3, 0.22)
 const BORDER_IDLE := Color(0.35, 0.4, 0.35)
 const MUTED := Color(0.55, 0.55, 0.55)
+## A row's name text (and READY UP's).
+const ROW_FONT_SIZE := 44
+const ROW_OUTLINE := 6
 const TOO_EXPENSIVE := Color(1.0, 0.4, 0.4)
 const BANK_COLOR := Color(1.0, 0.8, 0.25)
 const TUNE_COLOR := Color(0.55, 0.85, 1.0)
@@ -64,8 +68,9 @@ const UPGRADE_STAT_NAMES := {"fire_rate": "fire rate", "damage": "damage", "rang
 const MELEE_UPGRADE_STAT_NAMES := {"fire_rate": "swing speed", "damage": "damage", "range": "reach"}
 const BUFF_COLOR := AttributeBar.POSITIVE_COLOR
 const DEBUFF_COLOR := AttributeBar.NEGATIVE_COLOR
-const HINT := "{LB}{RB} switch tab     Up / Down: choose     {A} buy" \
-	+ "     {X} bank item     Start: ready     {B} un-ready"
+# Controller icons only: no keyboard text.
+const HINT := "{LB}{RB} switch tab     {UP}{DOWN} choose     {A} buy" \
+	+ "     {X} bank item     {B} un-ready"
 
 ## Seconds before the shop closes on its own. With SHOP_WARN left the screen
 ## flashes, and from then on the countdown is red and pops every second.
@@ -95,6 +100,8 @@ const PAGE_HEIGHT := 870
 var _seats: Array[Dictionary] = []
 var _menu_input := MenuInput.new()
 var _hint: RichTextLabel
+## Holds the shop's contents; scaled down to fit the screen (FitToScreen).
+var _center: CenterContainer
 var _timer_label: Label
 var _time_left := SHOP_TIME
 var bg: TextureRect  # the act floor behind the shop
@@ -141,6 +148,8 @@ func open(players: Array[Node], next_wave_index: int, total_waves: int, price_wa
 	var center := CenterContainer.new()
 	add_child(center)
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_center = center
+	get_viewport().size_changed.connect(_fit_to_screen)
 
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 20)
@@ -373,11 +382,10 @@ func _reroll(seat: Dictionary) -> void:
 	for slot in seat["offer"].size():
 		if seat["banked"][slot]:
 			keep.append(seat["offer"][slot])
-	var fresh := Items.roll_random(player, slots.size(), seat["offer"], keep)
+	var fresh := Items.roll_random(player, slots.size(), seat["offer"])
 	if fresh.size() < slots.size():
 		# Not enough unseen items: allow the replaced ones back.
-		fresh.append_array(Items.roll_random(player, slots.size() - fresh.size(),
-			keep + fresh, keep + fresh))
+		fresh.append_array(Items.roll_random(player, slots.size() - fresh.size(), keep + fresh))
 	player.spend_resources(cost)
 	seat["rerolls"] += 1
 	for i in mini(slots.size(), fresh.size()):
@@ -545,7 +553,7 @@ func _build_column(seat: Dictionary, parent: Node) -> void:
 	tab_bar.add_child(ButtonPrompts.label("{LB}", MUTED, 34))
 	var tab_labels: Array[PanelContainer] = []
 	# MODS only once the player has a Class Mod (picks never change in the shop).
-	var tab_count := TAB_NAMES.size() if not BraidClassMod.picks(player).is_empty() \
+	var tab_count := TAB_NAMES.size() if not ClassMod.picks(player).is_empty() \
 		else Tab.MODS
 	for tab_name in TAB_NAMES.slice(0, tab_count):
 		var tab_style := StyleBoxFlat.new()
@@ -652,7 +660,7 @@ func _build_mods_page(seat: Dictionary, page: VBoxContainer) -> void:
 	var player: Node = seat["player"]
 	seat["mod_kinds"] = []
 	seat["mod_texts"] = []
-	for a in BraidClassMod.actives(player):
+	for a in ClassMod.actives(player):
 		var card := {"slot": a["slot"], "branch": a["branch"], "level": a["level"]}
 		var gun: bool = a["slot"] == "gun"
 		var style := StyleBoxFlat.new()
@@ -665,11 +673,11 @@ func _build_mods_page(seat: Dictionary, page: VBoxContainer) -> void:
 		var inner := VBoxContainer.new()
 		inner.add_theme_constant_override("separation", 4)
 		panel.add_child(inner)
-		var kind := _label("", BraidClassMod.GUN_COLOR if gun else BraidClassMod.MELEE_COLOR, 30, 5)
+		var kind := _label("", ClassMod.GUN_COLOR if gun else ClassMod.MELEE_COLOR, 30, 5)
 		kind.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		inner.add_child(kind)
 		seat["mod_kinds"].append([kind, gun])
-		var title := _label(BraidClassMod.card_title(card), Color.WHITE, 48, 8)
+		var title := _label(ClassMod.card_title(card), Color.WHITE, 48, 8)
 		title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		inner.add_child(title)
 		var text := RichTextLabel.new()
@@ -677,7 +685,7 @@ func _build_mods_page(seat: Dictionary, page: VBoxContainer) -> void:
 		text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		text.add_theme_font_size_override("normal_font_size", 34)
 		text.add_theme_color_override("default_color", Color(0.85, 0.85, 0.85))
-		text.text = BraidClassMod.card_text(card)
+		text.text = ClassMod.card_text(card)
 		inner.add_child(text)
 		seat["mod_texts"].append(text)
 
@@ -703,8 +711,9 @@ func _size_mod_texts(seat: Dictionary, width: float) -> void:
 		measure.queue_free()
 
 
-## Returns [panel, name_label, tag_label, cost_label].
-func _build_row(parent: Node) -> Array:
+## A shop row's box (unselected). Shared with other screens' READY UP
+## buttons (make_ready_row) so they look identical.
+static func row_style() -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	style.bg_color = ROW_BG
 	style.set_border_width_all(4)
@@ -714,15 +723,45 @@ func _build_row(parent: Node) -> Array:
 	style.content_margin_right = 20
 	style.content_margin_top = 8
 	style.content_margin_bottom = 8
+	return style
 
+
+## A READY UP button exactly like the shop's, for other screens (the Class
+## Mod picker): returns [row, label]. Restyle it with style_ready_row().
+static func make_ready_row() -> Array:
 	var row := PanelContainer.new()
-	row.add_theme_stylebox_override("panel", style)
+	row.add_theme_stylebox_override("panel", row_style())
+	var label := Label.new()
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", ROW_FONT_SIZE)
+	label.add_theme_color_override("font_outline_color", Color.BLACK)
+	label.add_theme_constant_override("outline_size", ROW_OUTLINE)
+	row.add_child(label)
+	style_ready_row(row, label, false, false, Color.WHITE)
+	return [row, label]
+
+
+## Styles a READY UP row the way the shop does: highlighted (player-colour
+## border) when the cursor is on it, "READY!" in the player's colour once ready.
+static func style_ready_row(row: PanelContainer, label: Label, selected: bool, is_ready: bool,
+		color: Color) -> void:
+	label.text = "READY!" if is_ready else "READY UP"
+	label.add_theme_color_override("font_color", color if is_ready else Color.WHITE)
+	var style: StyleBoxFlat = row.get_theme_stylebox("panel")
+	style.bg_color = ROW_SELECTED_BG if selected else ROW_BG
+	style.border_color = color if selected else ROW_BG
+
+
+## Returns [panel, name_label, tag_label, cost_label].
+func _build_row(parent: Node) -> Array:
+	var row := PanelContainer.new()
+	row.add_theme_stylebox_override("panel", row_style())
 	parent.add_child(row)
 
 	var hbox := HBoxContainer.new()
 	hbox.add_theme_constant_override("separation", 16)
 	row.add_child(hbox)
-	var name_label := _label("", Color.WHITE, 44, 6)
+	var name_label := _label("", Color.WHITE, ROW_FONT_SIZE, ROW_OUTLINE)
 	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	name_label.clip_text = true
@@ -745,6 +784,14 @@ func _refresh() -> void:
 			ready_count += 1
 	if _hint:
 		ButtonPrompts.set_text(_hint, HINT + "          Ready: %d / %d" % [ready_count, _seats.size()])
+	# Columns can grow (pages never shrink); wrapped text settles a frame later.
+	_fit_to_screen.call_deferred()
+
+
+## Four players' columns are wider than the screen: shrink the shop to fit.
+func _fit_to_screen() -> void:
+	if _center:
+		FitToScreen.fit(_center)
 
 
 func _refresh_seat(seat: Dictionary) -> void:
@@ -1028,7 +1075,6 @@ func _melee_tune_description(player: Node) -> String:
 
 
 ## The item's effects, one per line: buffs in green, then debuffs in red.
-## A gun or melee weapon instead lists its stats next to the held one's.
 func _item_description(seat: Dictionary, slot: int) -> String:
 	return _describe_item(seat["player"], Items.find(seat["offer"][slot]), seat["sold"][slot])
 
@@ -1038,10 +1084,6 @@ func _describe_item(player: Node, item: Dictionary, sold: bool) -> String:
 	var lines: PackedStringArray = []
 	if sold:
 		lines.append("[color=#%s]Bought[/color]" % MUTED.to_html(false))
-	if Items.is_gun(item):
-		lines.append_array(_gun_description(player, item, sold))
-	if Items.is_melee(item):
-		lines.append_array(_melee_description(player, item, sold))
 	if Items.is_equipment(item):
 		lines.append_array(_equipment_description(player, item, sold))
 	if item.get("id", "") == "vampire_fangs":
@@ -1053,19 +1095,6 @@ func _describe_item(player: Node, item: Dictionary, sold: bool) -> String:
 		lines.append("[color=#%s]%s %+d[/color]" % [
 			buff if delta > 0 else DEBUFF_COLOR.to_html(false), effect[0]["name"], delta])
 	return "\n".join(lines)
-
-
-## A gun's stats in the player's hands, each beside the held gun's (green if
-## the new one is better, red if worse).
-func _gun_description(player: Node, item: Dictionary, sold: bool) -> PackedStringArray:
-	var lines: PackedStringArray = []
-	var new: Dictionary = player.gun_stats(Guns.get_gun(item["gun"]))
-	var now: Dictionary = player.gun_stats(player.gun, player.gun_level)
-	if not sold:
-		lines.append("[color=#%s]Replaces your %s[/color]" % [
-			MUTED.to_html(false), player.gun_name()])
-	lines.append_array(_gun_lines(new, now, sold))
-	return lines
 
 
 ## Damage, fire rate, range and knockback of gun stats `new` beside `now`.
@@ -1088,19 +1117,6 @@ func _gun_lines(new: Dictionary, now: Dictionary, sold: bool) -> PackedStringArr
 		lines.append("[color=#%s]Recoil pushes you back[/color]" % MUTED.to_html(false))
 	if new["overkill"]:
 		lines.append("[color=#%s]Kills carry leftover damage into the next enemy[/color]" % MUTED.to_html(false))
-	return lines
-
-
-## A melee weapon's damage, reach, arc and knockback in the player's hands, each beside the
-## held weapon's. (Swing speed isn't shown.)
-func _melee_description(player: Node, item: Dictionary, sold: bool) -> PackedStringArray:
-	var lines: PackedStringArray = []
-	var new: Dictionary = player.melee_stats(Melee.get_weapon(item["melee"]))
-	var now: Dictionary = player.melee_stats(player.melee, player.melee_level)
-	if not sold:
-		lines.append("[color=#%s]Replaces your %s[/color]" % [
-			MUTED.to_html(false), player.melee_name()])
-	lines.append_array(_melee_lines(new, now, sold))
 	return lines
 
 

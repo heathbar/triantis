@@ -22,7 +22,9 @@ extends Resource
 @export_range(0.05, 1.0, 0.05) var spawn_window := 0.8
 
 @export_group("Enemy Scaling")
-## Multiplies every enemy's health this wave.
+## Multiplies every enemy's health this wave. In the standard run (arena and
+## Campaign) this is replaced at run start from the shared difficulty curve,
+## scripts/waves/difficulty_curve.gd: tune that table, not this number.
 @export_range(0.1, 20.0, 0.05) var enemy_health_multiplier := 1.0
 ## Multiplies every enemy's movement speed this wave.
 @export_range(0.1, 5.0, 0.05) var enemy_speed_multiplier := 1.0

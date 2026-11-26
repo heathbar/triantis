@@ -1,11 +1,17 @@
 extends Node2D
-## Makes Braid Class Mods (scripts/braid/braid_class_mod.gd) happen in
-## play, for our squad's players (braid_game.gd adds one and watch()es each
-## player). A player can have several branches going at once, so everything
-## here looks picks up by mechanic (BraidClassMod.mechanics) and stacks
+## Makes Class Mods (scripts/class_mods/class_mod.gd) happen in play, for
+## our squad's players, in the arena and the Campaign alike (GameBase adds
+## one and watch()es each player as they spawn).
+##
+## What it needs from the game: all_players, is_wave_running(),
+## _drop_resources(), shot_bounds() (where Ricochet shots bounce in a game
+## without walls) and `link` (another squad's game, if any: shots are
+## reported to it, and when it has send_mark / remote_player_keys / send_heal,
+## marks and heals reach other squads too). A player can have several branches going at once, so everything
+## here looks picks up by mechanic (ClassMod.mechanics) and stacks
 ## what applies. It hooks the players' existing weapons from outside:
 ##   - each shot a player fires (their shot_fired signal) is swapped for a
-##     BraidShot (scripts/braid/braid_shot.gd) carrying every gun Class Mod
+##     ModShot (scripts/class_mods/mod_shot.gd) carrying every gun Class Mod
 ##     they have, plus a burst after it for Fan / Spray,
 ##   - a Laser Sight beam along each aiming player's line of fire,
 ##   - each melee swing (a MeleeSwing child added to the player) is widened
@@ -19,13 +25,12 @@ extends Node2D
 ## for our players (and other squads', through the link).
 
 const CharacterClasses := preload("res://scripts/character_classes.gd")
-const BraidClassMod := preload("res://scripts/braid/braid_class_mod.gd")
-const BraidShot := preload("res://scripts/braid/braid_shot.gd")
-const BraidTuning := preload("res://scripts/braid/braid_tuning.gd")
+const ClassMod := preload("res://scripts/class_mods/class_mod.gd")
+const ModShot := preload("res://scripts/class_mods/mod_shot.gd")
 const MeleeSwing := preload("res://scripts/melee_swing.gd")
 const Projectile := preload("res://scripts/projectile.gd")
 const BossBody := preload("res://scripts/bosses/boss_body.gd")
-const Visuals := preload("res://scripts/braid/braid_fx_visuals.gd")
+const Visuals := preload("res://scripts/class_mods/mod_fx_visuals.gd")
 
 const TINTS := {
 	"pierce": Color(0.55, 0.9, 1.0), "mark": Color(1.0, 0.4, 0.4), "ricochet": Color(1.0, 0.9, 0.4),
@@ -61,7 +66,7 @@ const PATH_REACH := 10.0
 const LASER_WIDTH := 4.0
 const LASER_GRACE := 0.25
 
-## The game scene (scripts/braid/braid_game.gd).
+## The game scene (a GameBase: scripts/game.gd or scripts/braid/braid_game.gd).
 var game: Node2D
 ## Our players -> their running state (see _new_state).
 var _st := {}
@@ -103,7 +108,6 @@ func setup(game_node: Node2D) -> void:
 func watch(player: Node) -> void:
 	player.shot_fired.connect(_on_shot.bind(player))
 	player.child_entered_tree.connect(_on_child.bind(player))
-	player.resources_changed.connect(_on_resources.bind(player))
 	player.hit_filter = _filter_hit.bind(player)
 	_st[player] = _new_state(player)
 
@@ -114,7 +118,7 @@ func _new_state(player: Node) -> Dictionary:
 		"laser": [], "laser_on": -INF,
 		"lunge_bonus": false, "swing_at": -INF, "next_double": false, "swings": 0,
 		"combo": 0, "combo_at": -INF, "bulwark": 0, "bulwark_at": -INF, "thorn": 0.0,
-		"hitrun": 0, "timed": {}, "res": player.resources,
+		"hitrun": 0, "timed": {},
 	}
 
 
@@ -141,7 +145,7 @@ func _physics_process(delta: float) -> void:
 # --- Per player, every frame ---------------------------------------------------
 
 func _tick_player(p: Node, delta: float) -> void:
-	var ev := BraidClassMod.mechanics(p)
+	var ev := ClassMod.mechanics(p)
 	var s: Dictionary = _st[p]
 	var alive: bool = not p.is_dead() and game.is_wave_running()
 	# No shooting while meleeing (Player.melee_busy), so no aim for gun mods.
@@ -199,7 +203,7 @@ func _tick_laser(p: Node, s: Dictionary, st: Dictionary, aim: Vector2, alive: bo
 		var from: Vector2 = p.global_position + aim * Player.MUZZLE_DISTANCE
 		var to: Vector2 = from + aim * p.shot_speed * p.shot_lifetime
 		var space := get_world_2d().direct_space_state
-		var ray := PhysicsRayQueryParameters2D.create(from, to, BraidTuning.WALL_LAYER)
+		var ray := PhysicsRayQueryParameters2D.create(from, to, PhysicsLayers.WALLS)
 		ray.hit_from_inside = true  # the muzzle can poke into a wall
 		var wall := space.intersect_ray(ray)
 		if not wall.is_empty():
@@ -283,9 +287,9 @@ func _timed(p: Node, kind: String, effects: Dictionary, secs: float) -> void:
 # --- Guns ---------------------------------------------------------------------
 
 func _on_shot(shot: Node, player: Node) -> void:
-	if not is_instance_valid(shot) or shot.get_script() == BraidShot:
+	if not is_instance_valid(shot) or shot.get_script() == ModShot:
 		return
-	var ev := BraidClassMod.mechanics(player)
+	var ev := ClassMod.mechanics(player)
 	if ev.is_empty():
 		return
 	var s: Dictionary = _st[player]
@@ -337,6 +341,7 @@ func _apply(s: Node, player: Node, ev: Dictionary, first: bool) -> void:
 	if ev.has("ricochet"):
 		st = ev["ricochet"]
 		s.bounces_left = int(st["bounces"])
+		s.edge_bounds = game.shot_bounds()
 		s.bounce_gain = st["gain"]
 		s.seek = st.get("seek", false)
 	if ev.has("grenade") and first and state["shots"] % int(ev["grenade"]["every"]) == 0:
@@ -406,9 +411,9 @@ func _tint_for(ev: Dictionary) -> Color:
 	return Color.WHITE
 
 
-## A BraidShot with `shot`'s flight (direction, damage, range, look).
+## A ModShot with `shot`'s flight (direction, damage, range, look).
 func _copy(shot: Node, player: Node, tint: Color) -> Node:
-	var s := BraidShot.new()
+	var s := ModShot.new()
 	s.direction = shot.direction
 	s.damage = shot.damage
 	s.lifetime = shot.lifetime
@@ -434,8 +439,8 @@ func _fan_shot(player: Node, dir: Vector2, damage: int, life: float, spd: float,
 		kb: float, homing: bool) -> void:
 	if not is_instance_valid(player) or player.is_dead() or not game.is_wave_running():
 		return
-	var ev := BraidClassMod.mechanics(player)
-	var s := BraidShot.new()
+	var ev := ClassMod.mechanics(player)
+	var s := ModShot.new()
 	s.direction = dir.rotated(randf_range(-0.05, 0.05))
 	s.damage = damage
 	s.lifetime = life
@@ -454,7 +459,7 @@ func _fan_shot(player: Node, dir: Vector2, damage: int, life: float, spd: float,
 		game.link.report_shot(s)
 
 
-## Everything a hit from one of our BraidShots does that the shot itself
+## Everything a hit from one of our ModShots does that the shot itself
 ## doesn't (it has already dealt its damage).
 func on_shot_hit(shot: Node, enemy: Node) -> void:
 	var p: Node = shot.shooter
@@ -463,7 +468,7 @@ func on_shot_hit(shot: Node, enemy: Node) -> void:
 	if shot.has_meta("melee"):
 		_on_melee_hit(enemy, p, null)
 		return
-	var ev := BraidClassMod.mechanics(p)
+	var ev := ClassMod.mechanics(p)
 	if ev.has("overclock"):
 		p.equipment_cooldown = maxf(p.equipment_cooldown - ev["overclock"]["per_hit"], 0.0)
 	if shot.is_shard and ev.has("flak") and ev["flak"].get("combo", false) and ev.has("combo"):
@@ -513,7 +518,7 @@ func _tick_shoved() -> void:
 			continue
 		for k in enemy.get_slide_collision_count():
 			var collider: Variant = enemy.get_slide_collision(k).get_collider()
-			if collider is CollisionObject2D and collider.collision_layer & BraidTuning.WALL_LAYER:
+			if collider is CollisionObject2D and collider.collision_layer & PhysicsLayers.WALLS:
 				enemy.apply_slow(0.02, e["stun"])
 				Visuals.ring(game, enemy.global_position, 12.0, TINTS["push"])
 				_shoved.remove_at(i)
@@ -525,7 +530,7 @@ func _tick_shoved() -> void:
 func _on_child(node: Node, player: Node) -> void:
 	if node.get_script() != MeleeSwing:
 		return
-	var ev := BraidClassMod.mechanics(player)
+	var ev := ClassMod.mechanics(player)
 	if ev.is_empty():
 		return
 	var s: Dictionary = _st[player]
@@ -562,7 +567,7 @@ func _on_child(node: Node, player: Node) -> void:
 		var count := int(st["count"])
 		for k in count:
 			var angle := 0.0 if count == 1 else lerpf(-0.3, 0.3, float(k) / (count - 1))
-			var s2 := BraidShot.new()
+			var s2 := ModShot.new()
 			s2.direction = facing.rotated(angle)
 			s2.damage = maxi(roundi(player.melee_damage * 0.7), 1)
 			s2.lifetime = st["range"]
@@ -594,7 +599,7 @@ func _on_child(node: Node, player: Node) -> void:
 func _on_melee_hit(enemy: Node, player: Node, swing: Node) -> void:
 	if not is_instance_valid(player) or not _st.has(player):
 		return
-	var ev := BraidClassMod.mechanics(player)
+	var ev := ClassMod.mechanics(player)
 	if ev.has("combo"):
 		_combo_hit(player, ev["combo"])
 	if ev.has("bulwark"):
@@ -760,7 +765,7 @@ func _filter_hit(_amount: int, _at: Vector2, player: Node) -> bool:
 		_shields.erase(player)
 		Visuals.ring(game, player.global_position, 12.0, TINTS["heal"])
 		return true
-	var ev := BraidClassMod.mechanics(player)
+	var ev := ClassMod.mechanics(player)
 	if not ev.has("riposte"):
 		return false
 	var st: Dictionary = ev["riposte"]
@@ -789,7 +794,7 @@ func _filter_hit(_amount: int, _at: Vector2, player: Node) -> bool:
 	return true
 
 
-## braid_game.gd: one of our own enemies died (not to another squad).
+## GameBase: one of our own enemies died (not to another squad).
 ## `killer` is our player who finished it, or null.
 func on_enemy_died(killer: Node, at: Vector2, enemy: Node) -> void:
 	var id := enemy.get_instance_id()
@@ -806,7 +811,7 @@ func on_enemy_died(killer: Node, at: Vector2, enemy: Node) -> void:
 	_suppress.erase(id)
 	if not is_instance_valid(killer) or not _st.has(killer):
 		return
-	var ev := BraidClassMod.mechanics(killer)
+	var ev := ClassMod.mechanics(killer)
 	var s: Dictionary = _st[killer]
 	if ev.has("salvage") and randf() < ev["salvage"]["chance"]:
 		game._drop_resources(at, 1)
@@ -831,17 +836,18 @@ func on_enemy_died(killer: Node, at: Vector2, enemy: Node) -> void:
 
 
 ## Salvage III: picking up resources speeds the gun up for a moment.
-func _on_resources(amount: int, player: Node) -> void:
-	var s: Dictionary = _st.get(player, {})
-	if s.is_empty():
-		return
-	var gained: bool = amount > s["res"]
-	s["res"] = amount
-	if not gained or not game.is_wave_running():
-		return
-	var ev := BraidClassMod.mechanics(player)
-	if ev.has("salvage") and ev["salvage"].has("rate"):
-		_timed(player, "salvage", {"fire_rate": _attr(ev["salvage"]["rate"])}, ev["salvage"]["rate_secs"])
+## Campaign: the tide swallowed `count` of our pickups (braid_tide.gd).
+## Each of our players with Salvage III collects them, scaled by their
+## harvesting like any pickup, knocked out or not (like the squad's shared
+## copies); nobody else gets a copy.
+func on_tide_pickups(count: int) -> void:
+	for p: Node in _st:
+		if not is_instance_valid(p):
+			continue
+		var st: Dictionary = ClassMod.mechanics(p).get("salvage", {})
+		if st.get("tide", false):
+			p.harvest(count)
+			Visuals.ring(game, p.global_position, 12.0, TINTS["salvage"])
 
 
 # --- What Class Mods leave behind ---------------------------------------------------
@@ -852,7 +858,7 @@ func _on_resources(amount: int, player: Node) -> void:
 ## game: we tell that squad (just the multiplier and time).
 func mark(enemy: Node, mult: float, secs: float, spread := 0.0, drop := 0) -> void:
 	if enemy.get("is_mirror"):
-		if game.link:
+		if game.link and game.link.has_method("send_mark"):
 			game.link.send_mark(enemy, mult, secs)
 		return
 	if not "damage_taken_multiplier" in enemy or enemy.is_dead():
@@ -944,7 +950,7 @@ func heal_nearest(at: Vector2) -> void:
 func add_spike(shooter: Node, at: Vector2, secs: float, damage: int) -> void:
 	if not is_instance_valid(shooter) or not game.is_wave_running():
 		return
-	var st: Dictionary = BraidClassMod.mechanics(shooter).get("nail", {})
+	var st: Dictionary = ClassMod.mechanics(shooter).get("nail", {})
 	var cap := int(st.get("max", 8))
 	var list: Array = _spikes.get(shooter.get_instance_id(), [])
 	list = list.filter(func(s) -> bool: return is_instance_valid(s))
@@ -997,7 +1003,7 @@ func bomblets(at: Vector2, count: int, damage: int, source: Node, color: Color) 
 func ally_along(shot: Node, from: Vector2, to: Vector2) -> void:
 	var reach := 16.0
 	var shooter: Node = shot.shooter
-	var ev := BraidClassMod.mechanics(shooter) if is_instance_valid(shooter) else {}
+	var ev := ClassMod.mechanics(shooter) if is_instance_valid(shooter) else {}
 	for p: Node2D in game.all_players:
 		if p == shooter or not _near_segment(p.global_position, from, to, reach):
 			continue
@@ -1024,7 +1030,7 @@ func ally_along(shot: Node, from: Vector2, to: Vector2) -> void:
 			var boost: float = ev["stim"]["boost"]
 			_timed(p, "stim", {"speed": _attr(boost, "speed"), "fire_rate": _attr(boost)},
 					ev["stim"]["secs"])
-	if shot.heal and shot.heal_remote and game.link:
+	if shot.heal and shot.heal_remote and game.link and game.link.has_method("remote_player_keys"):
 		for key in game.link.remote_player_keys():
 			var proxy: Node2D = game.link.remote_player(key)
 			if proxy and proxy.is_alive() and _near_segment(proxy.position, from, to, reach):

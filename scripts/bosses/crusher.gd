@@ -60,7 +60,7 @@ extends Boss
 
 const CrusherFire := preload("res://scripts/bosses/crusher_fire.gd")
 
-const DEFAULT_HEALTH := 2100
+const DEFAULT_HEALTH := 3000
 const ENRAGE_AT := 90.0
 
 ## The truck, tyres included: its length (along its facing) and width (the

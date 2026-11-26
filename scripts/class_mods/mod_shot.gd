@@ -1,5 +1,5 @@
 extends "res://scripts/projectile.gd"
-## A shot from a modded Braid weapon (scripts/braid/braid_class_mod_fx.gd
+## A shot from a modded weapon (scripts/class_mods/class_mod_fx.gd
 ## makes these in place of the player's own projectiles, and for melee
 ## waves). It flies and hits like a projectile (scripts/projectile.gd), plus
 ## whatever its Class Mods add (all off by default):
@@ -9,7 +9,7 @@ extends "res://scripts/projectile.gd"
 ##            lets it fly on with the damage left over
 ##   big      x (1 + big_bonus) damage to Brutes, elites and bosses
 ##   bounce   reflects off walls `bounces_left` times (braid_shot_walls.gd
-##            calls on_wall), damage x (1 + bounce_gain) each time; with
+##            calls on_wall; in the arena, off the edges of `edge_bounds`), damage x (1 + bounce_gain) each time; with
 ##            `seek` it turns toward the nearest enemy after each bounce
 ##   homing   steers toward the nearest enemy as it flies
 ##   mark     hit enemies take x mark_mult damage from everyone for
@@ -37,7 +37,7 @@ extends "res://scripts/projectile.gd"
 ## Everything else a hit does (shred, burn, overclock...) is the effects
 ## node's on_shot_hit().
 
-const Zap := preload("res://scripts/braid/braid_fx_visuals.gd")
+const Zap := preload("res://scripts/class_mods/mod_fx_visuals.gd")
 
 ## The Class Mod effects node (for spikes, heals, hit effects and messages
 ## to other squads). Set before adding.
@@ -86,6 +86,9 @@ var through_walls := false
 var returns := false
 ## A colour for its Class Mods (drawn instead of white).
 var tint := Color.WHITE
+## A game without walls (the arena): a bouncing shot bounces off the edges
+## of this instead. Empty = no edges.
+var edge_bounds := Rect2()
 
 ## Seek / homing reach, and how fast homing turns (radians a second).
 const SEEK_RANGE := 200.0
@@ -141,6 +144,10 @@ func _physics_process(delta: float) -> void:
 			_stop()
 			queue_free()
 			return
+	if bounces_left > 0 and edge_bounds.has_area() and not edge_bounds.has_point(to):
+		on_wall(to.clamp(edge_bounds.position, edge_bounds.end), _edge_normal(to))
+		_age += delta
+		return
 	global_position = to
 	_age += delta
 	if flak_shards > 0 and _age >= lifetime * flak_at:
@@ -268,6 +275,20 @@ func _steer_home(delta: float) -> void:
 	var turn := clampf(direction.angle_to(want), -HOMING_TURN * delta, HOMING_TURN * delta)
 	direction = direction.rotated(turn)
 	rotation = direction.angle()
+
+
+## Which way the edge of edge_bounds that `at` is past faces (inward).
+func _edge_normal(at: Vector2) -> Vector2:
+	var n := Vector2.ZERO
+	if at.x < edge_bounds.position.x:
+		n.x = 1.0
+	elif at.x > edge_bounds.end.x:
+		n.x = -1.0
+	if at.y < edge_bounds.position.y:
+		n.y = 1.0
+	elif at.y > edge_bounds.end.y:
+		n.y = -1.0
+	return n.normalized()
 
 
 ## Hit a wall at `at` (normal `normal`): true if it bounced and flies on.

@@ -1,6 +1,6 @@
 extends CanvasLayer
-## After a Braid boss fight: every player picks one Class Mod from
-## their cards (scripts/braid/braid_class_mod.gd), each with their own
+## After a boss fight (arena or Campaign): every player picks one Class Mod from
+## their cards (scripts/class_mods/class_mod.gd), each with their own
 ## controller (or the keyboard, or a click), side by side like the shop.
 ## Emits `all_ready` once everyone is ready, then removes itself.
 ##
@@ -18,9 +18,12 @@ extends CanvasLayer
 
 signal all_ready
 
-const BraidClassMod := preload("res://scripts/braid/braid_class_mod.gd")
+const ClassMod := preload("res://scripts/class_mods/class_mod.gd")
 const MenuInput := preload("res://scripts/ui/menu_input.gd")
 const ButtonPrompts := preload("res://scripts/ui/button_prompts.gd")
+## For its READY UP button, so the two screens' buttons look identical.
+const Shop := preload("res://scripts/ui/shop.gd")
+const FitToScreen := preload("res://scripts/ui/fit_to_screen.gd")
 
 ## Every player's column is exactly this wide (all text wraps inside it), and
 ## every card is as tall as the tallest card on the screen, so all players'
@@ -28,7 +31,7 @@ const ButtonPrompts := preload("res://scripts/ui/button_prompts.gd")
 const COLUMN_WIDTH := 620.0
 ## A card's text width: COLUMN_WIDTH minus the 20 px side margins.
 const INNER_WIDTH := COLUMN_WIDTH - 40.0
-const CARD_MIN_HEIGHT := 300.0
+const CARD_MIN_HEIGHT := 200.0
 # Colours match the shop (scripts/ui/shop.gd): each player's column is a
 # panel framed in their colour (the class colour they picked), faint until
 # they're ready, solid once they are.
@@ -65,11 +68,11 @@ func open(players: Array[Node], rng_seed: int, title := "CLASS MODS") -> void:
 	add_child(center)
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var vbox := VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 30)
+	vbox.add_theme_constant_override("separation", 20)  # sizes match the shop
 	center.add_child(vbox)
-	vbox.add_child(_label(title, Color(0.6, 1.0, 0.7), 140, 22))
+	vbox.add_child(_label(title, Color(0.6, 1.0, 0.7), 120, 20))
 	vbox.add_child(_label("Pick one Class Mod each: it changes how that weapon works for the rest of the run.",
-		Color(0.85, 0.85, 0.85), 48, 8))
+		Color(0.85, 0.85, 0.85), 44, 8))
 	var columns := HBoxContainer.new()
 	columns.alignment = BoxContainer.ALIGNMENT_CENTER
 	columns.add_theme_constant_override("separation", 40)
@@ -83,7 +86,7 @@ func open(players: Array[Node], rng_seed: int, title := "CLASS MODS") -> void:
 	for player in ordered:
 		var rng := RandomNumberGenerator.new()
 		rng.seed = rng_seed * 31 + player.player_index
-		var seat := {"player": player, "cards": BraidClassMod.offer(player, rng), "cursor": 0,
+		var seat := {"player": player, "cards": ClassMod.offer(player, rng), "cursor": 0,
 			"selected": -1, "ready": false, "panels": [], "badges": [], "ready_button": null, "frame": null, "status": null,
 			"cards_box": null, "inspect_box": null, "inspecting": false}
 		_build_column(seat, columns)
@@ -113,24 +116,8 @@ func _equalize_cards(content: Control) -> void:
 	for seat in _seats:
 		for panel: Control in seat["panels"]:
 			panel.custom_minimum_size.y = tallest
-	_fit_to_screen(content)
+	FitToScreen.fit(content)
 	content.modulate.a = 1.0
-
-
-## Shrinks the whole screen evenly (never grows it) when the cards don't fit,
-## e.g. four players with long mod texts, so nothing runs off the edges.
-func _fit_to_screen(content: Control) -> void:
-	var box := content.get_child(0) as Control
-	var needed := box.get_combined_minimum_size()
-	var room := content.get_viewport_rect().size * 0.96
-	var fit := minf(1.0, minf(room.x / maxf(needed.x, 1.0), room.y / maxf(needed.y, 1.0)))
-	# `content` grows past the screen to hold everything, so scale from its
-	# corner and re-centre the scaled result by hand.
-	content.scale = Vector2(fit, fit)
-	# (Its size hasn't caught up with the new card heights yet, so work it out.)
-	var screen := content.get_viewport_rect().size
-	var full := Vector2(maxf(screen.x, needed.x), maxf(screen.y, needed.y))
-	content.position = (screen - full * fit) / 2.0
 
 
 func _build_column(seat: Dictionary, parent: Control) -> void:
@@ -147,17 +134,17 @@ func _build_column(seat: Dictionary, parent: Control) -> void:
 	parent.add_child(framed)
 	var col := VBoxContainer.new()
 	col.custom_minimum_size = Vector2(COLUMN_WIDTH, 0)
-	col.add_theme_constant_override("separation", 18)
+	col.add_theme_constant_override("separation", 14)
 	framed.add_child(col)
 	var class_name_text: String = player.class_id.capitalize()
 	col.add_child(_label("%s  %s" % [player.display_name(), class_name_text], player.color, 64, 10, true, COLUMN_WIDTH))
 	if seat["cards"].is_empty():
-		var why := "No Class Mods left to pick." if BraidClassMod.has_trees(player.class_id) \
+		var why := "No Class Mods left to pick." if ClassMod.has_trees(player.class_id) \
 			else "No Class Mods for the %s yet." % class_name_text
 		col.add_child(_label(why, MUTED, 44, 6, true, COLUMN_WIDTH))
 		return
 	var cards_box := VBoxContainer.new()
-	cards_box.add_theme_constant_override("separation", 18)
+	cards_box.add_theme_constant_override("separation", 14)
 	col.add_child(cards_box)
 	seat["cards_box"] = cards_box
 	var inspect_box := VBoxContainer.new()
@@ -175,9 +162,9 @@ func _build_column(seat: Dictionary, parent: Control) -> void:
 		var gun: bool = card["slot"] == "gun"
 		var weapon: Dictionary = player.gun if gun else player.melee
 		var kind := "%s: %s" % ["GUN" if gun else "MELEE", str(weapon.get("name", "")).to_upper()]
-		inner.add_child(_label(kind, BraidClassMod.GUN_COLOR if gun else BraidClassMod.MELEE_COLOR, 36, 6, false, INNER_WIDTH))
-		inner.add_child(_label(BraidClassMod.card_title(card), Color.WHITE, 60, 10, false, INNER_WIDTH))
-		var text := _label(BraidClassMod.card_text(card), Color(0.88, 0.88, 0.9), 38, 0, false, INNER_WIDTH)
+		inner.add_child(_label(kind, ClassMod.GUN_COLOR if gun else ClassMod.MELEE_COLOR, 36, 6, false, INNER_WIDTH))
+		inner.add_child(_label(ClassMod.card_title(card), Color.WHITE, 48, 8, false, INNER_WIDTH))
+		var text := _label(ClassMod.card_text(card), Color(0.88, 0.88, 0.9), 34, 0, false, INNER_WIDTH)
 		text.size_flags_vertical = Control.SIZE_EXPAND_FILL  # pushes the badge to the bottom
 		inner.add_child(text)
 		# Always laid out (hidden by alpha), so selecting doesn't change the card's height.
@@ -188,9 +175,8 @@ func _build_column(seat: Dictionary, parent: Control) -> void:
 		panel.gui_input.connect(_on_card_mouse.bind(seat, i))
 		cards_box.add_child(panel)
 		seat["panels"].append(panel)
-	var ready_button := PanelContainer.new()
-	ready_button.custom_minimum_size = Vector2(COLUMN_WIDTH, 0)
-	ready_button.add_child(_label("READY UP", Color.WHITE, 56, 10, true, INNER_WIDTH))
+	var ready_parts := Shop.make_ready_row()
+	var ready_button: PanelContainer = ready_parts[0]
 	ready_button.gui_input.connect(_on_ready_mouse.bind(seat))
 	cards_box.add_child(ready_button)
 	seat["ready_button"] = ready_button
@@ -287,7 +273,7 @@ func _build_inspect(seat: Dictionary) -> void:
 	var branch: Dictionary = card["branch"]
 	var offered := int(card["level"])
 	var gun: bool = card["slot"] == "gun"
-	var accent: Color = BraidClassMod.GUN_COLOR if gun else BraidClassMod.MELEE_COLOR
+	var accent: Color = ClassMod.GUN_COLOR if gun else ClassMod.MELEE_COLOR
 	box.add_child(_label("%s  %s" % ["GUN" if gun else "MELEE", str(branch["name"]).to_upper()], accent, 44, 8, true, COLUMN_WIDTH))
 	var stages: Array = branch["stages"]
 	for i in stages.size():
@@ -315,7 +301,7 @@ func _build_inspect(seat: Dictionary) -> void:
 		elif level == offered:
 			tag = "  (this pick)"
 		var head := _label("%s: %s%s" % [STAGE_NAMES[mini(i, 2)],
-			BraidClassMod.card_title({"branch": branch, "level": level}), tag],
+			ClassMod.card_title({"branch": branch, "level": level}), tag],
 			Color.WHITE if level >= offered else MUTED, 44, 8, false, INNER_WIDTH)
 		inner.add_child(head)
 		var text := _label(str(stages[i]["text"]), Color(0.88, 0.88, 0.9) if level >= offered else MUTED, 34, 0, false,
@@ -377,15 +363,8 @@ func _refresh() -> void:
 			seat["badges"][i].modulate.a = 1.0 if chosen else 0.0
 		var button: PanelContainer = seat["ready_button"]
 		if button:
-			var can_ready: bool = seat["selected"] >= 0
-			var on_button: bool = not ready and _on_ready_button(seat)
-			var bg := color.darkened(0.55) if (ready or (on_button and can_ready)) else CARD_BG
-			button.add_theme_stylebox_override("panel", _box(bg,
-				color if (on_button or ready) else CARD_BG, 6 if on_button or ready else 2))
-			button.modulate.a = 1.0 if can_ready else 0.45
-			var ready_label := button.get_child(0) as Label
-			ready_label.text = "READY!" if ready else "READY UP"
-			ready_label.add_theme_color_override("font_color", color.lightened(0.3) if ready else Color.WHITE)
+			Shop.style_ready_row(button, button.get_child(0) as Label,
+				not ready and _on_ready_button(seat), ready, color)
 		var status: Control = seat["status"]
 		if status:
 			status.visible = seat["inspecting"]
@@ -400,7 +379,7 @@ func _check_done() -> void:
 	_done = true
 	for seat in _seats:
 		if seat["selected"] >= 0:
-			BraidClassMod.pick(seat["player"], seat["cards"][seat["selected"]])
+			ClassMod.pick(seat["player"], seat["cards"][seat["selected"]])
 	all_ready.emit()
 	queue_free()
 
@@ -413,8 +392,8 @@ func _box(bg: Color, border: Color, width: int) -> StyleBoxFlat:
 	style.set_corner_radius_all(14)
 	style.content_margin_left = 20
 	style.content_margin_right = 20
-	style.content_margin_top = 16
-	style.content_margin_bottom = 16
+	style.content_margin_top = 12
+	style.content_margin_bottom = 12
 	return style
 
 

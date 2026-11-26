@@ -1,7 +1,7 @@
 extends RefCounted
 ## Every gun in the game. A player holds exactly one: their class's starting
-## gun (scripts/character_classes.gd), until they buy another in the shop,
-## which replaces it (the old one is gone).
+## gun (scripts/character_classes.gd), kept all run in every mode. Guns
+## aren't sold: the shop's Upgrade Kits improve it and promote it up the tiers.
 ##
 ## Guns come in TYPES (SMG, Shotgun, ...) and every type comes in each rarity
 ## tier (scripts/rarity.gd): Scrap, Solid, Exquisite, Legendary, Mythic, e.g.
@@ -11,11 +11,11 @@ extends RefCounted
 ## damage and fire rate attributes then scale them (see
 ## Player._recalculate_stats() in scripts/player/character_body.gd).
 ##
-## To add a gun type: add an entry to TYPES. All five tiers of it are sold in
-## the shop automatically (scripts/items.gd). Its numbers are the Scrap tier:
+## To add a gun type: add an entry to TYPES (all five tiers of it are made
+## automatically) and give it to a class. Its numbers are the Scrap tier:
 ##   id        - unique key
 ##   name      - shown in the shop and on character select (after the tier)
-##   cost      - Scrap shop price in resources
+##   cost      - Scrap price in resources (sets Upgrade Kit and promotion prices)
 ##   damage    - damage per projectile
 ##   interval  - seconds between shots
 ##   range     - how far a shot flies, in pixels
@@ -46,8 +46,7 @@ extends RefCounted
 ## UPGRADE KITS (called tune-ups in the code): in the shop a player can
 ## upgrade the gun they hold, up to MAX_LEVEL times; level L adds
 ## LEVEL_BONUSES[L - 1]. A fully upgraded gun can then be promoted to the
-## next tier of its type (its level starts over). Buying any gun also starts
-## it at level 0.
+## next tier of its type (its level starts over).
 
 const Rarity := preload("res://scripts/rarity.gd")
 

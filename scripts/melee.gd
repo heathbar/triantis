@@ -1,7 +1,7 @@
 extends RefCounted
 ## Every melee weapon in the game. A player holds exactly one: their class's
-## starting weapon (scripts/character_classes.gd), until they buy another in
-## the shop, which replaces it (the old one is gone).
+## starting weapon (scripts/character_classes.gd), kept all run in every
+## mode. Melee weapons aren't sold: Upgrade Kits improve and promote it.
 ##
 ## A player swings by pulling their controller's right trigger (Space or right
 ## mouse button on the keyboard), hitting every enemy inside the swing's arc and within reach.
@@ -15,12 +15,11 @@ extends RefCounted
 ## each rarity tier (scripts/rarity.gd): Scrap, Solid, Exquisite, Legendary,
 ## Mythic, e.g. "scrap_knife" / "Mythic Katana". LIST holds every combination.
 ##
-## To add a weapon type: add an entry to TYPES. All five tiers of it are sold
-## in the shop automatically (scripts/items.gd). Its numbers are the Scrap
-## tier:
+## To add a weapon type: add an entry to TYPES (all five tiers of it are made
+## automatically) and give it to a class. Its numbers are the Scrap tier:
 ##   id        - unique key
 ##   name      - shown in the shop and on character select (after the tier)
-##   cost      - Scrap shop price in resources
+##   cost      - Scrap price in resources (sets Upgrade Kit and promotion prices)
 ##   damage    - damage per enemy hit
 ##   interval  - seconds between swings
 ##   range     - reach in pixels, from the edge of the player's square to the
@@ -36,7 +35,7 @@ extends RefCounted
 ## in the shop a player can upgrade the melee weapon they hold, up to
 ## MAX_LEVEL times; level L adds LEVEL_BONUSES[L - 1]. A fully upgraded
 ## weapon can then be promoted to the next tier of its type (its level starts
-## over). Buying any melee weapon also starts it at level 0.
+## over).
 
 const Rarity := preload("res://scripts/rarity.gd")
 
