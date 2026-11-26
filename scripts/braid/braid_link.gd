@@ -213,6 +213,7 @@ func _send_enemies() -> void:
 		var positions := PackedVector2Array()
 		var kinds := PackedByteArray()
 		var states := PackedByteArray()
+		var healths := PackedInt32Array()
 		var picked := []
 		for id in _owned:
 			if near.has_point(_owned[id].global_position):
@@ -228,14 +229,16 @@ func _send_enemies() -> void:
 			positions.append(enemy.global_position)
 			kinds.append(enemy.net_kind)
 			states.append(enemy.net_state())
+			healths.append(enemy.damage_to_kill())
 		if ids.is_empty() and not _sent_enemies_to.get(squad, false):
 			continue
 		_sent_enemies_to[squad] = not ids.is_empty()
-		Squads.send_enemies(squad, game.round_index(), ids, positions, kinds, states)
+		Squads.send_enemies(squad, game.round_index(), ids, positions, kinds, states, healths)
 
 
 func _on_remote_enemies(owner_squad: int, wave: int, ids: PackedInt32Array,
-		positions: PackedVector2Array, kinds: PackedByteArray, states: PackedByteArray) -> void:
+		positions: PackedVector2Array, kinds: PackedByteArray, states: PackedByteArray,
+		healths: PackedInt32Array) -> void:
 	if owner_squad == my_squad or not game.is_wave_running() or wave != game.round_index():
 		return
 	_mirrors_heard[owner_squad] = _clock
@@ -252,6 +255,8 @@ func _on_remote_enemies(owner_squad: int, wave: int, ids: PackedInt32Array,
 				_mirrors[key] = mirror
 		if mirror and i < states.size():
 			mirror.mirror_state(states[i])
+		if mirror and i < healths.size():
+			mirror.mirror_health(healths[i])
 	for key in _mirrors.keys():
 		if key.x == owner_squad and not listed.has(key):
 			_remove_mirror(key)

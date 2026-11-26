@@ -34,6 +34,10 @@ const STUCK_NEAR := 40.0
 const STUCK_COUNT_MAX := 20
 const NO_REMOTE_KILLER := Vector2i(-1, -1)
 const NetFollow := preload("res://scripts/net/net_follow.gd")
+## Mirror: seconds after one of our hits in which its owner's reports can't
+## raise its health back (a report sent before our hit got there). About a
+## round trip online, with room to spare.
+const MIRROR_HOLD := 0.6
 ## Hit flash: like the player's (character_body.gd FLASH_COLOR, FLASH_HOLD,
 ## FLASH_FADE; player_sprite.gd FLASH_STRENGTH), when a hit doesn't kill it.
 const HIT_FLASH_SHADER := preload("res://scripts/enemyai/hit_flash.gdshader")
@@ -84,6 +88,14 @@ var remote_killer := NO_REMOTE_KILLER
 ## enters the tree.
 var is_mirror := false
 var forward_hit := Callable()
+## Mirror: the damage its owner's copy still needs to die (their
+## damage_to_kill(), less the hits we've sent since), or -1 before the first
+## report. At 0 we take it for dead: it leaves "enemies" so shots (overkill
+## ones especially) fly on past it while the news of its death is on its way.
+var _mirror_needed := -1
+## Mirror: seconds left in which reports may lower _mirror_needed but not
+## raise it (ones sent before our hits reached the owner).
+var _mirror_hold := 0.0
 var _follow: NetFollow
 ## Velocity from being shoved by hits; decays each physics frame.
 var _knockback_velocity := Vector2.ZERO
@@ -199,6 +211,11 @@ func take_damage(amount: int, source: Node = null, knockback := Vector2.ZERO) ->
 	if is_mirror:
 		forward_hit.call(amount, source, knockback)
 		flash_hit()  # (its owner's copy decides if it dies; if so it vanishes)
+		if _mirror_needed > 0:
+			_mirror_needed = maxi(_mirror_needed - amount, 0)
+			_mirror_hold = MIRROR_HOLD
+			if _mirror_needed == 0:
+				remove_from_group("enemies")
 		return
 	if is_dead():
 		return
@@ -285,6 +302,28 @@ func mirror_state(_state: int) -> void:
 	pass
 
 
+## The damage (before damage_taken_multiplier) that would kill it now; 0 once
+## dead. A mirror goes by its owner's reports (see _mirror_needed; -1 if it
+## hasn't had one).
+func damage_to_kill() -> int:
+	if is_mirror:
+		return _mirror_needed
+	if is_dead():
+		return 0
+	return ceili(health / maxf(damage_taken_multiplier, 0.01))
+
+
+## Mirror: its owner's damage_to_kill() for it.
+func mirror_health(needed: int) -> void:
+	if _mirror_hold > 0.0 and _mirror_needed >= 0:
+		needed = mini(needed, _mirror_needed)
+	_mirror_needed = needed
+	# We took it for dead but it isn't (a hit was weaker there than we thought).
+	if needed > 0 and _mirror_hold <= 0.0 and not is_in_group("enemies") \
+			and not is_queued_for_deletion():
+		add_to_group("enemies")
+
+
 ## Squads game: a hit from another squad's player, sent by their game.
 func take_remote_damage(amount: int, squad: int, slot: int,
 		knockback := Vector2.ZERO) -> void:
@@ -343,6 +382,7 @@ func mirror_report(pos: Vector2) -> void:
 
 func _physics_process(delta: float) -> void:
 	if is_mirror:
+		_mirror_hold = maxf(_mirror_hold - delta, 0.0)
 		if _follow:
 			global_position = _follow.step(global_position, delta)
 		return

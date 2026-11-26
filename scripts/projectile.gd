@@ -30,7 +30,8 @@ var shooter: Node = null
 var from_equipment := false
 ## Overkill (the sniper rifle, Guns "overkill"): when the shot kills an
 ## enemy it flies on with the damage that enemy didn't need, until it runs
-## out or meets one it can't kill. Bosses always stop it.
+## out or meets one it can't kill. Bosses always stop it; other squads'
+## enemies count too (see deal_overkill).
 var overkill := false
 ## Squads game: another squad's shot, just for show (scripts/net/squad_link.gd).
 ## It stops at the first enemy it meets but doesn't hurt it (the real shot, in
@@ -77,19 +78,16 @@ func _physics_process(delta: float) -> void:
 
 
 ## Deals `amount` to `enemy` (BossBody.deal) and returns the damage it
-## didn't need if that killed it, else 0. Bosses and other squads' mirrored
-## enemies (whose health lives in another game) always give 0.
+## didn't need if that killed it, else 0. Bosses always give 0. Another
+## squad's enemy (a mirror) goes by the health its owner last reported: when
+## our hit should kill it the shot flies on, and its owner's game decides.
 static func deal_overkill(enemy: Node, amount: int, source: Node, knockback: Vector2, at: Vector2,
 		from_equipment := false) -> int:
 	var needed := -1
-	if not enemy is BossBody and not enemy.get("is_mirror") and enemy.has_method("is_dead") \
-			and enemy.get("health") is int:
-		var mult := 1.0
-		if enemy.get("damage_taken_multiplier") is float:
-			mult = maxf(enemy.damage_taken_multiplier, 0.01)
-		needed = ceili(enemy.health / mult)
+	if not enemy is BossBody and enemy.has_method("damage_to_kill"):
+		needed = enemy.damage_to_kill()
 	BossBody.deal(enemy, amount, source, knockback, at, from_equipment)
-	if needed < 0 or not is_instance_valid(enemy) or not enemy.is_dead():
+	if needed < 0 or not is_instance_valid(enemy) or enemy.damage_to_kill() != 0:
 		return 0
 	return maxi(amount - needed, 0)
 

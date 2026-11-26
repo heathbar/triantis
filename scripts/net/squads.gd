@@ -43,7 +43,8 @@ signal final_results(squad: int, results: Dictionary)
 ## World sync (see scripts/net/squad_link.gd for what these carry).
 signal remote_players(squad: int, players: Array, shots: Array)
 signal remote_enemies(owner_squad: int, wave: int, ids: PackedInt32Array,
-	positions: PackedVector2Array, kinds: PackedByteArray, states: PackedByteArray)
+	positions: PackedVector2Array, kinds: PackedByteArray, states: PackedByteArray,
+	healths: PackedInt32Array)
 signal enemy_hit(shooter_squad: int, enemy_id: int, damage: int, shooter_slot: int,
 		knockback: Vector2)
 signal enemy_died(owner_squad: int, enemy_id: int, killer_squad: int, killer_slot: int,
@@ -671,20 +672,22 @@ func _net_players(players: Array, shots: Array) -> void:
 		remote_players.emit(squad, players, shots)
 
 
-## Our enemies near `to_squad`'s map, to that squad.
+## Our enemies near `to_squad`'s map, to that squad. `healths` is each one's
+## damage_to_kill(), so overkill shots there know when they've killed it.
 func send_enemies(to_squad: int, wave: int, ids: PackedInt32Array,
-		positions: PackedVector2Array, kinds: PackedByteArray, states: PackedByteArray) -> void:
+		positions: PackedVector2Array, kinds: PackedByteArray, states: PackedByteArray,
+		healths: PackedInt32Array) -> void:
 	var peer := _peer_of_squad(to_squad)
 	if in_game() and peer != 0:
-		_net_enemies.rpc_id(peer, wave, ids, positions, kinds, states)
+		_net_enemies.rpc_id(peer, wave, ids, positions, kinds, states, healths)
 
 
 @rpc("any_peer", "unreliable_ordered")
 func _net_enemies(wave: int, ids: PackedInt32Array, positions: PackedVector2Array,
-		kinds: PackedByteArray, states: PackedByteArray) -> void:
+		kinds: PackedByteArray, states: PackedByteArray, healths: PackedInt32Array) -> void:
 	var squad := _sender_squad()
 	if squad >= 0:
-		remote_enemies.emit(squad, wave, ids, positions, kinds, states)
+		remote_enemies.emit(squad, wave, ids, positions, kinds, states, healths)
 
 
 ## One of our players hit `owner_squad`'s enemy.

@@ -1,0 +1,74 @@
+[gd_scene format=3 uid="uid://dvjv32xx8l32p"]
+
+[ext_resource type="Script" uid="uid://dpwgdn1kr3u22" path="res://scripts/braid/braid_junction.gd" id="1_ne1lh"]
+[ext_resource type="Script" uid="uid://rjebii07ei8a" path="res://scripts/braid/braid_block.gd" id="2_rviwo"]
+[ext_resource type="Script" uid="uid://cxawcvhuwddeq" path="res://scripts/braid/braid_spawn.gd" id="3_p65jk"]
+
+[node name="Crossing" type="Node2D" unique_id=1944192971]
+script = ExtResource("1_ne1lh")
+difficulty = 3
+
+[node name="Block1" type="StaticBody2D" parent="." unique_id=724239315]
+texture_repeat = 2
+position = Vector2(0, 344)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_rviwo")
+size = Vector2(360, 32)
+
+[node name="Block2" type="StaticBody2D" parent="." unique_id=1278132381]
+texture_repeat = 2
+position = Vector2(920, 344)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_rviwo")
+size = Vector2(360, 32)
+
+[node name="Block3" type="StaticBody2D" parent="." unique_id=819782055]
+texture_repeat = 2
+position = Vector2(608, 328)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_rviwo")
+variant = 2
+
+[node name="Block4" type="StaticBody2D" parent="." unique_id=934899282]
+texture_repeat = 2
+position = Vector2(344, 150)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_rviwo")
+size = Vector2(360, 40)
+
+[node name="Block5" type="StaticBody2D" parent="." unique_id=99717221]
+texture_repeat = 2
+position = Vector2(344, 530)
+collision_layer = 16
+collision_mask = 0
+script = ExtResource("2_rviwo")
+size = Vector2(360, 40)
+
+[node name="Vent1" type="Node2D" parent="." unique_id=329035879]
+z_index = -10
+position = Vector2(200, 60)
+script = ExtResource("3_p65jk")
+
+[node name="Vent2" type="Node2D" parent="." unique_id=1112866934]
+z_index = -10
+position = Vector2(200, 660)
+script = ExtResource("3_p65jk")
+
+[node name="Vent3" type="Node2D" parent="." unique_id=1674509772]
+z_index = -10
+position = Vector2(640, 100)
+script = ExtResource("3_p65jk")
+
+[node name="Vent4" type="Node2D" parent="." unique_id=723029609]
+z_index = -10
+position = Vector2(640, 620)
+script = ExtResource("3_p65jk")
+
+[node name="Vent5" type="Node2D" parent="." unique_id=1260635230]
+z_index = -10
+position = Vector2(873, 359)
+script = ExtResource("3_p65jk")
