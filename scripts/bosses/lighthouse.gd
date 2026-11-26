@@ -62,11 +62,12 @@ const ENRAGED_SHELLS := 5
 const SHELL_SPREAD := 64.0
 const SHELL_RADIUS := 30.0
 const TargetMarker := preload("res://scripts/target_marker.gd")
+const ExplosionArt := preload("res://scripts/explosion_art.gd")
 const SHELL_FLIGHT := 1.5
 const ENRAGED_SHELL_FLIGHT := 1.15
 const SHELL_DAMAGE := 2
 ## How long a landed shell's blast stays drawn.
-const SHELL_LINGER := 0.4
+const SHELL_LINGER := ExplosionArt.DURATION
 
 const FIRST_VENT := 20.0
 const VENT_EVERY := 24.0
@@ -332,8 +333,7 @@ func draw_hazard(h: Dictionary) -> void:
 		var height := (1.0 - k) * 100.0
 		draw_circle(at + Vector2(0, -height), 4.0, Color(0.15, 0.12, 0.1))
 	else:
-		var t := clampf((elapsed - land) / SHELL_LINGER, 0.0, 1.0)
-		draw_circle(at, SHELL_RADIUS * (0.8 + 0.4 * t), Color(1.0, 0.75, 0.3, 0.7 * (1.0 - t)))
+		ExplosionArt.draw(self, at, elapsed - land, SHELL_RADIUS)
 
 
 func _draw() -> void:

@@ -105,7 +105,13 @@ func is_dead() -> bool:
 	return dormant or not is_instance_valid(boss)
 
 
-func half_extent() -> float:
+## How far the body reaches from its centre: roughly (a circle's), or, for
+## an oval given `towards` (any length, world space), how far its edge is in
+## that direction.
+func half_extent(towards := Vector2.ZERO) -> float:
+	if oval != Vector2.ZERO and towards != Vector2.ZERO:
+		var d := towards.normalized().rotated(-global_rotation)
+		return 1.0 / sqrt(pow(d.x / oval.x, 2.0) + pow(d.y / oval.y, 2.0))
 	return radius * 0.85
 
 

@@ -1,8 +1,9 @@
 extends Node2D
-## An explosion: an expanding, fading orange disc. Purely visual (the damage
-## is dealt by Deployable.explode in scripts/equipment/deployable.gd).
+## An explosion (scripts/explosion_art.gd), its fireball `radius` across.
+## Purely visual (the damage is dealt by Deployable.explode in
+## scripts/equipment/deployable.gd, a bomber, the hot potato...).
 
-const DURATION := 0.35
+const ExplosionArt := preload("res://scripts/explosion_art.gd")
 
 var radius := 60.0
 var _age := 0.0
@@ -15,13 +16,11 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	_age += delta
-	if _age >= DURATION:
+	if _age >= ExplosionArt.DURATION:
 		queue_free()
 		return
 	queue_redraw()
 
 
 func _draw() -> void:
-	var t := _age / DURATION
-	draw_circle(Vector2.ZERO, radius * (0.4 + 0.6 * t), Color(1.0, 0.55, 0.1, 0.55 * (1.0 - t)))
-	draw_circle(Vector2.ZERO, radius * 0.5 * (0.4 + 0.6 * t), Color(1.0, 0.9, 0.4, 0.7 * (1.0 - t)))
+	ExplosionArt.draw(self, Vector2.ZERO, _age, radius)

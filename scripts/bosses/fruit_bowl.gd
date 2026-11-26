@@ -4,7 +4,7 @@ extends Boss
 ## an explosion hides the bowl, which is gone when it clears, and the four
 ## fruit fly out of it, land and roll to their spots. Smash all four to win
 ## (in any order, with no time limit between them; a smashed fruit stays
-## down, darkened).
+## down where it was, drawn smashed).
 ##
 ## Where the fruit go: in a squads game, to the strips two squads' maps
 ## share (above, right of, below and left of the middle), so each fruit can
@@ -24,7 +24,8 @@ extends Boss
 ##
 ## Art: assets/meadow/boss/, drawn 1:1. The bowl is split in two (bowl-top
 ## behind the fruit, bowl-bottom in front) so the fruit sit inside it.
-## The burst explosion is drawn (paint_burst), not art.
+## Each fruit has a <fruit>_smashed.png for once it's smashed. The burst is
+## three of the shared explosions (scripts/explosion_art.gd) across the bowl.
 ##
 ## Squads game: the host owns every part's health and where the fruit are
 ## anchored; the rings are hazards (scripts/bosses/boss.gd). The burst and
@@ -50,6 +51,13 @@ const FRUIT_TEXTURES: Array[Texture2D] = [
 	preload("res://assets/meadow/boss/jackfruit.png"),
 	preload("res://assets/meadow/boss/watermelon.png"),
 ]
+const SMASHED_TEXTURES: Array[Texture2D] = [
+	preload("res://assets/meadow/boss/cabbage_smashed.png"),
+	preload("res://assets/meadow/boss/cantaloupe_smashed.png"),
+	preload("res://assets/meadow/boss/jackfruit_smashed.png"),
+	preload("res://assets/meadow/boss/watermelon_smashed.png"),
+]
+const ExplosionArt := preload("res://scripts/explosion_art.gd")
 ## Each fruit's rings and health bar (the three green ones told apart:
 ## cabbage pale green, jackfruit yellow, watermelon its red flesh).
 const FRUIT_COLORS := [Color(0.62, 0.95, 0.5), Color(1.0, 0.64, 0.3),
@@ -60,24 +68,22 @@ const BOWL_COLOR := Color(0.36, 0.52, 0.95)
 const IN_BOWL := [Vector2(-8, -4), Vector2(25, -4.5), Vector2(-50, -18), Vector2(48, -14.5)]
 const BOWL_ORDER := [2, 3, 0, 1]
 
-## The burst: an explosion over the bowl for BURST_TIME seconds. At FLING
-## (the bowl hidden under it) the bowl is gone and the fruit fly out, landing
-## FLY_SHARE of the way to their spots at LAND, then rolling the rest of the
-## way, arriving at SPLIT_TIME (they can't be hurt until then).
-const BURST_TIME := 0.8
+## The burst: explosions over the bowl (BURSTS) for BURST_TIME seconds. At
+## FLING (the bowl hidden under their fireballs) the bowl is gone and the
+## fruit fly out, landing FLY_SHARE of the way to their spots at LAND, then
+## rolling the rest of the way, arriving at SPLIT_TIME (they can't be hurt
+## until then).
+const BURST_TIME := 0.7
 const FLING := 0.2
 const LAND := 0.6
 const SPLIT_TIME := 1.9
 const FLY_SHARE := 0.3
 const FLY_HEIGHT := 30.0
-const FLASH_FADE := 0.15
-## The explosion's puffs: [offset from the bowl's centre, radius, seconds
-## after the split it starts].
-const PUFFS := [
-	[Vector2(0, -6), 46.0, 0.0], [Vector2(-52, 4), 34.0, 0.03], [Vector2(54, 0), 36.0, 0.04],
-	[Vector2(-26, -30), 30.0, 0.06], [Vector2(30, -32), 30.0, 0.07], [Vector2(-84, -6), 24.0, 0.09],
-	[Vector2(86, -10), 24.0, 0.1], [Vector2(-30, 30), 30.0, 0.08], [Vector2(32, 28), 30.0, 0.09],
-	[Vector2(0, -50), 24.0, 0.12], [Vector2(0, 40), 26.0, 0.12],
+## The burst's explosions: [offset from the bowl's centre, fireball radius,
+## seconds after the split it goes off]. A big one in the middle and one at
+## each end of the bowl (it's wider than one fireball).
+const BURSTS := [
+	[Vector2(0, -6), 75.0, 0.0], [Vector2(-62, -12), 56.0, 0.03], [Vector2(62, -12), 56.0, 0.04],
 ]
 
 const MOVE_SPEED := 180.0
@@ -176,7 +182,8 @@ func boss_tick(delta: float) -> void:
 		piece.dormant = cracked[i] or is_defeated() or not arrived
 		# Under the explosion while it lasts, so they fly out of it.
 		piece.z_index = -1 if elapsed < split_at + BURST_TIME else 0
-		if arrived:
+		# (A smashed fruit stays where it fell.)
+		if arrived and not cracked[i]:
 			piece.position = piece.position.move_toward(_spot(i, elapsed), MOVE_SPEED * delta)
 		else:
 			piece.position = _flight(i)[0]
@@ -431,7 +438,6 @@ func markers() -> Array:
 # --- Drawing ------------------------------------------------------------------------
 
 const FLASH_TINT := Color(1.0, 0.45, 0.4)
-const SMASHED_TINT := Color(0.32, 0.32, 0.32)
 
 
 func _paint_bowl(b: BossBody) -> void:
@@ -446,12 +452,10 @@ func _paint_fruit(b: BossBody) -> void:
 	var i: int = b.part
 	if elapsed < split_at + FLING:
 		return  # Still in the bowl.
-	var tint := Color.WHITE
-	if cracked[i] or is_defeated():
-		tint = SMASHED_TINT
-	elif b.flash > 0.0:
-		tint = FLASH_TINT
-	if pieces_arrived():
+	var tint := FLASH_TINT if b.flash > 0.0 else Color.WHITE
+	if cracked[i]:
+		paint_smashed(b, i)
+	elif pieces_arrived():
 		paint_fruit(b, i, Vector2.ZERO, sin(b.age * WOBBLE_SPEED + i * 1.7) * WOBBLE, true, tint)
 	else:
 		var flight := _flight(i)
@@ -485,6 +489,14 @@ static func paint_bowl(c: CanvasItem, age: float, flashing: bool) -> void:
 	c.draw_texture(BOWL_BOTTOM, BOWL_AT, tint)
 
 
+## Fruit `i` smashed: its smashed art sitting on the ground where the whole
+## fruit's base was (b's origin is the fruit's middle).
+static func paint_smashed(c: CanvasItem, i: int) -> void:
+	var tex := SMASHED_TEXTURES[i]
+	var base := Vector2(0, (FRUIT_TEXTURES[i].get_size().y / 2.0)).floor()
+	c.draw_texture(tex, base - Vector2((tex.get_size().x / 2.0), tex.get_size().y).floor())
+
+
 ## Fruit `i` centred on `at`, turned `angle`: rocking on its base if `rock`,
 ## else round its middle (rolling).
 static func paint_fruit(c: CanvasItem, i: int, at: Vector2, angle: float, rock: bool,
@@ -500,31 +512,9 @@ static func paint_fruit(c: CanvasItem, i: int, at: Vector2, angle: float, rock: 
 	c.draw_set_transform(Vector2.ZERO)
 
 
-## The bowl bursting, `t` seconds after it broke: a white flash over it all,
-## then puffs of fire swelling, rising and going to smoke.
+## The bowl bursting, `t` seconds after it broke: BURSTS going off across it.
 static func paint_burst(c: CanvasItem, t: float) -> void:
 	if t >= BURST_TIME:
 		return
-	# The flash: solid over the whole bowl at once (so the bowl can go
-	# unseen), fading out over FLASH_FADE once the fruit are flung.
-	var flash := 1.0 - clampf((t - FLING) / FLASH_FADE, 0.0, 1.0)
-	if flash > 0.0:
-		c.draw_set_transform(Vector2(0, -3), 0.0, Vector2(1.0, 0.62))
-		c.draw_circle(Vector2.ZERO, 106.0, Color(1, 0.97, 0.8, flash))
-		c.draw_set_transform(Vector2.ZERO)
-	for puff: Array in PUFFS:
-		var start: float = puff[2]
-		if t < start:
-			continue
-		var k := clampf((t - start) / (BURST_TIME - start), 0.0, 1.0)
-		var grow := 1.0 - pow(1.0 - k, 3.0)
-		var r: float = float(puff[1]) * (0.35 + 0.65 * grow)
-		var color: Color
-		if k < 0.35:
-			color = Color(1.0, 0.95, 0.6).lerp(Color(1.0, 0.55, 0.15), k / 0.35)
-		else:
-			color = Color(1.0, 0.55, 0.15).lerp(Color(0.35, 0.3, 0.3), (k - 0.35) / 0.65)
-		color.a = 1.0 - smoothstep(0.55, 1.0, k)
-		var at: Vector2 = puff[0] * (0.8 + 0.4 * grow) + Vector2(0, -14.0 * k)
-		c.draw_circle(at, r, color)
-		c.draw_circle(at + Vector2(-r, -r) * 0.25, r * 0.5, Color(color.lightened(0.3), color.a * 0.7))
+	for burst: Array in BURSTS:
+		ExplosionArt.draw(c, burst[0], t - float(burst[2]), burst[1])

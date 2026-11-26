@@ -123,7 +123,7 @@ func _hit_between(a: float, b: float) -> void:
 			continue
 		var to_enemy := enemy.global_position - centre
 		var dist := to_enemy.length()
-		var enemy_half := Deployable.half_extent(enemy)
+		var enemy_half := Deployable.half_extent(enemy, to_enemy)
 		if dist - enemy_half > reach:
 			continue
 		# The slice is widened by however much of it the enemy's body covers.

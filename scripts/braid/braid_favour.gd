@@ -17,6 +17,7 @@ signal triggered(plate: Node2D, caller: Node2D)
 const BraidTuning := preload("res://scripts/braid/braid_tuning.gd")
 const BraidPrompt := preload("res://scripts/braid/braid_prompt.gd")
 const TargetMarker := preload("res://scripts/target_marker.gd")
+const ExplosionArt := preload("res://scripts/explosion_art.gd")
 
 const RADIUS := 12.0
 const IDLE := Color(0.95, 0.75, 0.3)
@@ -175,13 +176,10 @@ static func show_crush(parent: Node, rect: Rect2, on_column := Callable()) -> vo
 
 class Strike extends Node2D:
 	const WARN := Color(1.0, 0.3, 0.2)
-	const FLASH := Color(1.0, 0.95, 0.7)
-	const FIRE := Color(1.0, 0.55, 0.15)
-	const SMOKE := Color(0.25, 0.22, 0.22)
 	## A bomb falls this long (and this far, in pixels) before its blast.
 	const DROP_TIME := 0.15
 	const DROP_HEIGHT := 40.0
-	const BLAST_TIME := 0.45
+	const BLAST_TIME := ExplosionArt.DURATION
 
 	var rect := Rect2()
 	var on_column := Callable()
@@ -247,10 +245,4 @@ class Strike extends Node2D:
 					continue
 				if since > BLAST_TIME:
 					continue
-				var k := since / BLAST_TIME
-				var r := radius * (0.45 + 0.55 * sqrt(k))
-				var fade := 1.0 - k
-				draw_circle(at, r, Color(SMOKE, 0.55 * fade))
-				draw_circle(at, r * (0.8 - 0.4 * k), Color(FIRE, 0.85 * fade))
-				if k < 0.3:
-					draw_circle(at, r * 0.45, Color(FLASH, 1.0 - k / 0.3))
+				ExplosionArt.draw(self, at, since, radius)

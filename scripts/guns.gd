@@ -55,7 +55,7 @@ const TYPES := [
 	{"id": "pistol", "name": "Pistol", "cost": 8,
 		"damage": 8, "interval": 0.45, "range": 400, "knockback": 8},
 	{"id": "smg", "name": "SMG", "cost": 10,
-		"damage": 4, "interval": 0.25, "range": 340, "knockback": 3, "spread": 12},
+		"damage": 3, "interval": 0.25, "range": 340, "knockback": 3, "spread": 12},
 	{"id": "rivet_gun", "name": "Rivet Gun", "cost": 10,
 		"damage": 10, "interval": 0.6, "range": 480, "knockback": 14, "speed": 680},
 	{"id": "revolver", "name": "Revolver", "cost": 14,

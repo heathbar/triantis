@@ -25,10 +25,11 @@ const MAX_AIMED := 4
 const AIM_SPREAD := 16.0
 ## Seconds a shell's ring shows before it bursts, and the burst's flash.
 const WARNING := 1.4
-const BLAST := 0.3
+const BLAST := ExplosionArt.DURATION
 ## Burst radius (world px) and damage (half hearts).
 const RADIUS := 22.0
 const TargetMarker := preload("res://scripts/target_marker.gd")
+const ExplosionArt := preload("res://scripts/explosion_art.gd")
 const DAMAGE := 2
 const COLOR := Color(1.0, 0.45, 0.2)
 
@@ -93,7 +94,5 @@ static func draw(boss: Boss, h: Dictionary) -> bool:
 		boss.draw_circle(at, RADIUS * k, Color(COLOR, 0.3))
 		TargetMarker.draw(boss, at, RADIUS)
 	else:
-		var t := clampf((boss.elapsed - boom) / BLAST, 0.0, 1.0)
-		boss.draw_circle(at, RADIUS * (0.8 + 0.4 * t), Color(1.0, 0.85, 0.5, 0.85 * (1.0 - t)))
-		boss.draw_circle(at, RADIUS * 0.5 * (1.0 - t), Color(1, 1, 0.9, 1.0 - t))
+		ExplosionArt.draw(boss, at, boss.elapsed - boom, RADIUS)
 	return true

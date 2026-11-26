@@ -2,18 +2,24 @@
 extends Node2D
 ## A door in the top or bottom wall of a Braid lane (the level puts them
 ## there: scripts/braid/braid_level.gd). Enemies come through it: the door
-## lights up for a moment first (open()), then they step out at exit_point().
+## slides open onto a black void (open()), then they step out of it at
+## exit_point().
 ## Lets enemies arrive from the sides of the lane, not only from ahead.
 ##
 ## The node sits on the wall's inner face, centred on the doorway.
+##
+## Art: the act's door-1.png (assets/<theme>/environment, ActTheme), drawn as
+## a door in a top wall (the lane below it), DOOR_WIDTH x OUTER_WALL. Its left
+## and right halves are the two leaves, which slide apart into the wall as it
+## opens. An act without one gets the drawn door.
 
 const BraidTuning := preload("res://scripts/braid/braid_tuning.gd")
+const ActTheme := preload("res://scripts/act_theme.gd")
 
 const FRAME := Color(0.2, 0.18, 0.22)
 const SHUT := Color(0.42, 0.33, 0.24)
 const SHUT_LINE := Color(0.3, 0.23, 0.16)
-const DARK := Color(0.05, 0.04, 0.06)
-const WARN := Color(1.0, 0.3, 0.2)
+const DARK := Color.BLACK
 
 ## The lane it opens into.
 var lane := 0
@@ -43,7 +49,7 @@ func is_busy() -> bool:
 	return _open > 0.0 or _warn_left > 0.0
 
 
-## Opens over `warning` seconds (flashing), stays open a moment for enemies to
+## Opens over `warning` seconds, stays open a moment for enemies to
 ## come through, then shuts.
 func open(warning: float) -> void:
 	if _tween:
@@ -68,21 +74,27 @@ func _draw() -> void:
 	var depth := BraidTuning.OUTER_WALL
 	# Drawn into the wall: upward for a top door, downward for a bottom one.
 	var rect := Rect2(-w / 2.0, -depth if face > 0 else 0.0, w, depth)
-	draw_rect(rect.grow(2.0), FRAME)
+	var art := ActTheme.optional_environment("door")
+	if art == null:
+		draw_rect(rect.grow(2.0), FRAME)
 	draw_rect(rect, DARK)
 	# The two leaves slide apart as it opens.
 	var leaf := (w / 2.0) * (1.0 - _open)
-	if leaf > 0.5:
+	if art != null:
+		# Each leaf slides out towards its side of the doorway, its inner edge
+		# showing last. (The art's halves scaled to the doorway, should it be
+		# drawn at another size.)
+		if leaf > 0.0:
+			var art_size := art.get_size()
+			var src_w := art_size.x / 2.0 * leaf / (w / 2.0)
+			draw_texture_rect_region(art, Rect2(rect.position, Vector2(leaf, depth)),
+				Rect2(art_size.x / 2.0 - src_w, 0.0, src_w, art_size.y))
+			draw_texture_rect_region(art, Rect2(rect.end.x - leaf, rect.position.y, leaf, depth),
+				Rect2(art_size.x / 2.0, 0.0, src_w, art_size.y))
+	elif leaf > 0.5:
 		draw_rect(Rect2(rect.position, Vector2(leaf, depth)), SHUT)
 		draw_rect(Rect2(rect.end.x - leaf, rect.position.y, leaf, depth), SHUT)
 		draw_line(Vector2(rect.position.x + leaf, rect.position.y),
 			Vector2(rect.position.x + leaf, rect.end.y), SHUT_LINE, 1.0)
 		draw_line(Vector2(rect.end.x - leaf, rect.position.y),
 			Vector2(rect.end.x - leaf, rect.end.y), SHUT_LINE, 1.0)
-	# Warning: a red glow flashing on the floor in front of it.
-	if _warn_left > 0.0 or _open > 0.0:
-		var flash := 0.5 + 0.5 * sin(Time.get_ticks_msec() / 60.0)
-		var a := (0.35 + 0.45 * flash) if _warn_left > 0.0 else 0.4 * _open
-		var glow_y := 0.0 if face > 0 else -10.0
-		draw_rect(Rect2(-w / 2.0, glow_y, w, 10.0), Color(WARN, a * 0.5))
-		draw_rect(rect, Color(WARN, a * 0.6))

@@ -120,7 +120,9 @@ func explode(center: Vector2, radius: float, damage: int, knockback := 0.0) -> v
 
 
 ## Roughly half an enemy's size (its collision rectangle, scaled for elites).
-static func half_extent(enemy: Node2D) -> float:
+static func half_extent(enemy: Node2D, towards := Vector2.ZERO) -> float:
+	if enemy is BossBody:  # Its shape is built at run time, not a CollisionShape2D child.
+		return enemy.half_extent(towards)
 	var shape_node := enemy.get_node_or_null("CollisionShape2D") as CollisionShape2D
 	if shape_node and shape_node.shape is RectangleShape2D:
 		var size: Vector2 = (shape_node.shape as RectangleShape2D).size * enemy.scale.abs()

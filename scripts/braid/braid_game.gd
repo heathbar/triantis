@@ -1157,16 +1157,29 @@ func _spawn_group(group: WaveEnemyGroup, elite: bool, count: int) -> void:
 				var exit: Vector2 = door.exit_point()
 				get_tree().create_timer(_door_warning(), false).timeout.connect(func() -> void:
 					if state == State.RUNNING and not squad_out and round_index() == seg:
-						_emit_group(group, elite, count, exit))
+						_emit_group(group, elite, count, exit, true))
 				return
 	_emit_group(group, elite, count, _spawn_point())
 
 
-func _emit_group(group: WaveEnemyGroup, elite: bool, count: int, at: Vector2) -> void:
+## `from_door`: they come out of a door's dark doorway, fading up from black.
+func _emit_group(group: WaveEnemyGroup, elite: bool, count: int, at: Vector2,
+		from_door := false) -> void:
 	for p in _group_spots(at, count):
-		_add_enemy(group.enemy_scene, p,
+		var enemy := _add_enemy(group.enemy_scene, p,
 			segment_wave.enemy_health_multiplier * group.health_multiplier * _enemy_health_mult(),
 			segment_wave.enemy_speed_multiplier * group.speed_multiplier, elite)
+		if from_door:
+			_emerge(enemy)
+
+
+## Fades `enemy` up from black (its alpha kept: Braid fades enemies). A
+## slow tint it picks up in those few frames is lost.
+func _emerge(enemy: Node2D) -> void:
+	var tween := enemy.create_tween()
+	tween.tween_method(func(v: float) -> void:
+		enemy.modulate = Color(v, v, v, enemy.modulate.a),
+		0.0, 1.0, BraidTuning.DOOR_EMERGE_TIME)
 
 
 ## Where a group of `count` coming out at `at` stands: spread round it about

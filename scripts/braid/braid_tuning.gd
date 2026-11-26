@@ -197,10 +197,14 @@ const BEHIND_SPAWN_DEPTH := 160.0
 ## block them, at windows and in junctions).
 const DOOR_SPOTS_TOP: Array[float] = [0.2, 0.7]
 const DOOR_SPOTS_BOTTOM: Array[float] = [0.45, 0.95]
-## A door is this wide; enemies step out this far into the lane.
+## A door is this wide; enemies appear this far into the lane (just clear of
+## the doorway: enemy bodies are up to 20 px) and walk out.
 const DOOR_WIDTH := 28.0
-const DOOR_EXIT_DEPTH := 24.0
-## Seconds a door flashes before enemies come through, and stays open after.
+const DOOR_EXIT_DEPTH := 12.0
+## Enemies from a door come out of the dark: they fade up from black over
+## this many seconds.
+const DOOR_EMERGE_TIME := 0.3
+## Seconds a door takes to open before enemies come through.
 const DOOR_WARNING := 0.9
 const DOOR_HOLD_OPEN := 0.6
 ## Doors closer than this ahead of where the tide will be when they open
