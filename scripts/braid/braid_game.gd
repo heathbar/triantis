@@ -114,6 +114,10 @@ const START_X := 160.0
 const AFTER_GATE := 48.0
 ## Up to this far (px) off its spot, so no two enemies spawn exactly stacked.
 const SPAWN_JITTER := 4.0
+## A group comes out spread this far apart (px, roughly; see _group_spots).
+const SPAWN_SPACING := 24.0
+## What enemies' bodies can't pass (_confine keeps their middles out of it).
+const BODY_BLOCKERS := BraidTuning.WALL_LAYER | BraidTuning.WINDOW_LAYER
 ## A stuck enemy that gets stuck this many times in a row (see _steer) also
 ## edges sideways, this much (1 = as much as forward).
 const UNSTICK_SIDESTEP_AFTER := 3
@@ -1159,23 +1163,40 @@ func _spawn_group(group: WaveEnemyGroup, elite: bool, count: int) -> void:
 
 
 func _emit_group(group: WaveEnemyGroup, elite: bool, count: int, at: Vector2) -> void:
-	var spread := CLUSTER_SPACING * sqrt(float(count))
-	for i in count:
-		# Never two enemies on exactly the same spot (another group may have
-		# come out of this vent too): stacked bodies can't be pushed apart,
-		# so the physics slides the pair off together at a huge speed, right
-		# across the screen.
-		var p := at + Vector2.RIGHT.rotated(randf() * TAU) * randf_range(1.0, SPAWN_JITTER)
-		if i > 0:
-			for attempt in 6:
-				var q := at + Vector2.RIGHT.rotated(randf() * TAU) * randf_range(0.3, 1.0) * spread
-				# Not in a wall, and not over into the next lane.
-				if level.grid.is_free_at(q) and level.same_lane(q, at):
-					p = q
-					break
+	for p in _group_spots(at, count):
 		_add_enemy(group.enemy_scene, p,
 			segment_wave.enemy_health_multiplier * group.health_multiplier * _enemy_health_mult(),
 			segment_wave.enemy_speed_multiplier * group.speed_multiplier, elite)
+
+
+## Where a group of `count` coming out at `at` stands: spread round it about
+## SPAWN_SPACING apart (a sunflower pattern), on open floor in the same lane,
+## clear of walls where there's room. Bodies that start piled on each other
+## are pushed apart by the physics hard enough to fly off across the screen,
+## or (beside a vent or door) right through the lane's wall. Each spot is
+## jittered a little: never two enemies exactly stacked (another group may
+## come out of this vent too).
+func _group_spots(at: Vector2, count: int) -> Array[Vector2]:
+	var grid := level.grid
+	var step := SPAWN_SPACING / sqrt(PI)
+	var turn := randf() * TAU
+	var spots: Array[Vector2] = []
+	var taken := {}
+	# Roomy floor first, then any open floor.
+	for need in [2, 1]:
+		for k in count * 8:
+			if spots.size() >= count:
+				return spots
+			if taken.has(k):
+				continue
+			var p := at + Vector2.from_angle(turn + k * 2.39996) * step * sqrt(float(k))
+			if grid.clearance(grid.cell_of(p)) >= need and level.same_lane(p, at):
+				taken[k] = true
+				spots.append(p + Vector2.from_angle(randf() * TAU) * randf_range(1.0, SPAWN_JITTER))
+	# No room at all: on the spot (_confine keeps them out of the walls).
+	while spots.size() < count:
+		spots.append(at + Vector2.from_angle(randf() * TAU) * randf_range(1.0, SPAWN_JITTER))
+	return spots
 
 
 ## A spawn vent serving our lane ahead of the squad, just off screen (most of
@@ -1343,10 +1364,52 @@ func _enemy_scaling() -> PlayerScaling:
 	return player_scaling
 
 
-## Enemies collide with walls and window glass, and walk round walls.
+## Enemies collide with walls and window glass, walk round walls, and never
+## get shoved through them.
 func _prepare_enemy(enemy: Enemy) -> void:
 	enemy.collision_mask |= BraidTuning.WALL_LAYER | BraidTuning.WINDOW_LAYER
 	enemy.steering = _steer
+	enemy.confine = _confine
+
+
+## Given to every enemy as its `confine` (chasesplayer.gd), after each move
+## from `from`. Bodies overlapping each other (a crowd squeezed against a wall,
+## a group just out of a vent) are pushed apart by the physics without regard
+## to walls, sometimes hard enough to shove one right through a lane's thin
+## wall: into the void, where it's stuck for good, or the next lane. Undoes any
+## move that took its middle through a wall or glass, or out of the level.
+func _confine(enemy: Enemy, from: Vector2) -> void:
+	var at := enemy.global_position
+	var grid := level.grid
+	# A short move ending a cell clear of every wall can't have crossed one
+	# (most moves: one cached lookup).
+	if from.distance_squared_to(at) < grid.cell * grid.cell and grid.clearance(grid.cell_of(at)) >= 2:
+		return
+	if not grid.is_outside_at(at) and not _wall_between(enemy, from, at):
+		return
+	if not grid.is_outside_at(from) and not _in_wall(enemy, from):
+		enemy.global_position = from
+	else:
+		# Already somewhere it shouldn't be (a seal shut on it, say): the
+		# nearest open floor.
+		var back := level.nearest_open(at)
+		enemy.global_position = back if grid.is_free_at(back) else level.nearest_open(from)
+
+
+## True if the straight line `from` -> `to` touches a wall or glass.
+func _wall_between(enemy: Enemy, from: Vector2, to: Vector2) -> bool:
+	if from.is_equal_approx(to):
+		return _in_wall(enemy, to)
+	var query := PhysicsRayQueryParameters2D.create(from, to, BODY_BLOCKERS, [enemy.get_rid()])
+	query.hit_from_inside = true
+	return not enemy.get_world_2d().direct_space_state.intersect_ray(query).is_empty()
+
+
+func _in_wall(enemy: Enemy, at: Vector2) -> bool:
+	var query := PhysicsPointQueryParameters2D.new()
+	query.position = at
+	query.collision_mask = BODY_BLOCKERS
+	return not enemy.get_world_2d().direct_space_state.intersect_point(query, 1).is_empty()
 
 
 func _after_enemy_killed(killer: Node, at: Vector2, enemy: Enemy) -> void:

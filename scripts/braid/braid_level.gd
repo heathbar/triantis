@@ -1117,9 +1117,11 @@ func doors_between(lane: int, from_x: float, to_x: float) -> Array[Node]:
 
 
 ## A random open spot (a cell centre) across lane `lane` at progress `x`, or
-## Vector2.INF if it's all wall.
+## Vector2.INF if it's all wall. Spots a cell clear of walls first (bigger
+## enemies spawned right against a wall start out overlapping it).
 func random_open_point_at(lane: int, x: float) -> Vector2:
 	var spots: Array[Vector2] = []
+	var roomy: Array[Vector2] = []
 	var v := BraidTuning.OUTER_WALL + BraidTuning.FLOW_CELL / 2.0
 	while v < BraidTuning.BAND_HEIGHT - BraidTuning.OUTER_WALL:
 		var c := grid.cell_of(point_at(lane, x, v))
@@ -1127,7 +1129,11 @@ func random_open_point_at(lane: int, x: float) -> Vector2:
 			var centre := grid.cell_center(c)
 			if not spots.has(centre):
 				spots.append(centre)
+				if grid.clearance(c) >= 2:
+					roomy.append(centre)
 		v += BraidTuning.FLOW_CELL
+	if not roomy.is_empty():
+		return roomy.pick_random()
 	return spots.pick_random() if not spots.is_empty() else Vector2.INF
 
 

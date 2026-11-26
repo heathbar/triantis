@@ -24,6 +24,9 @@ var cols := 0
 var rows := 0
 ## 1 = wall (cols * rows, row-major).
 var blocked := PackedByteArray()
+## 1 = outside every level piece: the void round the lanes (block_outside).
+## Those cells are in `blocked` too.
+var outside := PackedByteArray()
 ## Steps to the nearest player, -1 = not reached. Only cells in
 ## [_win_lo, _win_hi) columns are valid.
 var dist := PackedInt32Array()
@@ -56,6 +59,9 @@ func rasterize(area: Rect2, walls: Array, pad := BraidTuning.FLOW_WALL_PAD) -> v
 	blocked = PackedByteArray()
 	blocked.resize(cols * rows)
 	blocked.fill(0)
+	outside = PackedByteArray()
+	outside.resize(cols * rows)
+	outside.fill(0)
 	dist = PackedInt32Array()
 	dist.resize(cols * rows)
 	dist.fill(-1)
@@ -87,6 +93,7 @@ func block_outside(rects: Array) -> void:
 	for i in cols * rows:
 		if inside[i] == 0:
 			blocked[i] = 1
+			outside[i] = 1
 	_clear_dirty = true
 
 
@@ -119,6 +126,12 @@ func is_free(c: Vector2i) -> bool:
 
 func is_free_at(world: Vector2) -> bool:
 	return is_free(cell_of(world))
+
+
+## True if `world` is in the void round the level (or off the grid).
+func is_outside_at(world: Vector2) -> bool:
+	var c := cell_of(world)
+	return not in_grid(c) or outside[c.y * cols + c.x] != 0
 
 
 ## How many cells (square rings) out from cell `c` the nearest wall cell is:

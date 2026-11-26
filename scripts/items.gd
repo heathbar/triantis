@@ -138,16 +138,19 @@ const LIST := [
 		"effects": {"armor": 25, "speed": -20, "fire_rate": -10}},
 
 	# --- Specials: effects that aren't attributes (see "blurb") --------------
-	# Vampire Fangs: Player.record_kill. Each copy heals another half heart.
+	# Vampire Fangs: Player.record_kill. Each copy shortens the wait between
+	# heals (FANG_KILLS); after the last there's none to sell (can_offer).
+	# The shop shows fang_blurb() in place of this.
 	{"id": "vampire_fangs", "name": "Vampire Fangs", "cost": 14, "effects": {},
-		"blurb": "Every 40 kills heals half a heart"},
+		"blurb": "Every 50 kills heals half a heart"},
 	# Coupon: discount(). Copies stack (0.9 x 0.9 = 19% off for two).
 	{"id": "coupon", "name": "Coupon", "cost": 30, "effects": {},
 		"blurb": "10% off everything in the shop from now on"},
 ]
 
-## Vampire Fangs: a heal every this many kills.
-const FANG_KILLS := 40
+## Vampire Fangs: half a heart every FANG_KILLS[n - 1] kills with n owned. The
+## shop stops offering them once a player has them all.
+const FANG_KILLS: Array[int] = [50, 40, 30]
 ## Each Coupon takes this share off every later shop price.
 const COUPON_DISCOUNT := 0.1
 
@@ -216,6 +219,8 @@ static func is_equipment(item: Dictionary) -> bool:
 ## Braid mode) is never offered weapons.
 static func can_offer(player: Node, item: Dictionary) -> bool:
 	if item.is_empty():
+		return false
+	if item["id"] == "vampire_fangs" and owned(player, "vampire_fangs") >= FANG_KILLS.size():
 		return false
 	var lives_delta := int(item["effects"].get("lives", 0))
 	if lives_delta < 0 and player.get_attribute("lives") + lives_delta < CharacterClasses.LIVES_MIN:
@@ -353,7 +358,37 @@ const PRICE_RISE_PER_WAVE := 0.5
 ## Multiplier on every shop price after `waves_done` waves (1 for the first
 ## shop), times `player`'s Coupon discount if a player is given.
 static func price_mult(waves_done: int, player: Node = null) -> float:
-	return (1.0 + PRICE_RISE_PER_WAVE * maxi(waves_done - 1, 0)) * discount(player)
+	return (1.0 + PRICE_RISE_PER_WAVE * maxi(waves_done - 1, 0)) * discount(player) \
+		* squad_mult(player)
+
+
+## Every player in a squad gets their own copy of every resource picked up,
+## and each extra player brings more enemies (PlayerScaling
+## enemy_count_per_player), so each player earns more the bigger the squad.
+## Prices rise by this share for each player in the squad after the first
+## to make up for it.
+const PRICE_RISE_PER_EXTRA_PLAYER := 0.5
+
+
+## Price multiplier for the size of `player`'s squad (the players in their
+## own game; other squads in a Squads game don't count). 1 alone or for null.
+static func squad_mult(player: Node) -> float:
+	if player == null or not player.is_inside_tree():
+		return 1.0
+	var squad := player.get_tree().get_nodes_in_group("all_players").size()
+	return 1.0 + PRICE_RISE_PER_EXTRA_PLAYER * maxi(squad - 1, 0)
+
+
+## Kills per Vampire Fangs heal with `count` owned (0 for none).
+static func fang_kills(count: int) -> int:
+	return FANG_KILLS[mini(count, FANG_KILLS.size()) - 1] if count > 0 else 0
+
+
+## The Vampire Fangs line in `player`'s shop: what owning one more would do
+## (`sold`: what the one just bought does).
+static func fang_blurb(player: Node, sold: bool) -> String:
+	var count := owned(player, "vampire_fangs") + (0 if sold else 1)
+	return "Every %d kills heals half a heart" % fang_kills(count)
 
 
 ## How many of item `id` `player` has bought.

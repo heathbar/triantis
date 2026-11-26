@@ -14,6 +14,7 @@ const Hearts := preload("res://scripts/ui/hearts.gd")
 const Guns := preload("res://scripts/guns.gd")
 const Melee := preload("res://scripts/melee.gd")
 const Equipment := preload("res://scripts/equipment.gd")
+const Rarity := preload("res://scripts/rarity.gd")
 
 const BUFF_COLOR := AttributeBar.POSITIVE_COLOR
 const DEBUFF_COLOR := AttributeBar.NEGATIVE_COLOR
@@ -36,7 +37,8 @@ var _equipment_label: Label
 
 ## Everything the panel shows about `player`, as plain data:
 ## {"label", "slot", "color", "attributes" (id -> int), "health", "max_health" (half hearts),
-##  "gun", "melee", "equipment" (name, "" for none)}.
+##  "gun", "melee", "equipment" (name, "" for none),
+##  "gun_tier", "melee_tier" (Rarity.TIERS index; colours the names)}.
 static func snapshot(player: Node) -> Dictionary:
 	var attributes := {}
 	for attr in CharacterClasses.ATTRIBUTES:
@@ -50,6 +52,8 @@ static func snapshot(player: Node) -> Dictionary:
 		"max_health": player.max_health,
 		"gun": player.gun_name(),
 		"melee": player.melee_name(),
+		"gun_tier": int(player.gun.get("tier", 0)),
+		"melee_tier": int(player.melee.get("tier", 0)),
 		"equipment": player.equipment.get("name", ""),
 	}
 
@@ -90,8 +94,12 @@ func show_stats(data: Dictionary) -> void:
 		value_label.add_theme_color_override("font_color", BUFF_COLOR if diff > 0
 			else (DEBUFF_COLOR if diff < 0 else MUTED))
 
-	_gun_label.text = "Gun:  %s" % data["gun"]
-	_melee_label.text = "Melee:  %s" % data["melee"]
+	# Weapon names in their rarity colour (results from an older game may
+	# not say the tier: Scrap's white).
+	_gun_label.text = data["gun"]
+	_gun_label.add_theme_color_override("font_color", _tier_color(data.get("gun_tier", 0)))
+	_melee_label.text = data["melee"]
+	_melee_label.add_theme_color_override("font_color", _tier_color(data.get("melee_tier", 0)))
 	# Results from an older game (squads) may not say.
 	var equipment: String = data.get("equipment", "")
 	_equipment_label.text = "Equip:  %s" % (equipment if equipment != "" else "None")
@@ -151,12 +159,9 @@ func _build() -> void:
 		grid.add_child(value_label)
 		_values.append(value_label)
 
-	_gun_label = _label("", Color.WHITE, 40, 6)
-	_gun_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	vbox.add_child(_gun_label)
-	_melee_label = _label("", Color.WHITE, 40, 6)
-	_melee_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	vbox.add_child(_melee_label)
+	var gun_row := _weapon_row(vbox, "Gun:  ")
+	_gun_label = gun_row[1]
+	_melee_label = _weapon_row(vbox, "Melee:  ")[1]
 	_equipment_label = _label("", Color.WHITE, 40, 6)
 	_equipment_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	vbox.add_child(_equipment_label)
@@ -174,7 +179,23 @@ func _build() -> void:
 	for equipment in Equipment.LIST:
 		widest = maxf(widest, font.get_string_size("Equip:  " + equipment["name"],
 			HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x)
-	_gun_label.custom_minimum_size.x = ceilf(widest)
+	gun_row[0].custom_minimum_size.x = ceilf(widest)
+
+
+## A "Gun:  " / "Melee:  " row: [the row, the label for the weapon's name].
+func _weapon_row(parent: Control, prefix: String) -> Array:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 0)
+	parent.add_child(row)
+	row.add_child(_label(prefix, Color.WHITE, 40, 6))
+	var name_label := _label("", Color.WHITE, 40, 6)
+	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	row.add_child(name_label)
+	return [row, name_label]
+
+
+static func _tier_color(tier: int) -> Color:
+	return Rarity.TIERS[clampi(tier, 0, Rarity.TIERS.size() - 1)]["color"]
 
 
 func _label(text: String, color: Color, font_size: int, outline: int) -> Label:

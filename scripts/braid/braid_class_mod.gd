@@ -130,9 +130,9 @@ const TREES := {
 		"melee": [
 			{"id": "clearcut", "name": "Clear-Cut", "mechanic": "spin", "stages": [
 				{"text": "The machete swings all the way round.", "reach": 1.0},
-				{"text": "The machete swings all the way round and reaches 40% further.", "reach": 1.4},
-				{"text": "The machete swings all the way round and reaches 40% further, and melee kills always drop an extra resource.",
-					"reach": 1.4, "kill_drop": 1}]},
+				{"text": "The machete swings all the way round and reaches 10% further.", "reach": 1.1},
+				{"text": "The machete swings all the way round and reaches 10% further, and melee kills always drop an extra resource.",
+					"reach": 1.1, "kill_drop": 1}]},
 		],
 	},
 	"engineer": {

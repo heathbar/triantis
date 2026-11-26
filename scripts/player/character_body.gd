@@ -946,14 +946,14 @@ func add_points(amount: int) -> void:
 func record_kill(points_value: int) -> void:
 	kills += 1
 	add_points(points_value)
-	# Vampire Fangs (Items): every FANG_KILLS kills, half a heart per pair
-	# owned (wasted at full health or while knocked out).
+	# Vampire Fangs (Items): half a heart every Items.fang_kills() kills,
+	# fewer the more pairs owned (wasted at full health or while knocked out).
 	var fangs := Items.owned(self, "vampire_fangs")
 	if fangs > 0:
 		_fang_kills += 1
-		if _fang_kills >= Items.FANG_KILLS:
+		if _fang_kills >= Items.fang_kills(fangs):
 			_fang_kills = 0
-			heal(fangs)
+			heal(1)
 
 
 func add_resources(amount: int) -> void:

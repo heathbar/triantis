@@ -108,6 +108,10 @@ var objective_roll := randf()
 ## target around walls, as func(enemy, target: Node2D) -> Vector2 (a unit
 ## vector). Unset (the arena game): straight at it.
 var steering := Callable()
+## Braid mode: called after every move as func(enemy, from: Vector2) (`from`
+## = where it was before the move), to undo a move that shoved it through a
+## wall or out of the level. Unset (the arena game): nothing.
+var confine := Callable()
 ## Braid mode (only while `steering` is set): seconds left of steering more
 ## carefully round walls, set whenever it's found to be stuck (pushing on but
 ## hardly moving: see _track_stuck), and how many times in a row that's been.
@@ -354,8 +358,11 @@ func _physics_process(delta: float) -> void:
 	if _knockback_velocity.length_squared() < 1.0:
 		_knockback_velocity = Vector2.ZERO
 
+	var from := global_position
 	move_and_slide()
 	_stay_in_bounds()
+	if confine.is_valid():
+		confine.call(self, from)
 	if steering.is_valid():
 		_track_stuck(target, delta)
 	_after_move(delta)

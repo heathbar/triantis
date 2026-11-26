@@ -67,10 +67,15 @@ const DEBUFF_COLOR := AttributeBar.NEGATIVE_COLOR
 const HINT := "{LB}{RB} switch tab     Up / Down: choose     {A} buy" \
 	+ "     {X} bank item     Start: ready     {B} un-ready"
 
-## Seconds before the shop closes on its own; the countdown turns red for
-## the last SHOP_WARN of them.
-const SHOP_TIME := 30.0
+## Seconds before the shop closes on its own. With SHOP_WARN left the screen
+## flashes, and from then on the countdown is red and pops every second.
+const SHOP_TIME := 60.0
 const SHOP_WARN := 10.0
+## The SHOP_WARN flash: a full-screen wash of this colour, fading out over
+## WARN_FLASH_TIME, WARN_FLASHES times.
+const WARN_FLASH_COLOR := Color(1.0, 0.25, 0.15, 0.45)
+const WARN_FLASH_TIME := 0.35
+const WARN_FLASHES := 2
 const TIMER_COLOR := Color(0.85, 0.85, 0.85)
 const TIMER_WARN_COLOR := Color(1.0, 0.4, 0.3)
 
@@ -209,12 +214,39 @@ func open(players: Array[Node], next_wave_index: int, total_waves: int, price_wa
 func _process(delta: float) -> void:
 	if _done:
 		return
+	var was_left := _time_left
 	_time_left = maxf(_time_left - delta, 0.0)
 	_show_time()
+	if was_left > SHOP_WARN and _time_left <= SHOP_WARN:
+		_warn_flash()
+	if _time_left <= SHOP_WARN and _time_left > 0.0 and ceili(was_left) != ceili(_time_left):
+		_pop_timer(1.6 if ceili(_time_left) == int(SHOP_WARN) else 1.25)
 	if _time_left <= 0.0:
 		for seat in _seats:
 			seat["ready"] = true
 		_check_all_ready()
+
+
+## The SHOP_WARN warning: the screen flashes WARN_FLASH_COLOR.
+func _warn_flash() -> void:
+	var wash := ColorRect.new()
+	wash.color = WARN_FLASH_COLOR
+	wash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(wash)
+	wash.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var tween := wash.create_tween()
+	for i in WARN_FLASHES:
+		tween.tween_property(wash, "modulate:a", 1.0, 0.0)
+		tween.tween_property(wash, "modulate:a", 0.0, WARN_FLASH_TIME)
+	tween.tween_callback(wash.queue_free)
+
+
+## The countdown swells to `peak` times its size and settles back.
+func _pop_timer(peak: float) -> void:
+	_timer_label.pivot_offset = _timer_label.size * Vector2(1.0, 0.0)
+	var tween := _timer_label.create_tween()
+	tween.tween_property(_timer_label, "scale", Vector2.ONE * peak, 0.08)
+	tween.tween_property(_timer_label, "scale", Vector2.ONE, 0.3)
 
 
 func _show_time() -> void:
@@ -806,7 +838,7 @@ func _widest_row(seat: Dictionary) -> float:
 	for item in Items.all():
 		longest = maxf(longest, font.get_string_size(item["name"], HORIZONTAL_ALIGNMENT_LEFT,
 			-1, font_size).x)
-		priciest = maxf(priciest, cost_font.get_string_size(str(Items.price(item, _last_waves_done)),
+		priciest = maxf(priciest, cost_font.get_string_size(str(Items.price(item, _last_waves_done, seat["player"])),
 			HORIZONTAL_ALIGNMENT_LEFT, -1, cost_size).x)
 	# Everything in the row besides the name and price: margins, border,
 	# separations, the (empty) tag. The name label itself only asks for an
@@ -1012,7 +1044,9 @@ func _describe_item(player: Node, item: Dictionary, sold: bool) -> String:
 		lines.append_array(_melee_description(player, item, sold))
 	if Items.is_equipment(item):
 		lines.append_array(_equipment_description(player, item, sold))
-	if item.has("blurb"):
+	if item.get("id", "") == "vampire_fangs":
+		lines.append("[color=#%s]%s[/color]" % [buff, Items.fang_blurb(player, sold)])
+	elif item.has("blurb"):
 		lines.append("[color=#%s]%s[/color]" % [buff, item["blurb"]])
 	for effect in Items.effects_in_order(item):
 		var delta: int = effect[1]
