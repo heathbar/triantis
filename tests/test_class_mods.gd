@@ -5,6 +5,8 @@ const ClassMod := preload("res://scripts/class_mods/class_mod.gd")
 const ModShot := preload("res://scripts/class_mods/mod_shot.gd")
 const ClassModFx := preload("res://scripts/class_mods/class_mod_fx.gd")
 const BraidTide := preload("res://scripts/braid/braid_tide.gd")
+const ExplosionArt := preload("res://scripts/explosion_art.gd")
+const Blast := preload("res://scripts/equipment/blast.gd")
 
 
 func test_every_tree_deals_three_cards() -> void:
@@ -85,6 +87,27 @@ func test_tide_reports_swallowed_pickups() -> void:
 	tide.free()
 	behind.free()
 	ahead.free()
+
+
+func test_small_blasts_use_the_small_explosion() -> void:
+	check(ExplosionArt.is_small(24.0), "an Underbarrel burst (24 px) is small")
+	check(ExplosionArt.is_small(36.0), "Underbarrel II-III bursts (36 px) are small")
+	check(not ExplosionArt.is_small(60.0), "a bomber's blast (60 px) is big")
+	var world := Node2D.new()
+	add_child(world)
+	var shot := ModShot.new()
+	shot.fx = Node.new()  # (only checked for null: no spikes, lines or bomblets)
+	shot.burst_radius = 24.0
+	shot.position = Vector2(40, 30)
+	world.add_child(shot)
+	shot._stop()
+	var blasts := world.get_children().filter(func(n: Node) -> bool: return n.get_script() == Blast)
+	check_eq(blasts.size(), 1, "the grenade burst leaves one explosion")
+	if blasts.size() == 1:
+		check_eq(blasts[0].radius, 24.0, "sized to the burst")
+		check_eq(blasts[0].position, Vector2(40, 30), "where the grenade stopped")
+	shot.fx.free()
+	world.free()
 
 
 ## Just enough of a Player for ClassMod.offer and the Salvage tide hook.

@@ -522,6 +522,7 @@ func _block(at: Vector2, size: Vector2, block_name: String, style := "wall") -> 
 	block.position = at
 	block.size = size
 	block.style = style
+	block.lane_wall = true  # drawn with the act's wall art, if any
 	add_child(block)
 	return block
 

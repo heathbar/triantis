@@ -293,6 +293,10 @@ var mount: Node = null
 ## joins the tree): nothing hurts it, and walls and enemies don't stop it (so
 ## the Campaign's tide can always push it along).
 var dummy := false
+## Thrown through the air (the Vault blasting players out of its wall,
+## scripts/bosses/vault.gd), or empty: {"from", "to", "time", "left",
+## "height"}. Set it with toss().
+var _toss := {}
 
 ## The debug menu's DPS readout (scripts/ui/health_hud.gd) averages the
 ## damage this player dealt over the last this many seconds.
@@ -351,6 +355,9 @@ func is_dead() -> bool:
 
 func _physics_process(delta: float) -> void:
 	if is_dead():
+		return
+	if is_tossed():
+		_toss_step(delta)
 		return
 
 	_hit_cooldown = maxf(_hit_cooldown - delta, 0.0)
@@ -533,6 +540,52 @@ func set_mount(node: Node) -> void:
 	gun_sprite.visible = node == null
 	if node != null:
 		_recoil_velocity = Vector2.ZERO
+
+
+## Throws this player from where they are to `to` in an arc `height` px high
+## over `seconds`. In the air they can't move, shoot, swing or be hurt, and
+## they stay unhurtable for `grace` seconds after landing.
+func toss(to: Vector2, seconds: float, height: float, grace: float) -> void:
+	if is_dead():
+		return
+	if is_dashing():
+		_end_dash()
+	velocity = Vector2.ZERO
+	_recoil_velocity = Vector2.ZERO
+	if not _toss.is_empty():
+		_toss_step(INF)  # Already in the air: land that toss first.
+	_toss = {"from": global_position, "to": to, "time": maxf(seconds, 0.01), "left": seconds,
+		"height": height, "sprite": sprite.position, "gun": gun_sprite.position}
+	extend_invulnerability(seconds + grace)
+
+
+func is_tossed() -> bool:
+	return not _toss.is_empty()
+
+
+## The landing spot of the toss this player is in the air for.
+func toss_target() -> Vector2:
+	return _toss.get("to", global_position)
+
+
+## How high off the ground a tossed player is (0 on the ground).
+func toss_height() -> float:
+	if _toss.is_empty():
+		return 0.0
+	var k := 1.0 - float(_toss["left"]) / float(_toss["time"])
+	return 4.0 * float(_toss["height"]) * k * (1.0 - k)
+
+
+func _toss_step(delta: float) -> void:
+	_toss["left"] = float(_toss["left"]) - delta
+	var k := clampf(1.0 - float(_toss["left"]) / float(_toss["time"]), 0.0, 1.0)
+	global_position = (_toss["from"] as Vector2).lerp(_toss["to"], k)
+	var lift := Vector2(0, -toss_height())
+	sprite.position = (_toss["sprite"] as Vector2) + lift
+	gun_sprite.position = (_toss["gun"] as Vector2) + lift
+	if k >= 1.0:
+		_toss.clear()
+		stay_in_bounds()
 
 
 func is_mounted() -> bool:
@@ -1193,6 +1246,11 @@ func _die(hit_position: Vector2) -> void:
 	# Out of health: the character is frozen in place for the rest of the game
 	# (_physics_process returns early once is_dead() is true).
 	velocity = Vector2.ZERO
+	if is_tossed():
+		# Knocked out in the air: down where they are.
+		sprite.position = _toss["sprite"]
+		gun_sprite.position = _toss["gun"]
+		_toss.clear()
 	remove_from_group("players")  # enemies stop chasing, camera stops tracking
 	# Nothing bumps into a knocked-out player (they'd block a keypad, a doorway...).
 	_live_collision_layer = collision_layer

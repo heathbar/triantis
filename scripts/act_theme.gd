@@ -23,7 +23,9 @@ extends RefCounted
 ## so new tiles can just be dropped in. Roles: "block" (wall blocks),
 ## "roof" and "store-mat" (checkpoint shop), "background" (the ground, also
 ## behind the shop), "window" (32x32 tile for the panes of windows between
-## lanes; see optional_environment: plain drawn glass when there's none).
+## lanes; see optional_environment: plain drawn glass when there's none),
+## "wall" (64x16 tiles for the lane walls the level builds; see
+## optional_environment_options: block-1 art when there's none).
 ## A role's file is assets/<theme>/environment/<role>-1.png; "block" also
 ## has variations block-2.png and block-3.png (picked per block with its
 ## `variant`). Any variation can instead come as lettered alternatives
@@ -181,6 +183,13 @@ static func environment_options(role: String, fallback: Texture2D, variant := 1)
 ## or null if there's none: for roles with no default art.
 static func optional_environment(role: String) -> Texture2D:
 	return _env_texture(current if current != "" else "meadow", role, 1)
+
+
+## Every texture of the current theme's <role>-<variant> (lettered
+## alternatives, or the plain file; the meadow's when no act theme is set),
+## or [] if it has none: for roles with no default art.
+static func optional_environment_options(role: String, variant := 1) -> Array:
+	return _env_textures(current if current != "" else "meadow", role, variant)
 
 
 ## assets/<theme>/environment/<role>-<variant>.png, or null if there's none.

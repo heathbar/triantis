@@ -1,8 +1,10 @@
 extends "res://scripts/bosses/vault.gd"
 ## The Vault in a Braid convergence room (scripts/braid/braid_game.gd): the
 ## arena's Vault (scripts/bosses/vault.gd) with the map hooks pointed at the
-## room (scripts/braid/bosses/braid_room.gd). Each squad's keypad turns up
-## near its own lane mouth (own_area), so every squad has one close by.
+## room (scripts/braid/bosses/braid_room.gd). The wall is sized to the
+## room, and in a squads game each squad's lock or keypad is on its own side
+## of it, picked by its lane (BRAID_SIDES): the top lane's squad gets the
+## north side, the bottom lane's the south, the ones between west then east.
 
 const BraidRoom := preload("res://scripts/braid/bosses/braid_room.gd")
 const BraidBossMortars := preload("res://scripts/braid/bosses/braid_boss_mortars.gd")
@@ -21,8 +23,18 @@ func squad_map_shared(_squad: int) -> Rect2:
 	return BraidRoom.arena(self)
 
 
-func own_area() -> Rect2:
-	return BraidRoom.near_our_mouth(self).grow(-KEYPAD_REACH)
+## The sides (SIDES) by lane, for each number of lanes.
+const BRAID_SIDES := {2: [0, 2], 3: [0, 3, 2], 4: [0, 3, 1, 2]}
+
+
+func _squad_side() -> int:
+	if not squads_game:
+		return -1
+	var sides: Array = BRAID_SIDES.get(game.level.lanes, [])
+	var lane: int = game.my_lane()
+	if lane < 0 or lane >= sides.size():
+		return -1
+	return sides[lane]
 
 
 func outer_point(_squad: int, u: Vector2) -> Vector2:

@@ -315,6 +315,8 @@ func hazard_tick(h: Dictionary, _delta: float) -> void:
 	if h["kind"] == "shell" and not h.get("landed", false) and elapsed >= float(h["land"]):
 		h["landed"] = true
 		var at: Vector2 = h["pos"]
+		if ExplosionArt.is_small(SHELL_RADIUS):
+			ExplosionArt.play_small_sound()
 		hurt_players(func(p: Vector2) -> bool:
 			return p.distance_to(at) <= SHELL_RADIUS + PLAYER_HALF, SHELL_DAMAGE)
 

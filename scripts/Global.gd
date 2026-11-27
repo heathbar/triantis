@@ -100,7 +100,7 @@ const STANDARD_OBJECTIVE_EVERY := 4
 ## (scripts/waves/boss_rush.gd).
 const MODE_BOSS_RUSH := "boss_rush"
 ## Shown as "Campaign" everywhere in the UI. Each squad crosses its own
-## lane, pushed along by a tide (scripts/braid/). Its own scene (BRAID_SCENE).
+## lane, chased by a tide (scripts/braid/). Its own scene (BRAID_SCENE).
 const MODE_BRAID := "braid"
 
 ## Players chosen on the character select screen.

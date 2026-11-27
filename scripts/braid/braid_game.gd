@@ -1,6 +1,6 @@
 extends GameBase
 ## Braid mode (called "Campaign" in the UI): each squad crosses its own lane from left to right,
-## pushed along by the tide (scripts/braid/braid_tide.gd).
+## chased by the tide (scripts/braid/braid_tide.gd), which hurts anyone in it.
 ##
 ## A run is BraidTuning.ACTS acts. Each act has its own level
 ## (scripts/braid/braid_level.gd, laid out from the run's seed by
@@ -143,6 +143,9 @@ var state := State.RUNNING
 ## The act, and the segment of it being played (0-based; SEGMENTS_PER_ACT
 ## is its boss fight).
 var act := 0
+## The act the run started at: 0, unless a Braid dock seed test started it
+## later (then it plays as act 1 for difficulty, in that act's art).
+var _start_act := 0
 var segment := 0
 ## How many acts this run has (1 for a strip test, which has no boss).
 var acts := BraidTuning.ACTS
@@ -190,9 +193,16 @@ var _unlock_timer := -1.0
 
 
 func _ready() -> void:
-	# Run straight from the editor: keyboard + every controller, a fresh seed.
+	# Run straight from the editor (or the Braid dock): every controller, or
+	# the keyboard if none is plugged in; a fresh seed.
 	if Global.players.is_empty():
 		Global.players = _default_players()
+		if Global.players.size() > 1:
+			Global.players = Global.players.filter(func(p: Dictionary) -> bool:
+				return p["device"] != Global.KEYBOARD)
+			for i in Global.players.size():
+				Global.players[i]["slot"] = i
+				Global.players[i]["character"] = i
 		Global.run_seed = randi()
 	_setup_pixel_view()
 	if wave_set == null:
@@ -224,7 +234,9 @@ func _ready() -> void:
 	add_child(braid_hud)
 	# A seed test can start at a later act (the Braid dock's "Act"), to look
 	# at that act's art; a strip test (one act) only takes on its art.
-	_build_act(clampi(int(_debug.get("act", 1)) - 1, 0, acts - 1))
+	# Its difficulty is still act 1's (see _difficulty_act).
+	_start_act = clampi(int(_debug.get("act", 1)) - 1, 0, acts - 1)
+	_build_act(_start_act)
 
 	_spawn_players(level.bounds)
 	_place_players(START_X)
@@ -277,6 +289,12 @@ func max_player_spread() -> Vector2:
 ## fights): what the Squads messages go by.
 func round_index() -> int:
 	return act * (BraidTuning.SEGMENTS_PER_ACT + 1) + segment
+
+
+## The act whose difficulty is played: the act, less any acts a Braid dock
+## seed test skipped (that test starts at act 1's difficulty).
+func _difficulty_act() -> int:
+	return act - _start_act
 
 
 func is_boss_round() -> bool:
@@ -384,7 +402,7 @@ func _start_segment(i: int) -> void:
 	_tide_start = level.segment_start(i) - BraidTuning.TIDE_START_GAP
 	var stop := level.gate_x(i) - BraidTuning.TIDE_GATE_STOP
 	tide.reset(_tide_start, stop)
-	segment_wave = _segment_wave(act * BraidTuning.SEGMENTS_PER_ACT + i, level.tide_time(_tide_start, stop))
+	segment_wave = _segment_wave(_difficulty_act() * BraidTuning.SEGMENTS_PER_ACT + i, level.tide_time(_tide_start, stop))
 	_schedule = segment_wave.build_spawn_schedule(all_players.size(), player_scaling)
 	_next_spawn = 0
 	_clock = 0.0
@@ -462,6 +480,17 @@ func _start_boss() -> void:
 func _boss_wave(a: int) -> WaveDefinition:
 	var base: WaveDefinition = wave_set.waves[BraidTuning.BOSS_WAVES[mini(a, BraidTuning.BOSS_WAVES.size() - 1)]]
 	var wave: WaveDefinition = base.duplicate()
+	var d := a - _start_act
+	if d != a:
+		# A dock seed test started at a later act: act `a`'s boss, but as tough
+		# as act `d`'s (its health scaled the way that act's enemies are).
+		var easier: WaveDefinition = wave_set.waves[BraidTuning.BOSS_WAVES[mini(d, BraidTuning.BOSS_WAVES.size() - 1)]]
+		wave.boss_health = roundi(base.boss_health * easier.enemy_health_multiplier
+			/ maxf(base.enemy_health_multiplier, 0.01))
+		wave.enemy_health_multiplier = easier.enemy_health_multiplier
+		wave.enemy_speed_multiplier = easier.enemy_speed_multiplier
+		wave.base_elite_chance = easier.base_elite_chance
+		base = wave.duplicate()
 	if not BraidTuning.BRAID_BOSSES.has(wave.boss_id):
 		wave.boss_id = BraidTuning.FALLBACK_BOSS
 		for i in BraidTuning.BOSS_WAVES:
@@ -894,11 +923,11 @@ func _reach_checkpoint() -> void:
 	var price_wave: int
 	var heading: String
 	if next_seg == BraidTuning.SEGMENTS_PER_ACT:
-		price_wave = BraidTuning.BOSS_WAVES[mini(next_act, BraidTuning.BOSS_WAVES.size() - 1)]
+		price_wave = BraidTuning.BOSS_WAVES[mini(next_act - _start_act, BraidTuning.BOSS_WAVES.size() - 1)]
 		next_wave = _boss_wave(next_act)
 		heading = "Next: BOSS  -  %s" % Boss.boss_info(next_wave.boss_id)["name"]
 	else:
-		var g := mini(next_act * BraidTuning.SEGMENTS_PER_ACT + next_seg, BraidTuning.SEGMENT_WAVES.size() - 1)
+		var g := mini((next_act - _start_act) * BraidTuning.SEGMENTS_PER_ACT + next_seg, BraidTuning.SEGMENT_WAVES.size() - 1)
 		price_wave = BraidTuning.SEGMENT_WAVES[g]
 		next_wave = wave_set.waves[price_wave]
 		heading = "Next: Act %d, chapter %d / %d" % [next_act + 1, next_seg + 1, n] if acts > 1 \

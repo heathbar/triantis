@@ -48,5 +48,5 @@ enemy_health_multiplier = 5.0
 enemy_speed_multiplier = 1.52
 base_elite_chance = 0.26
 boss_id = "vault"
-boss_health = 4000
+boss_health = 8000
 completion_bonus = 40

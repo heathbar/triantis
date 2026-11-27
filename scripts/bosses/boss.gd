@@ -42,7 +42,7 @@ const BOSSES := {
 	"vault": {"id": "vault", "name": "The Vault",
 		"epithet": "Nothing gets in", "color": Color(0.4, 0.95, 0.75),
 		"script": "res://scripts/bosses/vault.gd",
-		"summary": "Enter the keypad code to drop its shield, then open fire."},
+		"summary": "Pick its lock, then crack its keypad past the lasers. Then it gets up."},
 	"crusher": {"id": "crusher", "name": "The Crusher",
 		"epithet": "Never touches the brakes", "color": Color(0.8, 0.34, 0.95),
 		"script": "res://scripts/bosses/crusher.gd",

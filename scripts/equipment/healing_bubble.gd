@@ -3,7 +3,7 @@ extends Deployable
 ## - A knocked-out player inside it is revived with 1 heart (once per player
 ##   per bubble, and only while a teammate is still up: once the whole squad
 ##   is down the run, or the squad's wave, is already lost).
-## - A player who stays inside for `heal_time` seconds straight (3s) gets half
+## - A player who stays inside for `heal_time` seconds straight (1.2s) gets half
 ##   a heart back, again every `heal_time` while they stay and are missing
 ##   health. Their HUD flashes the half heart that's coming back
 ##   (Player.set_healing).

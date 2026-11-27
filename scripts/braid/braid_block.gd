@@ -50,12 +50,18 @@ const GLASS_SHINE := Color(0.85, 0.95, 1.0, 0.6)
 ## variant 2 starts at the block's own top-left corner (a picture, tiling
 ## right and down if the block is bigger than it). Only variant 1 gets the
 ## outline (dark; light grey in the robot act).
+## A `lane_wall` uses the act's wall art instead (wall-1.png, or lettered
+## wall-1a.png ..., 64x16) when it has some: see _draw_wall_tiles.
 @export_range(1, 3) var variant := 1:
 	set(value):
 		variant = value
 		queue_redraw()
 ## A seal's colour.
 @export var tint := Color(1, 1, 1)
+## True for the walls the level builds round and between the lanes (set by
+## braid_level.gd), not the blocks inside a strip or junction: these draw
+## with the act's wall art when it has some.
+var lane_wall := false
 
 var _shape: CollisionShape2D
 
@@ -125,8 +131,11 @@ func _draw() -> void:
 			y += 6.0
 		draw_rect(Rect2(Vector2.ZERO, size), Color(tint, 0.9), false, 1.0)
 		return
+	var walls := ActTheme.optional_environment_options("wall", 1) if lane_wall and variant == 1 else []
 	var options := ActTheme.environment_options("block", TEXTURE, variant)
-	if variant == 2 and options.size() > 1:
+	if not walls.is_empty():
+		_draw_wall_tiles(walls)
+	elif variant == 2 and options.size() > 1:
 		_draw_pictures(options)
 	elif variant == 2:
 		draw_texture_rect_region(options[0], Rect2(Vector2.ZERO, size), Rect2(Vector2.ZERO, size))
@@ -155,6 +164,43 @@ func _draw_tiles(options: Array) -> void:
 			if cell.has_area():
 				var texture: Texture2D = options[posmod(hash(Vector2i(cx, cy)), options.size())]
 				draw_texture_rect_region(texture, Rect2(cell.position - origin, cell.size), cell)
+
+
+## Wall art (wall-1a.png, ... 64x16): laid in rows as tall as the art from
+## the block's top edge, so a 16px lane wall is exactly one row, with the
+## columns on the world grid so the tiles carry on across blocks side by
+## side. A block taller than it is wide (a wall running up and down) turns
+## the art 90 degrees clockwise: columns from its left edge, rows on the
+## world grid. Each tile is its own pick (from its world cell, so stable and
+## the same for every player); the block's edges crop the last ones.
+func _draw_wall_tiles(options: Array) -> void:
+	var art: Vector2 = options[0].get_size()
+	var turned := size.y > size.x
+	var origin := global_position.round()
+	# Work in the art's own frame: `along` runs with the art's width.
+	var length := size.y if turned else size.x
+	var across := size.x if turned else size.y
+	var start := origin.y if turned else origin.x  # world grid along the wall
+	var first := floori(start / art.x)
+	var last := ceili((start + length) / art.x)
+	var rows := ceili(across / art.y)
+	for row in rows:
+		for col in range(first, last):
+			var from := maxf(col * art.x, start)
+			var to := minf((col + 1) * art.x, start + length)
+			var thick := minf(art.y, across - row * art.y)
+			if to <= from or thick <= 0.0:
+				continue
+			var texture: Texture2D = options[posmod(hash([col, row, origin.x if turned else origin.y]), options.size())]
+			var src := Rect2(from - col * art.x, 0.0, to - from, thick)
+			if turned:
+				# Clockwise: the art's top edge on the right, its left end at the top.
+				draw_set_transform(Vector2((row + 1) * art.y - (art.y - thick), from - start) , PI / 2.0)
+				draw_texture_rect_region(texture, Rect2(Vector2.ZERO, src.size), src)
+				draw_set_transform(Vector2.ZERO)
+			else:
+				draw_texture_rect_region(texture,
+					Rect2(from - start, row * art.y, to - from, thick), src)
 
 
 ## Lettered pictures (block-2a.png, ...): laid out from the block's top-left

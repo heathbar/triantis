@@ -61,7 +61,7 @@ signal mode_message(from_squad: int, data: Array)
 const GAME_ID := "triantis-squads"
 ## Games only see and join hosts with the same version. Bump it whenever the
 ## messages change, or anything both sides must agree on (like MAP_OVERLAP).
-const PROTOCOL_VERSION := 13
+const PROTOCOL_VERSION := 14
 const DISCOVERY_PORT := 47800
 const GAME_PORT := 47801
 const CONNECT_FAILED := "Couldn't connect to that game."

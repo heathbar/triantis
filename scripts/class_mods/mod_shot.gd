@@ -38,6 +38,7 @@ extends "res://scripts/projectile.gd"
 ## node's on_shot_hit().
 
 const Zap := preload("res://scripts/class_mods/mod_fx_visuals.gd")
+const Blast := preload("res://scripts/equipment/blast.gd")
 
 ## The Class Mod effects node (for spikes, heals, hit effects and messages
 ## to other squads). Set before adding.
@@ -205,7 +206,7 @@ func _hit(enemy: Node) -> int:
 		enemy.apply_slow(slow_mult, slow_secs)
 	if blast_radius > 0.0:
 		_area_damage(global_position, blast_radius, roundi(damage * 0.5), enemy)
-		Zap.ring(get_parent(), global_position, blast_radius, tint)
+		Blast.spawn(get_parent(), global_position, blast_radius)
 	if toxin_secs > 0.0 and fx:
 		fx.poison(enemy, maxf(damage * toxin_dps, 1.0), toxin_secs, toxin_spread, shooter, toxin_heals)
 	if chain_jumps > 0:
@@ -333,9 +334,9 @@ func _stop() -> void:
 			Color(1.0, 0.55, 0.2))
 	if burst_radius > 0.0:
 		_area_damage(global_position, burst_radius, roundi(damage * burst_mult))
-		Zap.ring(get_parent(), global_position, burst_radius, tint)
+		Blast.spawn(get_parent(), global_position, burst_radius)
 		if bomblets > 0:
-			fx.bomblets(global_position, bomblets, maxi(roundi(damage * 0.6), 1), shooter, tint)
+			fx.bomblets(global_position, bomblets, maxi(roundi(damage * 0.6), 1), shooter)
 
 
 func _burst_flak() -> void:
@@ -358,7 +359,7 @@ func _burst_flak() -> void:
 
 func _burst_mortar() -> void:
 	_area_damage(global_position, mortar_radius, roundi(damage * mortar_damage))
-	Zap.ring(get_parent(), global_position, mortar_radius, tint)
+	Blast.spawn(get_parent(), global_position, mortar_radius)
 	if puddle_secs > 0.0 and fx:
 		fx.add_hazard(global_position, global_position, mortar_radius * 0.7, puddle_secs,
 			maxi(roundi(damage * 0.2), 1), shooter, Color(0.6, 1.0, 0.2))

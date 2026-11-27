@@ -21,6 +21,8 @@ extends RefCounted
 ##     spawns (every player gets a copy of each pickup, so more players and
 ##     elites mean more). Spent all at once in one shop, priced for that wave.
 ##   - Hearts: every earlier wave's bonus_hearts.
+##   - Class Mods: one pick for every earlier boss wave (a run picks one
+##     after each boss but its last), made before the shop.
 ##   - The boss and its enemy trickle: that boss wave's own (health scales
 ##     with players as usual, see boss.gd). A boss not placed in the run yet
 ##     borrows the trickle of the closest boss wave at or before the chosen
@@ -116,6 +118,16 @@ static func bonus_hearts(base: WaveSet, index: int) -> int:
 	return hearts
 
 
+## Class Mod picks a run would have made before wave `index`: one after
+## every boss wave before it.
+static func class_mod_picks(base: WaveSet, index: int) -> int:
+	var picks := 0
+	for i in mini(index, base.waves.size()):
+		if base.waves[i].is_boss_wave():
+			picks += 1
+	return picks
+
+
 ## Average resources one enemy from `scene` drops.
 static func _expected_drops(scene: PackedScene) -> float:
 	var enemy := scene.instantiate()
@@ -175,6 +187,7 @@ static func describe(base: WaveSet, s: Dictionary, player_count: int) -> String:
 	var at := wave_index(base, s)
 	var resources := estimated_resources(base, at, player_count, s)
 	var hearts := bonus_hearts(base, at)
+	var picks := class_mod_picks(base, at)
 	var text := "%s, kitted out as wave %d" % [Boss.boss_info(id)["name"], at + 1]
 	if boss_wave(base, id) < 0:
 		text += " (not in the run yet)"
@@ -183,6 +196,8 @@ static func describe(base: WaveSet, s: Dictionary, player_count: int) -> String:
 			else " solo (more with more players)",
 		"+%d heart%s" % [hearts, "" if hearts == 1 else "s"] if hearts > 0 else "no bonus hearts",
 		roundi(float(s.get("health", 1.0)) * 100)]
+	if picks > 0:
+		text += ", %d Class Mod pick%s" % [picks, "" if picks == 1 else "s"]
 	if resources <= 0:
 		text += "\nNo resources: straight into the fight, no shop."
 	return text

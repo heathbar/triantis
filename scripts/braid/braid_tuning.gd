@@ -121,11 +121,13 @@ const TIDE_START_GAP := 160.0
 const TIDE_GATE_STOP := 56.0
 ## (Squads go into the shop early once one player of every squad stands on
 ## their checkpoint plate: see braid_game.gd.)
-## Half hearts a player loses every TIDE_DAMAGE_INTERVAL seconds while the
-## tide touches them (ignores armour).
+## Half hearts a player loses every TIDE_DAMAGE_INTERVAL seconds while
+## they're in the tide or touching it (ignores armour). It doesn't push them
+## (2026-11-26: it used to, and knocked out anyone it pinned to a wall).
 const TIDE_DAMAGE := 1
 const TIDE_DAMAGE_INTERVAL := 1.0
-## Players can't be further into the tide than this: it pushes them along.
+## A dummy squad's stand-in (scripts/net/dummy_squad.gd) can't be further
+## into the tide than this: it's pushed along. Real players aren't.
 const TIDE_PUSH_DEPTH := 6.0
 ## Enemies and pickups this far inside the tide are swallowed (enemies drop
 ## nothing, pickups are lost).

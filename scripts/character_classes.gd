@@ -83,8 +83,8 @@ const CLASSES := {
 		"name": "Sniper",
 		"description": "Long reach, hard hits, fragile",
 		"attributes": {
-			"lives": 2, "range": 0, "speed": -10, "harvesting": 20,
-			"ranged_damage": 10, "fire_rate": 0, "melee_damage": -60, "knockback": 0, "engineering": 10, "armor": -30,
+			"lives": 3, "range": 50, "speed": 0, "harvesting": 20,
+			"ranged_damage": 40, "fire_rate": -15, "melee_damage": -60, "knockback": 20, "engineering": 0, "armor": -30,
 		},
 	},
 	"engineer": {

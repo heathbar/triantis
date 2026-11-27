@@ -77,6 +77,8 @@ static func hazard_tick(boss: Boss, h: Dictionary) -> bool:
 	if not h.get("hit", false) and boss.elapsed >= float(h["boom"]):
 		h["hit"] = true
 		var at: Vector2 = h["pos"]
+		if ExplosionArt.is_small(RADIUS):
+			ExplosionArt.play_small_sound()
 		var reach := RADIUS + Boss.PLAYER_HALF * 0.5
 		boss.hurt_players(func(p: Vector2) -> bool: return p.distance_squared_to(at) <= reach * reach,
 			DAMAGE)

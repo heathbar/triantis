@@ -31,6 +31,7 @@ const MeleeSwing := preload("res://scripts/melee_swing.gd")
 const Projectile := preload("res://scripts/projectile.gd")
 const BossBody := preload("res://scripts/bosses/boss_body.gd")
 const Visuals := preload("res://scripts/class_mods/mod_fx_visuals.gd")
+const Blast := preload("res://scripts/equipment/blast.gd")
 
 const TINTS := {
 	"pierce": Color(0.55, 0.9, 1.0), "mark": Color(1.0, 0.4, 0.4), "ricochet": Color(1.0, 0.9, 0.4),
@@ -987,7 +988,7 @@ func add_hazard(a: Vector2, b: Vector2, radius: float, secs: float, damage: int,
 
 
 ## Underbarrel III: `count` small bursts scattered round `at`, one after another.
-func bomblets(at: Vector2, count: int, damage: int, source: Node, color: Color) -> void:
+func bomblets(at: Vector2, count: int, damage: int, source: Node) -> void:
 	for k in count:
 		var timer := get_tree().create_timer(0.12 * (k + 1), false, true)
 		var spot := at + Vector2.from_angle(randf() * TAU) * randf_range(10.0, 24.0)
@@ -995,7 +996,7 @@ func bomblets(at: Vector2, count: int, damage: int, source: Node, color: Color) 
 			if not game.is_wave_running():
 				return
 			_area(spot, 14.0, damage, source if is_instance_valid(source) else null)
-			Visuals.ring(game, spot, 14.0, color))
+			Blast.spawn(game, spot, 14.0))
 
 
 ## A Triage or Stim shot moving from -> to: heals, boosts or revives the
@@ -1175,7 +1176,7 @@ class Dot extends Node2D:
 			fx.heal_nearest(at)
 		if explode > 0.0:
 			fx.call_deferred("_area", at, explode, maxi(roundi(dps * 3.0), 1), src)
-			Visuals.ring(fx.game, at, explode, COLORS["burn"])
+			Blast.spawn(fx.game, at, explode)
 
 	func _draw() -> void:
 		var c: Color = COLORS.get(kind, Color.WHITE)

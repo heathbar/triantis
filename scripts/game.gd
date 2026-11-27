@@ -140,6 +140,7 @@ func _ready() -> void:
 		test_kit = {
 			"resources": BossTest.estimated_resources(wave_set, at, all_players.size(), test),
 			"hearts": BossTest.bonus_hearts(wave_set, at),
+			"mod_picks": BossTest.class_mod_picks(wave_set, at),
 		}
 		wave_set = BossTest.build(wave_set, test)
 	elif Global.current_mode() == Global.MODE_CUSTOM:
@@ -173,6 +174,16 @@ func _ready() -> void:
 				player.change_attribute("lives", test_kit["hearts"])
 				player.restore_all_lives()
 			player.add_resources(test_kit["resources"])
+		# The Class Mods a run would have picked by now, one pick per
+		# earlier boss.
+		var picks: int = test_kit["mod_picks"]
+		if picks > 0:
+			state = State.SHOP  # between waves; the shop or the boss intro follows
+			pause_menu.enabled = false
+			get_tree().paused = true
+		for i in picks:
+			await _pick_class_mods(Global.run_seed + i * 7,
+				"BOSS TEST: CLASS MOD %d OF %d" % [i + 1, picks])
 		if test_kit["resources"] > 0:
 			_go_shopping(0)
 		else:

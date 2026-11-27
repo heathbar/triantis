@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://3u7epm8o8xlq"
-path="res://.godot/imported/block-1e.png-cf4609a379888dbbc6ffadb552bae7d9.ctex"
+uid="uid://bcvkcfcq0om27"
+path="res://.godot/imported/small-explosion-5.png-4c8fd5fdd6c356f6c399b0f696e8a5cc.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/robot/environment/block-1e.png"
-dest_files=["res://.godot/imported/block-1e.png-cf4609a379888dbbc6ffadb552bae7d9.ctex"]
+source_file="res://assets/misc/small-explosion-5.png"
+dest_files=["res://.godot/imported/small-explosion-5.png-4c8fd5fdd6c356f6c399b0f696e8a5cc.ctex"]
 
 [params]
 

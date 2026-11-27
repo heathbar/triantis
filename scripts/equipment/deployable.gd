@@ -112,11 +112,7 @@ func explode(center: Vector2, radius: float, damage: int, knockback := 0.0) -> v
 		if away == Vector2.ZERO:
 			away = Vector2.RIGHT.rotated(randf() * TAU)
 		BossBody.deal(enemy, damage, credit(), away * knockback, center, true)
-	var blast := Blast.new()
-	blast.radius = radius
-	var world := get_parent() as Node2D
-	blast.position = world.to_local(center)  # before add_child
-	world.add_child(blast)
+	Blast.spawn(get_parent() as Node2D, center, radius)
 
 
 ## Roughly half an enemy's size (its collision rectangle, scaled for elites).

@@ -7,10 +7,10 @@ extends Node2D
 ## where the segment's clock says (BraidLevel.tide_after: the host's clock in
 ## a squads game, so it's in the same place for everyone), never past `stop_x`
 ## (just short of the next checkpoint gate), and calls update(), which:
-##   - our players it reaches are pushed along (they can't be more than
-##     TIDE_PUSH_DEPTH into it) and lose TIDE_DAMAGE every
-##     TIDE_DAMAGE_INTERVAL while it touches them; a player pinned against a
-##     wall until it covers them is knocked out,
+##   - our players it reaches aren't moved: they lose TIDE_DAMAGE every
+##     TIDE_DAMAGE_INTERVAL for as long as they're in it or touching it
+##     (only a dummy squad's stand-in, which can't be hurt, is pushed along:
+##     scripts/net/dummy_squad.gd),
 ##   - our enemies and pickups TIDE_SWALLOW_DEPTH inside it are swallowed
 ##     (no kill, no drops; the pickup is lost, though pickups_swallowed lets
 ##     a Salvage III Scavenger have it: scripts/class_mods/class_mod_fx.gd).
@@ -68,12 +68,12 @@ func time_left() -> float:
 func update(x: float, delta: float, players: Array[Node]) -> void:
 	_time += delta
 	front = minf(x, stop_x)
-	_push_players(delta, players)
+	_touch_players(delta, players)
 	_swallow()
 	queue_redraw()
 
 
-func _push_players(delta: float, players: Array[Node]) -> void:
+func _touch_players(delta: float, players: Array[Node]) -> void:
 	for player: Node2D in players:
 		if player.is_dead():
 			_touch_timers.erase(player)
@@ -82,15 +82,12 @@ func _push_players(delta: float, players: Array[Node]) -> void:
 		if at - PLAYER_HALF_WIDTH >= front:
 			_touch_timers.erase(player)
 			continue
-		# Shove them out to TIDE_PUSH_DEPTH inside it; walls can stop that.
-		var min_x := front - BraidTuning.TIDE_PUSH_DEPTH + PLAYER_HALF_WIDTH
-		if at < min_x:
-			var along: Vector2 = level.dir_at_point(player.global_position) if level else Vector2.RIGHT
-			player.move_and_collide(along * (min_x - at))
-			at = _progress(player.global_position)
-		if at + PLAYER_HALF_WIDTH < front:
-			# Pinned and swallowed whole.
-			_hurt(player, player.health)
+		if player.get("dummy"):
+			# Kept up with the front (it stands still and can't be hurt).
+			var min_x := front - BraidTuning.TIDE_PUSH_DEPTH + PLAYER_HALF_WIDTH
+			if at < min_x:
+				var along: Vector2 = level.dir_at_point(player.global_position) if level else Vector2.RIGHT
+				player.move_and_collide(along * (min_x - at))
 			continue
 		# Seconds to the next hit: the grace first, then every interval.
 		var t: float = _touch_timers.get(player, FIRST_TOUCH_GRACE) - delta

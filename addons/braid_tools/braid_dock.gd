@@ -7,8 +7,10 @@ extends EditorDock
 ##   Check seeds: build many seeds in a row and list the ones with problems.
 ##   Play seed / Play strip: run the Braid game on that seed, or on a lane
 ##     that's one strip over and over (scripts/braid/braid_game.gd DEBUG_FILE).
-##     "Act" picks the act: Play seed starts the run there, Play strip draws
-##     the strip in that act's art (scripts/act_theme.gd), to look at it.
+##     "Act" picks the act: Play seed starts the run there (in that act's
+##     art and boss, at act 1's difficulty), Play strip draws the strip in
+##     that act's art (scripts/act_theme.gd), to look at it. Either plays
+##     with every connected controller, or the keyboard if there are none.
 
 const BraidTuning := preload("res://scripts/braid/braid_tuning.gd")
 const BraidGenerator := preload("res://scripts/braid/braid_generator.gd")
@@ -82,7 +84,7 @@ func _build_ui() -> void:
 	_act.min_value = 1
 	_act.max_value = BraidTuning.ACTS
 	_act.value = 1
-	_act.tooltip_text = "Play seed starts the run at this act; Play strip draws the strip in this act's art."
+	_act.tooltip_text = "Play seed starts the run at this act (act 1 difficulty); Play strip draws the strip in this act's art."
 	row.add_child(_act)
 	row.add_child(_text("(Play seed / Play strip)"))
 

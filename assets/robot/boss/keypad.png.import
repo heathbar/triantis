@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bqc6pm3bawohm"
-path="res://.godot/imported/block-1b.png-3eb2335bf686767e45a3580c7090df28.ctex"
+uid="uid://b6vnvh6q2v8k8"
+path="res://.godot/imported/keypad.png-22b06f0baa16e5242df2ab6379b06da1.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/robot/environment/block-1b.png"
-dest_files=["res://.godot/imported/block-1b.png-3eb2335bf686767e45a3580c7090df28.ctex"]
+source_file="res://assets/robot/boss/keypad.png"
+dest_files=["res://.godot/imported/keypad.png-22b06f0baa16e5242df2ab6379b06da1.ctex"]
 
 [params]
 

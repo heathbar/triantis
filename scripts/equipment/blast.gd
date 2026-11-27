@@ -1,17 +1,30 @@
 extends Node2D
 ## An explosion (scripts/explosion_art.gd), its fireball `radius` across.
 ## Purely visual (the damage is dealt by Deployable.explode in
-## scripts/equipment/deployable.gd, a bomber, the hot potato...).
+## scripts/equipment/deployable.gd, a bomber, the hot potato, a Class Mod
+## burst...). A small one (ExplosionArt.is_small) also plays the small blast
+## sound; big ones' owners play their own.
 
 const ExplosionArt := preload("res://scripts/explosion_art.gd")
+const Self := preload("res://scripts/equipment/blast.gd")
 
 var radius := 60.0
 var _age := 0.0
 
 
+## Adds a blast of `radius` to `world` at world position `at`.
+static func spawn(world: Node2D, at: Vector2, radius: float) -> void:
+	var blast := Self.new()
+	blast.radius = radius
+	blast.position = world.to_local(at)  # before add_child
+	world.add_child(blast)
+
+
 func _ready() -> void:
 	add_to_group("deployables")  # Cleared with the rest when the wave ends.
 	z_index = 20
+	if ExplosionArt.is_small(radius):
+		ExplosionArt.play_small_sound()
 
 
 func _process(delta: float) -> void:
