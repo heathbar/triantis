@@ -4,7 +4,8 @@ extends CharacterBody2D
 ##
 ## The keyboard player's keys and mouse buttons are InputMap actions (set up
 ## in Global._setup_controller_ui_input): "fire", "melee", "use_equipment",
-## "drop" and the keypad's "code_a" / "code_b" / "code_x" / "code_y".
+## "drop", the keypad's "code_a" / "code_b" / "code_x" / "code_y" and the
+## lock's "pick_lock".
 ## Controllers use their sticks, triggers and face buttons directly.
 
 ## Health (in half hearts) went up or down.
@@ -40,8 +41,6 @@ const MELEE_TRIGGER_THRESHOLD = 0.5
 ## below what it counts as let go.
 const EQUIPMENT_TRIGGER_THRESHOLD := 0.5
 const EQUIPMENT_TRIGGER_RELEASE := 0.3
-## Keypad codes (the Vault): which action gives which face button.
-const CODE_ACTIONS := {&"code_a": "A", &"code_b": "B", &"code_x": "X", &"code_y": "Y"}
 ## Seconds a dash keeps the player safe after it ends.
 const DASH_GRACE := 0.15
 
@@ -279,9 +278,11 @@ var hit_filter := Callable()
 ## it, which calls its player_dropped(player).
 var carrying: Node = null
 ## Boss waves: the keypad this player stands at (the Vault,
-## scripts/bosses/vault.gd), or null. While set, the face buttons (I/J/K/L on
-## the keyboard) go to it as code presses: keypad.code_press(player, button)
-## with "A", "B", "X" or "Y". It also stops them using their equipment.
+## scripts/bosses/vault.gd), or null. While set, the buttons it takes
+## (keypad.station_actions: face buttons / 1-4 at the keypad, X / F / Space
+## at the lock) go to it as presses: keypad.code_press(player, button) with
+## "A", "B", "X" or "Y". It also stops them using their equipment, and the
+## keyboard player swinging while Space picks the lock.
 var keypad: Node = null
 ## A fixed gun this player is manning (Braid's mounted turrets,
 ## scripts/braid/braid_turret.gd), or null. While set they can't move, their
@@ -507,13 +508,14 @@ func _poll_equipment_trigger() -> void:
 		use_equipment()
 
 
-## Keypad codes: the face button `event` presses on this player's controller
-## ("A", "B", "X" or "Y"), or "". The keyboard player's keys are laid out the
-## same way (CODE_ACTIONS): I (Y) on top, J (X) left, L (B) right, K (A) below.
+## The keypad or lock button `event` presses for this player ("A", "B", "X"
+## or "Y"), or "": whichever of the station's actions it is
+## (keypad.station_actions).
 func _code_button(event: InputEvent) -> String:
-	for action: StringName in CODE_ACTIONS:
+	var actions: Dictionary = keypad.station_actions(self)
+	for action: StringName in actions:
 		if _is_my_press(event, action):
-			return CODE_ACTIONS[action]
+			return actions[action]
 	return ""
 
 
@@ -836,6 +838,10 @@ func _shoot(aim: Vector2) -> void:
 ## ready, so tapping can't swing any faster.
 func _melee_held() -> bool:
 	if device == Global.KEYBOARD:
+		# Space picks the Vault's lock instead.
+		if keypad != null and is_instance_valid(keypad) \
+				and keypad.station_actions(self).has(&"pick_lock"):
+			return false
 		return Input.is_action_pressed(&"melee")
 	return Input.get_joy_axis(device, JOY_AXIS_TRIGGER_RIGHT) > MELEE_TRIGGER_THRESHOLD
 

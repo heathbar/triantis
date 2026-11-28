@@ -234,15 +234,19 @@ func _setup_controller_ui_input() -> void:
 	_ensure_key("use_equipment", KEY_F)
 	_ensure_key("drop", KEY_Q)
 	_ensure_joy_button("drop", JOY_BUTTON_B)
-	# The Vault's keypad: face buttons, or I / J / K / L laid out the same way.
-	_ensure_key("code_a", KEY_K)
+	# The Vault's keypad: face buttons, or 1 / 2 / 3 / 4 (A / B / X / Y).
+	_ensure_key("code_a", KEY_1)
 	_ensure_joy_button("code_a", JOY_BUTTON_A)
-	_ensure_key("code_b", KEY_L)
+	_ensure_key("code_b", KEY_2)
 	_ensure_joy_button("code_b", JOY_BUTTON_B)
-	_ensure_key("code_x", KEY_J)
+	_ensure_key("code_x", KEY_3)
 	_ensure_joy_button("code_x", JOY_BUTTON_X)
-	_ensure_key("code_y", KEY_I)
+	_ensure_key("code_y", KEY_4)
 	_ensure_joy_button("code_y", JOY_BUTTON_Y)
+	# The Vault's lock: X on a controller, F or Space on the keyboard.
+	_ensure_key("pick_lock", KEY_F)
+	_ensure_key("pick_lock", KEY_SPACE)
+	_ensure_joy_button("pick_lock", JOY_BUTTON_X)
 	# Braid: hold at an airstrike pad, press to man / leave a turret
 	# (scripts/braid/braid_favour.gd, braid_turret.gd).
 	_ensure_key("interact", KEY_E)

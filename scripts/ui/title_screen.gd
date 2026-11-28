@@ -495,7 +495,7 @@ func _rebuild_host_list() -> void:
 	for id in ids:
 		var info: Dictionary = Squads.hosts[id]
 		var button := Button.new()
-		button.custom_minimum_size = Vector2(1300, 130)
+		button.custom_minimum_size = Vector2(1300, 140)
 		button.add_theme_font_size_override("font_size", 56)
 		var state := "%d/%d squads" % [info["squads"], Squads.MAX_SQUADS] if info["open"] else "Full / in progress"
 		var mode := Global.mode_name(str(info.get("mode", "")))

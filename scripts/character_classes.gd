@@ -72,7 +72,7 @@ const CLASSES := {
 		"name": "Scavenger",
 		"description": "Gathers far more resources",
 		"attributes": {
-			"lives": 4, "range": 0, "speed": 25, "harvesting": 50,
+			"lives": 4, "range": 0, "speed": 20, "harvesting": 30,
 			"ranged_damage": 0, "fire_rate": 0, "melee_damage": -20, "knockback": -10, "engineering": 15, "armor": -30,
 		},
 	},
@@ -236,16 +236,20 @@ static func clamp_attribute(id: String, value: int) -> int:
 ## rate and knockback.
 const STAT_MULT_MIN := 0.2
 const STAT_MULT_MAX := 4.0
-## Speed and harvesting break the game sooner, so they get a narrower range.
-const NARROW_MULT_MIN := 0.3
-const NARROW_MULT_MAX := 3.0
-const NARROW_MULT_ATTRIBUTES: Array[String] = ["speed", "harvesting"]
+## Speed and harvesting break the game sooner, so each has its own range.
+const SPEED_MULT_MIN := 0.4
+const SPEED_MULT_MAX := 3.0
+const HARVEST_MULT_MIN := 0.1
+const HARVEST_MULT_MAX := 1.5
 
 
 ## The multipliers at -100 (x) and +100 (y) for an attribute.
 static func mult_limits(attribute_id: String) -> Vector2:
-	if attribute_id in NARROW_MULT_ATTRIBUTES:
-		return Vector2(NARROW_MULT_MIN, NARROW_MULT_MAX)
+	match attribute_id:
+		"speed":
+			return Vector2(SPEED_MULT_MIN, SPEED_MULT_MAX)
+		"harvesting":
+			return Vector2(HARVEST_MULT_MIN, HARVEST_MULT_MAX)
 	return Vector2(STAT_MULT_MIN, STAT_MULT_MAX)
 
 
@@ -271,7 +275,7 @@ static func block_chance(armor: int) -> float:
 
 
 ## Maps an attribute to a stat multiplier: -100 -> 0.2x, 0 -> 1x, +100 -> 4x
-## (speed and harvesting: 0.3x .. 3x, see mult_limits()).
+## (speed 0.4x .. 3x, harvesting 0.1x .. 1.5x: see mult_limits()).
 ## Exponential on each side of 0, so equal steps feel like equal changes:
 ## e.g. -50 -> ~0.45x, +50 -> 2x.
 static func stat_multiplier(value: int, attribute_id: String = "") -> float:

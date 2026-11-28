@@ -119,7 +119,7 @@ const LIST := [
 		"range": 140.0, "interval": 1.2, "damage": 8, "chains": 4, "chain_range": 70.0,
 		"scales": ["damage", "chains"]},
 	{"id": "adrenaline_shot", "name": "Adrenaline Shot", "cost": 35,
-		"duration": 10.0, "cooldown": 22.5,
+		"duration": 5.0, "cooldown": 40,
 		"blurb": "A jab that makes you faster, quicker on the trigger and tougher for a while",
 		"speed": 40, "fire_rate": 40, "armor": 40,
 		"scales": ["speed", "fire_rate", "armor"]},

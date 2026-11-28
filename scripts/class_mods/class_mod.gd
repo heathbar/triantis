@@ -122,9 +122,9 @@ const TREES := {
 				{"text": "Each hit makes the enemy take +8% damage from everyone (up to 8 times, for 4 s), and fully shredded enemies bleed.",
 					"per": 0.08, "max": 8, "bleed": 0.5}]},
 			{"id": "spray", "name": "Spray", "mechanic": "fan", "stages": [
-				{"text": "Every shot is a burst of 2.", "extra": 1},
-				{"text": "Every shot is a burst of 3.", "extra": 2},
-				{"text": "Every shot is a burst of 3, and every bullet goes through 1 enemy.", "extra": 2, "pierce": 1}]},
+				{"text": "Every 3rd shot is a burst of 2.", "extra": 1, "every": 3},
+				{"text": "Every other shot is a burst of 2.", "extra": 1, "every": 2},
+				{"text": "Every other shot is a burst of 2, and every bullet goes through 1 enemy.", "extra": 1, "every": 2, "pierce": 1}]},
 			{"id": "recycler", "name": "Recycler", "mechanic": "recycler", "stages": [
 				{"text": "Every 25 kills heal you half a heart.", "kills": 25},
 				{"text": "Every 15 kills heal you half a heart.", "kills": 15},
@@ -181,9 +181,9 @@ const TREES := {
 				{"text": "Stronger 4 s poison that spreads when its host dies. A poisoned enemy dying heals your squad's nearest player (you too) half a heart, at most once a second.",
 					"dps": 1.0, "secs": 4.0, "spread": 48.0, "heal_kill": true}]},
 			{"id": "fan", "name": "Fan", "mechanic": "fan", "stages": [
-				{"text": "Every shot is a burst of 2.", "extra": 1},
-				{"text": "Every shot is a burst of 4.", "extra": 3},
-				{"text": "Every shot is a burst of 4, and the last bullet homes in on an enemy.", "extra": 3, "home_last": true}]},
+				{"text": "Every 3rd shot is a burst of 2.", "extra": 1, "every": 3},
+				{"text": "Every 4th shot is a burst of 3.", "extra": 2, "every": 4},
+				{"text": "Every 4th shot is a burst of 3, and its last bullet homes in on an enemy.", "extra": 2, "every": 4, "home_last": true}]},
 			{"id": "stim", "name": "Stim Darts", "mechanic": "stim", "stages": [
 				{"text": "Shots that pass squadmates give them +15% speed and fire rate for 3 s.", "boost": 0.15, "secs": 3.0},
 				{"text": "Shots that pass squadmates give them +30% speed and fire rate for 3 s.", "boost": 0.3, "secs": 3.0},

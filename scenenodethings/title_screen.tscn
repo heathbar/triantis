@@ -58,35 +58,35 @@ layout_mode = 2
 
 [node name="NewLocalGameButton" type="Button" parent="Strip/MainMenu/VBox" unique_id=762018501]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(960, 150)
+custom_minimum_size = Vector2(960, 140)
 layout_mode = 2
 size_flags_horizontal = 4
 text = "New Local Game"
 
 [node name="NewSquadsGameButton" type="Button" parent="Strip/MainMenu/VBox" unique_id=1784086436]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(960, 150)
+custom_minimum_size = Vector2(960, 140)
 layout_mode = 2
 size_flags_horizontal = 4
 text = "New Squads Game"
 
 [node name="ControlsButton" type="Button" parent="Strip/MainMenu/VBox" unique_id=221015837]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(960, 150)
+custom_minimum_size = Vector2(960, 140)
 layout_mode = 2
 size_flags_horizontal = 4
 text = "Controls"
 
 [node name="SettingsButton" type="Button" parent="Strip/MainMenu/VBox" unique_id=1262018688]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(960, 150)
+custom_minimum_size = Vector2(960, 140)
 layout_mode = 2
 size_flags_horizontal = 4
 text = "Settings"
 
 [node name="QuitButton" type="Button" parent="Strip/MainMenu/VBox" unique_id=1889386848]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(960, 150)
+custom_minimum_size = Vector2(960, 140)
 layout_mode = 2
 size_flags_horizontal = 4
 text = "Exit"
@@ -223,14 +223,14 @@ horizontal_alignment = 1
 
 [node name="HostButton" type="Button" parent="Strip/SquadsMenu/Panel/VBox" unique_id=1071908322]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(800, 150)
+custom_minimum_size = Vector2(800, 140)
 layout_mode = 2
 size_flags_horizontal = 4
 text = "Host"
 
 [node name="JoinButton" type="Button" parent="Strip/SquadsMenu/Panel/VBox" unique_id=1728551630]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(800, 150)
+custom_minimum_size = Vector2(800, 140)
 layout_mode = 2
 size_flags_horizontal = 4
 text = "Join"
@@ -299,7 +299,7 @@ alignment = 1
 
 [node name="AddressEdit" type="LineEdit" parent="Strip/JoinMenu/Panel/VBox/AddressRow" unique_id=341876286]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(900, 130)
+custom_minimum_size = Vector2(900, 140)
 layout_mode = 2
 theme_override_font_sizes/font_size = 56
 placeholder_text = "e.g. 203.0.113.7"
@@ -308,7 +308,7 @@ select_all_on_focus = true
 
 [node name="AddressJoinButton" type="Button" parent="Strip/JoinMenu/Panel/VBox/AddressRow" unique_id=1777670582]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(400, 130)
+custom_minimum_size = Vector2(400, 140)
 layout_mode = 2
 text = "Join"
 
@@ -347,7 +347,7 @@ horizontal_alignment = 1
 
 [node name="GameNameEdit" type="LineEdit" parent="Strip/HostMenu/Panel/VBox" unique_id=586300810]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(1100, 130)
+custom_minimum_size = Vector2(1100, 140)
 layout_mode = 2
 size_flags_horizontal = 4
 theme_override_font_sizes/font_size = 64
@@ -366,7 +366,7 @@ autowrap_mode = 3
 
 [node name="StartHostingButton" type="Button" parent="Strip/HostMenu/Panel/VBox" unique_id=1967614771]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(800, 150)
+custom_minimum_size = Vector2(800, 140)
 layout_mode = 2
 size_flags_horizontal = 4
 text = "Host Game"
@@ -400,7 +400,7 @@ horizontal_alignment = 1
 
 [node name="StandardButton" type="Button" parent="Strip/ModeMenu/Panel/VBox" unique_id=423383766]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(800, 120)
+custom_minimum_size = Vector2(800, 140)
 layout_mode = 2
 size_flags_horizontal = 4
 text = "Standard"
@@ -416,7 +416,7 @@ autowrap_mode = 3
 
 [node name="CustomButton" type="Button" parent="Strip/ModeMenu/Panel/VBox" unique_id=1111476286]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(800, 120)
+custom_minimum_size = Vector2(800, 140)
 layout_mode = 2
 size_flags_horizontal = 4
 text = "Custom"
@@ -432,7 +432,7 @@ autowrap_mode = 3
 
 [node name="BossRushButton" type="Button" parent="Strip/ModeMenu/Panel/VBox" unique_id=1384920571]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(800, 120)
+custom_minimum_size = Vector2(800, 140)
 layout_mode = 2
 size_flags_horizontal = 4
 text = "Boss Rush"
@@ -448,7 +448,7 @@ autowrap_mode = 3
 
 [node name="ModeBackButton" type="Button" parent="Strip/ModeMenu/Panel/VBox" unique_id=243620072]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(600, 120)
+custom_minimum_size = Vector2(600, 140)
 layout_mode = 2
 size_flags_horizontal = 4
 text = "Back"
@@ -476,7 +476,7 @@ horizontal_alignment = 1
 
 [node name="CampaignButton" type="Button" parent="Strip/PlayMenu/Panel/VBox" unique_id=1562243337]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(800, 120)
+custom_minimum_size = Vector2(800, 140)
 layout_mode = 2
 size_flags_horizontal = 4
 text = "Campaign"
@@ -492,7 +492,7 @@ autowrap_mode = 3
 
 [node name="ArenaButton" type="Button" parent="Strip/PlayMenu/Panel/VBox" unique_id=1822152331]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(800, 120)
+custom_minimum_size = Vector2(800, 140)
 layout_mode = 2
 size_flags_horizontal = 4
 text = "Arena"
@@ -508,7 +508,7 @@ autowrap_mode = 3
 
 [node name="PlayBackButton" type="Button" parent="Strip/PlayMenu/Panel/VBox" unique_id=1666242635]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(600, 120)
+custom_minimum_size = Vector2(600, 140)
 layout_mode = 2
 size_flags_horizontal = 4
 text = "Back"

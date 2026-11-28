@@ -235,11 +235,11 @@ func _on_ready_button(seat: Dictionary) -> bool:
 	return seat["cursor"] >= seat["cards"].size()
 
 
-## Selects card `i` (replacing any earlier choice) and moves the cursor
-## to READY UP.
+## Selects card `i` (replacing any earlier choice). The cursor stays on
+## the card: the player moves down to READY UP themselves.
 func _select(seat: Dictionary, i: int) -> void:
 	seat["selected"] = i
-	seat["cursor"] = seat["cards"].size()
+	seat["cursor"] = i
 
 
 ## Locks in the selected card, if there is one.

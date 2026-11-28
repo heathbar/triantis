@@ -488,7 +488,7 @@ func _hide_controls() -> void:
 func _button(text: String) -> Button:
 	var b := Button.new()
 	b.text = text
-	b.custom_minimum_size = Vector2(800, 120)
+	b.custom_minimum_size = Vector2(800, 140)
 	b.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	# Hovering moves the focus highlight, so only one button looks selected.
 	b.mouse_entered.connect(func() -> void:

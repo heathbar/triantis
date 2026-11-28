@@ -34,14 +34,14 @@ extends Boss
 ## every window, so players have to go round to find it. In a squads game
 ## every squad has its own, always on its own side (the side facing its
 ## corner of the map), at a new spot along it after every window. A player at it sees a ring
-## with a needle going round and a gold arc; any face button while the needle
-## is in the arc sets a pin. PINS pins open it, each with a smaller arc and a
+## with a needle going round and a gold arc; X (F or Space on the keyboard)
+## while the needle is in the arc sets a pin. PINS pins open it, each with a smaller arc and a
 ## faster needle (PIN_ARCS, PIN_SPEEDS; engineering widens the arcs). A miss
 ## puts the arc somewhere else and locks out presses for a moment, but keeps
 ## the pins already set. Stepping off keeps them too.
 ##
 ## The keypad: in the lock's place. A player standing on it gets a random
-## code of face buttons (I/J/K/L on the keyboard) and cracks it one press at
+## code of face buttons (1/2/3/4 on the keyboard) and cracks it one press at
 ## a time. The code is hidden: a row of blank squares above them shows only
 ## how long it is and how far in they are, so they find each button by trying
 ## them. A wrong press, moving, shooting or swinging starts their code over.
@@ -251,6 +251,16 @@ const BULLET := Color(1.0, 0.55, 0.2)
 ## The input action for each code button (see character_body.gd), whose key
 ## the keyboard player's keycap shows, and the colours the keycaps are drawn in.
 const CODE_ACTIONS := {"A": &"code_a", "B": &"code_b", "X": &"code_x", "Y": &"code_y"}
+## The lock's one button: X, F or Space (Global).
+const PICK_ACTION := &"pick_lock"
+## Controller button art (white, so drawn on a dark disc). Preloaded: loaded
+## mid-draw they came out as blank white squares.
+const BUTTON_ICONS := {
+	"A": preload("res://assets/ui/controls/A.svg"),
+	"B": preload("res://assets/ui/controls/B.svg"),
+	"X": preload("res://assets/ui/controls/X.svg"),
+	"Y": preload("res://assets/ui/controls/Y.svg"),
+}
 const BUTTON_COLORS := {"A": Color(0.4, 0.85, 0.35), "B": Color(0.95, 0.35, 0.3),
 	"X": Color(0.35, 0.6, 1.0), "Y": Color(1.0, 0.85, 0.3)}
 
@@ -361,6 +371,8 @@ func boss_begin() -> void:
 	_ui_canvas = Control.new()
 	_ui_canvas.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_ui_canvas.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	# The button icons are big SVGs drawn small: smooth, not nearest.
+	_ui_canvas.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	_ui_canvas.draw.connect(_draw_ui)
 	_ui.add_child(_ui_canvas)
 	add_child(_ui)
@@ -812,7 +824,19 @@ func _new_pin(entry: Dictionary, fresh := false) -> void:
 		-PI, PI)
 
 
-## A face button pressed by a player at our keypad or lock (character_body.gd).
+## The input actions `player` can press at our station, each with the
+## button it counts as (character_body.gd): the four code buttons at the
+## keypad, the pick button at the lock, nothing elsewhere.
+func station_actions(player: Node) -> Dictionary:
+	if _picks.has(player):
+		return {PICK_ACTION: PICK_BUTTON}
+	if _codes.has(player):
+		return {CODE_ACTIONS["A"]: "A", CODE_ACTIONS["B"]: "B", CODE_ACTIONS["X"]: "X",
+			CODE_ACTIONS["Y"]: "Y"}
+	return {}
+
+
+## A button pressed by a player at our keypad or lock (character_body.gd).
 func code_press(player: Node, button: String) -> void:
 	if not wall_up() or our_code_done():
 		return
@@ -833,7 +857,7 @@ func code_press(player: Node, button: String) -> void:
 		_station_done()
 
 
-## Any face button at the lock: sets the pin if the needle's in the gold.
+## The pick button at the lock: sets the pin if the needle's in the gold.
 func _pick_press(player: Node) -> void:
 	var entry: Dictionary = _picks[player]
 	if float(entry["miss"]) > 0.0:
@@ -1620,8 +1644,11 @@ const ICON := 64.0
 const ICON_GAP := 10.0
 ## The lock picker's ring radius on screen (UI units).
 const PICK_RING := 78.0
-## The button the picker shows (any face button sets a pin).
+## The button the picker shows and takes (PICK_ACTION).
 const PICK_BUTTON := "X"
+## The keypad's hint bubble: its buttons' size and gap (UI units).
+const HINT_ICON := 48.0
+const HINT_GAP := 12.0
 
 
 func _draw_ui() -> void:
@@ -1669,6 +1696,34 @@ func _draw_code(player: Node2D, to_ui: Transform2D) -> void:
 			rect = rect.grow(6.0 + 3.0 * sin(elapsed * 10.0))
 		# Every button is a blank square: the code has to be cracked.
 		_ui_canvas.draw_rect(rect, Color(tint, tint.a * 0.8))
+	_draw_hint(Vector2(centre.x, back.position.y - 14.0), player.device == Global.KEYBOARD)
+
+
+## A speech bubble whose tail points down at `tip`, showing the buttons a
+## code can use (A B X Y, or the keyboard's 1 2 3 4).
+func _draw_hint(tip: Vector2, keyboard: bool) -> void:
+	var font := ThemeDB.fallback_font
+	var buttons := ["A", "B", "X", "Y"]
+	var row := buttons.size() * HINT_ICON + (buttons.size() - 1) * HINT_GAP
+	var pad := 16.0
+	var tail := 16.0
+	var box := Rect2(tip.x - row / 2.0 - pad, tip.y - tail - HINT_ICON - pad * 2.0,
+		row + pad * 2.0, HINT_ICON + pad * 2.0)
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.08, 0.08, 0.1, 0.85)
+	style.border_color = Color(info["color"], 0.9)
+	style.set_border_width_all(3)
+	style.set_corner_radius_all(14)
+	_ui_canvas.draw_style_box(style, box)
+	var base_y := box.end.y
+	_ui_canvas.draw_colored_polygon(PackedVector2Array([Vector2(tip.x - tail, base_y - 2.0),
+		Vector2(tip.x + tail, base_y - 2.0), tip]), style.bg_color)
+	_ui_canvas.draw_polyline(PackedVector2Array([Vector2(tip.x - tail, base_y),
+		tip, Vector2(tip.x + tail, base_y)]), style.border_color, 3.0)
+	for i in buttons.size():
+		var rect := Rect2(box.position.x + pad + i * (HINT_ICON + HINT_GAP), box.position.y + pad,
+			HINT_ICON, HINT_ICON)
+		_draw_button(buttons[i], rect, Color.WHITE, keyboard, font, CODE_ACTIONS[buttons[i]])
 
 
 ## The lock picker over a player: the ring, its gold arc, the needle, a
@@ -1691,7 +1746,7 @@ func _draw_pick(player: Node2D, to_ui: Transform2D, font: Font) -> void:
 		Color.WHITE, 6.0)
 	var icon := Rect2(centre - Vector2.ONE * ICON * 0.4, Vector2.ONE * ICON * 0.8)
 	_draw_button(PICK_BUTTON, icon, Color(1, 1, 1, 0.4) if missed else Color.WHITE,
-		player.device == Global.KEYBOARD, font)
+		player.device == Global.KEYBOARD, font, PICK_ACTION)
 	for i in PINS:
 		var dot := centre + Vector2((i - (PINS - 1) / 2.0) * 34.0, PICK_RING + 46.0)
 		var set_pin := i < int(entry["pin"])
@@ -1699,32 +1754,29 @@ func _draw_pick(player: Node2D, to_ui: Transform2D, font: Font) -> void:
 		_ui_canvas.draw_arc(dot, 12.0, 0.0, TAU, 16, Color.BLACK, 3.0)
 
 
-## One button: for a controller, a ring with the button's letter (drawn
-## here, like the icons in assets/ui/controls: those came out as blank white
-## squares when drawn from this canvas); for the keyboard player a keycap
-## with its key.
-func _draw_button(button: String, rect: Rect2, tint: Color, keyboard: bool, font: Font) -> void:
+## One button: for a controller, its icon (assets/ui/controls, white) on a
+## dark disc; for the keyboard player a keycap with the key `action` is
+## bound to.
+func _draw_button(button: String, rect: Rect2, tint: Color, keyboard: bool, font: Font,
+		action: StringName) -> void:
 	if not keyboard:
 		var centre := rect.get_center()
-		var r := rect.size.x * 0.5 * 166.0 / 256.0  # The icons' ring, in their 512 box.
-		_ui_canvas.draw_circle(centre, r, Color(0, 0, 0, 0.5 * tint.a))
-		_ui_canvas.draw_arc(centre, r, 0.0, TAU, 48, tint, maxf(rect.size.x * 24.0 / 512.0, 2.0))
-		var letter_size := int(r * 1.3)
-		_ui_canvas.draw_string(font, Vector2(rect.position.x, centre.y + letter_size * 0.35), button,
-			HORIZONTAL_ALIGNMENT_CENTER, rect.size.x, letter_size, tint)
+		var r := rect.size.x * 0.5 * 190.0 / 256.0  # Just past the icons' ring (166 of 256).
+		_ui_canvas.draw_circle(centre, r, Color(0.05, 0.05, 0.07, 0.85 * tint.a))
+		_ui_canvas.draw_texture_rect(BUTTON_ICONS[button], rect, false, tint)
 		return
 	var color: Color = BUTTON_COLORS[button] * tint
 	_ui_canvas.draw_rect(rect, Color(0.1, 0.1, 0.12, tint.a))
 	_ui_canvas.draw_rect(rect, color, false, 4.0)
 	var size := int(rect.size.y * 0.7)
 	var pos := Vector2(rect.position.x, rect.get_center().y + size * 0.35)
-	_ui_canvas.draw_string(font, pos, _key_letter(button), HORIZONTAL_ALIGNMENT_CENTER,
+	_ui_canvas.draw_string(font, pos, _key_letter(action), HORIZONTAL_ALIGNMENT_CENTER,
 		rect.size.x, size, color)
 
 
-## The keyboard key for code button `button` ("K" for "A" by default).
-static func _key_letter(button: String) -> String:
-	for e in InputMap.action_get_events(CODE_ACTIONS[button]):
+## The first keyboard key bound to `action` ("1" for code_a, "F" for the lock).
+static func _key_letter(action: StringName) -> String:
+	for e in InputMap.action_get_events(action):
 		if e is InputEventKey:
 			return e.as_text_physical_keycode()
 	return "?"

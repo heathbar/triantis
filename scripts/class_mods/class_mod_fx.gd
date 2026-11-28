@@ -303,7 +303,8 @@ func _on_shot(shot: Node, player: Node) -> void:
 	_apply(modded, player, ev, first)
 	_kill(shot)
 	shot.get_parent().add_child(modded)
-	if first and ev.has("fan"):
+	# "every" N: only every Nth volley is a burst (default every one).
+	if first and ev.has("fan") and s["shots"] % int(ev["fan"].get("every", 1)) == 0:
 		var st: Dictionary = ev["fan"]
 		var extra := int(st["extra"])
 		for k in extra:

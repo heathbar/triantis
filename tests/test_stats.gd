@@ -10,11 +10,14 @@ func test_stat_multiplier_ends() -> void:
 	check_near(CharacterClasses.stat_multiplier(0), 1.0, "average")
 	check_near(CharacterClasses.stat_multiplier(100), CharacterClasses.STAT_MULT_MAX, "+100")
 	check_near(CharacterClasses.stat_multiplier(-100), CharacterClasses.STAT_MULT_MIN, "-100")
-	for id in ["speed", "harvesting"]:
-		check_near(CharacterClasses.stat_multiplier(-100, id), CharacterClasses.NARROW_MULT_MIN,
-			"%s's own -100 end" % id)
-		check_near(CharacterClasses.stat_multiplier(100, id), CharacterClasses.NARROW_MULT_MAX,
-			"%s's own +100 end" % id)
+	var ends := {
+		"speed": [CharacterClasses.SPEED_MULT_MIN, CharacterClasses.SPEED_MULT_MAX],
+		"harvesting": [CharacterClasses.HARVEST_MULT_MIN, CharacterClasses.HARVEST_MULT_MAX],
+	}
+	for id in ends:
+		check_near(CharacterClasses.stat_multiplier(-100, id), ends[id][0], "%s's own -100 end" % id)
+		check_near(CharacterClasses.stat_multiplier(100, id), ends[id][1], "%s's own +100 end" % id)
+		check_near(CharacterClasses.stat_multiplier(0, id), 1.0, "%s's average" % id)
 	check_near(CharacterClasses.stat_multiplier(500), CharacterClasses.STAT_MULT_MAX,
 		"out-of-range values are clamped")
 
