@@ -7,6 +7,7 @@
 [ext_resource type="PackedScene" path="res://scenenodethings/enemy.tscn" id="e_grunt"]
 [ext_resource type="PackedScene" uid="uid://dg3ae7hgbnmjk" path="res://scenenodethings/enemies/runner.tscn" id="e_runner"]
 [ext_resource type="PackedScene" uid="uid://pgyt58w10g8f" path="res://scenenodethings/enemies/swarmling.tscn" id="e_swarmling"]
+[ext_resource type="PackedScene" uid="uid://dqmd7dcpmucqm" path="res://scenenodethings/enemies/bomber.tscn" id="e_bomber"]
 
 [sub_resource type="Resource" id="Group_grunt"]
 script = ExtResource("1_group")
@@ -35,10 +36,16 @@ script = ExtResource("1_group")
 enemy_scene = ExtResource("e_charger")
 count = 4
 
+[sub_resource type="Resource" id="Group_bomber"]
+script = ExtResource("1_group")
+enemy_scene = ExtResource("e_bomber")
+count = 4
+
 [resource]
 script = ExtResource("2_wave")
+display_name = "Short Fuse"
 duration = 63.0
-enemy_groups = Array[ExtResource("1_group")]([SubResource("Group_grunt"), SubResource("Group_runner"), SubResource("Group_swarmling"), SubResource("Group_brute"), SubResource("Group_charger")])
+enemy_groups = Array[ExtResource("1_group")]([SubResource("Group_grunt"), SubResource("Group_runner"), SubResource("Group_swarmling"), SubResource("Group_brute"), SubResource("Group_charger"), SubResource("Group_bomber")])
 opening_spawn = 9
 enemy_health_multiplier = 1.9
 enemy_speed_multiplier = 1.24

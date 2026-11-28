@@ -8,6 +8,7 @@
 [ext_resource type="PackedScene" path="res://scenenodethings/enemy.tscn" id="e_grunt"]
 [ext_resource type="PackedScene" uid="uid://dg3ae7hgbnmjk" path="res://scenenodethings/enemies/runner.tscn" id="e_runner"]
 [ext_resource type="PackedScene" uid="uid://pgyt58w10g8f" path="res://scenenodethings/enemies/swarmling.tscn" id="e_swarmling"]
+[ext_resource type="PackedScene" path="res://scenenodethings/enemies/splitter.tscn" id="e_splitter"]
 
 [sub_resource type="Resource" id="Group_grunt"]
 script = ExtResource("1_group")
@@ -41,10 +42,16 @@ script = ExtResource("1_group")
 enemy_scene = ExtResource("e_bomber")
 count = 6
 
+[sub_resource type="Resource" id="Group_splitter"]
+script = ExtResource("1_group")
+enemy_scene = ExtResource("e_splitter")
+count = 3
+
 [resource]
 script = ExtResource("2_wave")
+display_name = "Divide and Conquer"
 duration = 66.0
-enemy_groups = Array[ExtResource("1_group")]([SubResource("Group_grunt"), SubResource("Group_runner"), SubResource("Group_swarmling"), SubResource("Group_brute"), SubResource("Group_charger"), SubResource("Group_bomber")])
+enemy_groups = Array[ExtResource("1_group")]([SubResource("Group_grunt"), SubResource("Group_runner"), SubResource("Group_swarmling"), SubResource("Group_brute"), SubResource("Group_charger"), SubResource("Group_bomber"), SubResource("Group_splitter")])
 opening_spawn = 10
 enemy_health_multiplier = 2.5
 enemy_speed_multiplier = 1.32

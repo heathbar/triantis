@@ -38,15 +38,11 @@ extends RefCounted
 ## Theme name per act (0-based); "" = default art.
 const ACT_THEMES: Array[String] = ["", "ocean", "junkyard", "robot"]
 
-## Enemy looks per theme: kind -> the textures one is picked from at random.
-## "" is the default (meadow) art for kinds whose scenes don't carry it
-## (splitter, shooter). Kinds missing here keep their scene's art (sprayer
-## outside junkyard and robot).
+## Enemy looks per theme: kind -> the textures one is picked from at random
+## (each one still image). Kinds missing here keep their default (meadow)
+## art, which each enemy script preloads itself, animation frames and all
+## (the sprayer outside junkyard and robot, for one).
 const ENEMY_LOOKS := {
-	"": {
-		"splitter": [preload("res://assets/meadow/enemies/splitter-1.png")],
-		"shooter": [preload("res://assets/meadow/enemies/shooter-1.png")],
-	},
 	"junkyard": {
 		"grunt": [
 			preload("res://assets/junkyard/enemies/grunt-1.png"),
@@ -144,6 +140,12 @@ static func set_theme(id: String) -> void:
 
 static func reset() -> void:
 	current = ""
+
+
+## Frame `t` seconds into a looping animation of `frames`, `frame_time`
+## seconds each (one frame = a still image).
+static func frame_at(frames: Array, t: float, frame_time: float) -> Texture2D:
+	return frames[int(t / frame_time) % frames.size()]
 
 
 ## The current theme's looks for enemy `kind`, or [] for its default art.

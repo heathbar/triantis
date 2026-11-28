@@ -4,12 +4,17 @@ extends Enemy
 ## it's headed), then dashes in a straight line at charge_speed for
 ## CHARGE_DISTANCE, overshooting. Its aim locks just before it goes, so
 ## sidestep late. Running into a Barricade ends the charge and stuns it.
-## Drawn as a pineapple (27x45): upright normally, shaking side to side while
-## it winds up, and tipped over leaves-first along its aim while it charges
-## (the collision rectangle turns with it). In Braid act 2 it's a swordfish
+## Drawn as a horned ram (the meadow's, the default; dark-outlined so it
+## stands out on the grass): trotting through its
+## walk frames (charger-1a..d), head down and shaking side to side while it
+## winds up, galloping through its charge frames (charger-charge-1a..d) with
+## a puff of dust (charger-dust-1) kicked up behind as it goes. It never
+## turns, just faces left or right (its aim, from winding up until it
+## recovers). Act-themed art is one still image. In Braid act 2 it's a swordfish
 ## (ActTheme): lying flat, facing the way it walks, and pointing its sword
 ## along its aim while it charges. Act-themed art taller than it is wide
-## (Braid act 4's rocket) behaves like the pineapple: its top leads the charge.
+## (Braid act 4's rocket) stands upright and tips over along its aim while it
+## charges, its top leading (the collision rectangle turns with it).
 
 const ActTheme := preload("res://scripts/act_theme.gd")
 
@@ -39,6 +44,25 @@ const UPRIGHT_SPEED := 10.0
 const LANE_COLOR := Color(1.0, 0.95, 0.5, 0.18)
 ## Aim is sent to mirrors as one of this many directions (see net_state).
 const AIM_STEPS := 64
+## The default (meadow) ram: walk frames, charge frames, and the dust it
+## kicks up as a charge starts.
+const WALK_FRAMES: Array[Texture2D] = [
+	preload("res://assets/meadow/enemies/charger-1a.png"),
+	preload("res://assets/meadow/enemies/charger-1b.png"),
+	preload("res://assets/meadow/enemies/charger-1c.png"),
+	preload("res://assets/meadow/enemies/charger-1d.png"),
+]
+const CHARGE_FRAMES: Array[Texture2D] = [
+	preload("res://assets/meadow/enemies/charger-charge-1a.png"),
+	preload("res://assets/meadow/enemies/charger-charge-1b.png"),
+	preload("res://assets/meadow/enemies/charger-charge-1c.png"),
+	preload("res://assets/meadow/enemies/charger-charge-1d.png"),
+]
+const DUST := preload("res://assets/meadow/enemies/charger-dust-1.png")
+## Seconds per walk / charge frame, and how long the dust takes to fade.
+const WALK_FRAME_TIME := 0.15
+const CHARGE_FRAME_TIME := 0.06
+const DUST_TIME := 0.45
 
 ## Pixels per second while charging (scaled with the wave's speed).
 @export var charge_speed := 300.0
@@ -53,14 +77,21 @@ var _shape: CollisionShape2D
 ## The sprite's normal tint (the elite colour, for an elite).
 var _sprite_color := Color.WHITE
 ## Its art is wider than tall (act 2's swordfish): it faces right and lies
-## flat, rather than standing upright like the pineapple.
+## flat, rather than standing upright like the rocket.
 var _lies_flat := false
+## Drawn with the default (meadow) ram's frames, not a still themed image.
+var _animated := false
+## Seconds into the current walk / charge animation.
+var _anim := 0.0
+## The phase _process last drew (kicks up dust as a charge starts, mirrors too).
+var _drawn_phase: int = Phase.CHASE
 
 
 func _ready() -> void:
 	var look := ActTheme.enemy_look("charger")
+	_animated = look == null
+	ActTheme.apply_look(self, look if look else WALK_FRAMES[0])
 	if look:
-		ActTheme.apply_look(self, look)
 		_lies_flat = look.get_width() > look.get_height()
 	super()
 	_sprite = get_node_or_null("Sprite2D") as Sprite2D
@@ -159,7 +190,10 @@ func _process(delta: float) -> void:
 		_blink = 0.0
 		_sprite.self_modulate = _sprite_color
 	_sprite.position.x = shake
-	# Leaves (the top of the image) point along the charge; upright otherwise.
+	if _animated:
+		_animate(delta)
+		return
+	# The top of the image points along the charge; upright otherwise.
 	var turn := 0.0
 	var turn_speed := UPRIGHT_SPEED
 	if _lies_flat:
@@ -182,6 +216,48 @@ func _process(delta: float) -> void:
 	_sprite.rotation = angle
 	if _shape:
 		_shape.rotation = angle
+
+
+## The ram (default art): picks its frame for the phase and faces left or
+## right, and kicks up dust as a charge starts.
+func _animate(delta: float) -> void:
+	if _phase != _drawn_phase:
+		_anim = 0.0
+		if _phase == Phase.CHARGE:
+			_kick_up_dust()
+		_drawn_phase = _phase
+	_anim += delta
+	var aiming := _phase == Phase.WINDUP or _phase == Phase.CHARGE
+	var facing := signf(_aim.x) if aiming else facing_x()
+	if facing != 0.0:
+		_sprite.flip_h = facing < 0.0
+	match _phase:
+		Phase.WINDUP:
+			_sprite.texture = CHARGE_FRAMES[0]  # Head down, shaking.
+		Phase.CHARGE:
+			_sprite.texture = ActTheme.frame_at(CHARGE_FRAMES, _anim, CHARGE_FRAME_TIME)
+		Phase.RECOVER:
+			_sprite.texture = WALK_FRAMES[0]
+		_:
+			_sprite.texture = ActTheme.frame_at(WALK_FRAMES, _anim, WALK_FRAME_TIME)
+
+
+## A puff of dust at its hooves, behind it, that fades out where it is.
+func _kick_up_dust() -> void:
+	var world := get_parent() as Node2D
+	if world == null:
+		return
+	var dust := Sprite2D.new()
+	dust.texture = DUST
+	dust.flip_h = _aim.x < 0.0
+	dust.scale = scale
+	var feet := Vector2(-_aim.x * 10.0, ActTheme.used_rect(WALK_FRAMES[0]).size.y / 2.0 - 6.0)
+	dust.position = world.to_local(global_position + feet * scale)
+	world.add_child(dust)
+	world.move_child(dust, get_index())  # Under the ram.
+	var tween := dust.create_tween()
+	tween.tween_property(dust, "modulate:a", 0.0, DUST_TIME)
+	tween.tween_callback(dust.queue_free)
 
 
 ## While winding up: the lane it's about to charge down.

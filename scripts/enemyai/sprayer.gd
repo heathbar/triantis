@@ -7,20 +7,34 @@ extends Enemy
 ## spray_damage; a Barricade stops the stream. It stands still while it
 ## sprays, and faces its target the whole time (the art faces right; it's mirrored to face left).
 ##
-## Art (meadow: a soda cup): sprayer-1.png (33x60) is the cup. In Braid
-## act 3 the body is a fire extinguisher and in act 4 a robot canister
-## instead (THEMED_LAYOUTS).
-## sprayer-spray-1..9.png (131x26) are the stream, drawn pointing right from
-## its left edge: 1-3 start, 4-6 flow (looped), 7-9 wind down.
+## Art (meadow, the default: a frog; "the straw" below is its mouth): it
+## hops along on its lily pad (sprayer-1a/b, 34x27), spits with its mouth
+## open (sprayer-open-1) and shuts it as the stream winds down
+## (sprayer-shut-1). In Braid act 3 the body is a fire extinguisher and in
+## act 4 a robot canister instead (THEMED_LAYOUTS), one still image each.
+## sprayer-spray-1..9.png (131x26) are the water stream (every theme's),
+## drawn pointing right from its left edge: 1-3 start, 4-6 flow (looped),
+## 7-9 wind down.
 
 enum Phase { CHASE, SPRAY }
 
 const ActTheme := preload("res://scripts/act_theme.gd")
 
-## The straw's tip, from the enemy's centre, facing right (in the cup art:
-## pixel (33, 2), with the sprite offset by SPRITE_OFFSET).
-const NOZZLE := Vector2(17.0, -35.0)
-const SPRITE_OFFSET := Vector2(-16.0, -37.0)
+## The frog's mouth, from the enemy's centre, facing right (in the open-mouth
+## art: about pixel (29, 13), with the sprite offset by SPRITE_OFFSET), and
+## its collision rectangle (centred on the enemy).
+const NOZZLE := Vector2(12.0, -1.0)
+const SPRITE_OFFSET := Vector2(-17.0, -14.0)
+const BODY := Vector2(26.0, 24.0)
+## The frog: hopping on its lily pad, mouth open, mouth shut.
+const WALK_FRAMES: Array[Texture2D] = [
+	preload("res://assets/meadow/enemies/sprayer-1a.png"),
+	preload("res://assets/meadow/enemies/sprayer-1b.png"),
+]
+const OPEN_LOOK := preload("res://assets/meadow/enemies/sprayer-open-1.png")
+const SHUT_LOOK := preload("res://assets/meadow/enemies/sprayer-shut-1.png")
+## Seconds per walk frame.
+const WALK_FRAME_TIME := 0.25
 ## Act-themed bodies (ActTheme), by theme: where the art sits ("offset"),
 ## where the stream comes out ("nozzle", facing right) and the collision
 ## rectangle ("body", centred on the enemy). The stream art stays the same.
@@ -95,6 +109,9 @@ var _sprite: Sprite2D
 var _spray: Sprite2D
 ## Where the stream comes out (NOZZLE, or the act-themed body's).
 var _nozzle_at := NOZZLE
+## Drawn as the frog (default art), not a still act-themed body.
+var _animated := true
+var _walk := 0.0
 
 
 func _ready() -> void:
@@ -103,19 +120,24 @@ func _ready() -> void:
 	_sprite = get_node_or_null("Visual/Sprite2D") as Sprite2D
 	_spray = get_node_or_null("Visual/Spray") as Sprite2D
 	var sprite_offset := SPRITE_OFFSET
+	var body := BODY
 	var look := ActTheme.enemy_look("sprayer")
 	var layout: Dictionary = THEMED_LAYOUTS.get(ActTheme.current, {})
 	if look and not layout.is_empty():
+		_animated = false
 		sprite_offset = layout["offset"]
 		_nozzle_at = layout["nozzle"]
+		body = layout["body"]
 		if _sprite:
 			_sprite.texture = look
-		var shape_node := get_node_or_null("CollisionShape2D") as CollisionShape2D
-		if shape_node:
-			var rect := RectangleShape2D.new()  # Own copy: the scene's is shared.
-			rect.size = layout["body"]
-			shape_node.shape = rect
-			shape_node.position = Vector2.ZERO
+	elif _sprite:
+		_sprite.texture = WALK_FRAMES[0]
+	var shape_node := get_node_or_null("CollisionShape2D") as CollisionShape2D
+	if shape_node:
+		var rect := RectangleShape2D.new()  # Own copy: the scene's is shared.
+		rect.size = body
+		shape_node.shape = rect
+		shape_node.position = Vector2.ZERO
 	if _sprite:
 		_sprite.offset = sprite_offset
 	if _spray:
@@ -271,12 +293,21 @@ func mirror_state(state: int) -> void:
 		_set_phase(phase, 0.0)
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	if _visual:
 		_visual.scale.x = _facing
+	var frame := _spray_frame(_spray_t) if _phase == Phase.SPRAY else -1
+	if _animated and _sprite:
+		# Mouth open while the stream flows, shut as it winds down, else hopping.
+		_walk += delta
+		if frame >= 6:
+			_sprite.texture = SHUT_LOOK
+		elif frame >= 0:
+			_sprite.texture = OPEN_LOOK
+		else:
+			_sprite.texture = ActTheme.frame_at(WALK_FRAMES, _walk, WALK_FRAME_TIME)
 	if _spray == null:
 		return
-	var frame := _spray_frame(_spray_t) if _phase == Phase.SPRAY else -1
 	_spray.visible = frame >= 0
 	if frame >= 0:
 		_spray.texture = SPRAY_FRAMES[frame]

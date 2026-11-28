@@ -6,6 +6,7 @@
 [ext_resource type="PackedScene" path="res://scenenodethings/enemies/charger.tscn" id="e_charger"]
 [ext_resource type="PackedScene" path="res://scenenodethings/enemy.tscn" id="e_grunt"]
 [ext_resource type="PackedScene" uid="uid://dg3ae7hgbnmjk" path="res://scenenodethings/enemies/runner.tscn" id="e_runner"]
+[ext_resource type="PackedScene" uid="uid://pgyt58w10g8f" path="res://scenenodethings/enemies/swarmling.tscn" id="e_swarmling"]
 
 [sub_resource type="Resource" id="Group_grunt"]
 script = ExtResource("1_group")
@@ -26,11 +27,18 @@ script = ExtResource("1_group")
 enemy_scene = ExtResource("e_charger")
 count = 3
 
+[sub_resource type="Resource" id="Group_swarmling"]
+script = ExtResource("1_group")
+enemy_scene = ExtResource("e_swarmling")
+count = 30
+cluster = 10
+allow_elite = false
+
 [resource]
 script = ExtResource("2_wave")
 display_name = "Stampede"
 duration = 61.5
-enemy_groups = Array[ExtResource("1_group")]([SubResource("Group_grunt"), SubResource("Group_runner"), SubResource("Group_brute"), SubResource("Group_charger")])
+enemy_groups = Array[ExtResource("1_group")]([SubResource("Group_grunt"), SubResource("Group_runner"), SubResource("Group_swarmling"), SubResource("Group_brute"), SubResource("Group_charger")])
 opening_spawn = 8
 enemy_health_multiplier = 1.7
 enemy_speed_multiplier = 1.2

@@ -6,6 +6,12 @@ extends Enemy
 ## (enemy_blast_damage, which grows with the wave), so a bomber shot in a
 ## crowd is a gift. Blowing itself up earns nobody anything; when a player
 ## kills it, they're credited with whatever the blast kills.
+##
+## Drawn as a puffball spore (the meadow's, the default): glowing purple
+## (bomber-1), flickering between its red frames (bomber-fuse-1a/b) as the
+## fuse burns, and bursting into a spore cloud (bomber-cloud-1a/b, blown up
+## to the blast's size) instead of a fireball. Act-themed art is one image
+## that flashes FUSE_TINT on a lit fuse and blows up in an ordinary blast.
 
 const Blast := preload("res://scripts/equipment/blast.gd")
 const ActTheme := preload("res://scripts/act_theme.gd")
@@ -23,9 +29,20 @@ const FUSE_SPEED := 0.45
 const BLAST_KNOCKBACK := 40.0
 ## A player's body counts as reaching this far from their centre.
 const PLAYER_HALF := 12.0
-## The default (meadow) art. Every bomber look is one image: a lit fuse
-## flashes it FUSE_TINT and swells it.
+## The default (meadow) art: unlit, the lit fuse's two frames, and its spore
+## cloud's two frames. A lit fuse swells any look.
 const LOOK := preload("res://assets/meadow/enemies/bomber-1.png")
+const FUSE_FRAMES: Array[Texture2D] = [
+	preload("res://assets/meadow/enemies/bomber-fuse-1a.png"),
+	preload("res://assets/meadow/enemies/bomber-fuse-1b.png"),
+]
+const CLOUD_FRAMES: Array[Texture2D] = [
+	preload("res://assets/meadow/enemies/bomber-cloud-1a.png"),
+	preload("res://assets/meadow/enemies/bomber-cloud-1b.png"),
+]
+## The spore cloud: seconds on its first frame, then fading out on its second.
+const CLOUD_BURST := 0.15
+const CLOUD_FADE := 0.6
 const WARNING_COLOR := Color(1.0, 0.4, 0.1, 0.5)
 const FUSE_TINT := Color(1.0, 0.25, 0.2)
 
@@ -113,11 +130,34 @@ func _explode(center: Vector2, killer: Node) -> void:
 		if player is Player and center.distance_to(player.global_position) - PLAYER_HALF <= blast_radius:
 			player.hurt_by(blast_damage, center)
 	var world := get_parent() as Node2D
-	if world:
-		var blast := Blast.new()
-		blast.radius = blast_radius
-		blast.position = world.to_local(center)  # before add_child
-		world.add_child.call_deferred(blast)
+	if world == null:
+		return
+	if not _themed:
+		_spore_cloud(world, center)
+		return
+	var blast := Blast.new()
+	blast.radius = blast_radius
+	blast.position = world.to_local(center)  # before add_child
+	world.add_child.call_deferred(blast)
+
+
+## The puffball's burst: its spore cloud, blown up (whole pixels) to about
+## the blast's size, puffing out then fading.
+func _spore_cloud(world: Node2D, center: Vector2) -> void:
+	var cloud := Sprite2D.new()
+	cloud.texture = CLOUD_FRAMES[0]
+	cloud.z_index = 20
+	var size := float(CLOUD_FRAMES[1].get_width())
+	cloud.scale = Vector2.ONE * maxf(roundf(blast_radius * 2.0 / size), 1.0)
+	cloud.position = world.to_local(center)  # before add_child
+	cloud.add_to_group("deployables")  # Cleared with the rest when the wave ends.
+	world.add_child.call_deferred(cloud)
+	# (The tree's tween, bound to the cloud: it isn't in the tree yet.)
+	var tween := get_tree().create_tween().bind_node(cloud)
+	tween.tween_interval(CLOUD_BURST)
+	tween.tween_callback(cloud.set.bind("texture", CLOUD_FRAMES[1]))
+	tween.tween_property(cloud, "modulate:a", 0.0, CLOUD_FADE)
+	tween.tween_callback(cloud.queue_free)
 
 
 func net_state() -> int:
@@ -135,21 +175,24 @@ func _process(delta: float) -> void:
 		_fuse = maxf(_fuse - delta, 0.0)
 	if _sprite == null:
 		return
-	# The default art faces left: mirror it while heading right. Face the way
-	# it's walking, not the way a hit knocked it (see facing_x).
-	var facing := facing_x()
-	if facing != 0.0 and not _themed:  # (themed art, e.g. the mine, never turns)
-		_sprite.flip_h = facing > 0.0
+	# (Round, so it never turns.)
 	var tint := elite_color if is_elite else Color.WHITE
 	if _fuse < 0.0:
 		_sprite.self_modulate = tint
 		_sprite.scale = _sprite_scale
+		if not _themed:
+			_sprite.texture = LOOK
 		return
-	# Flashes red faster and swells as the fuse burns down.
+	# Flashes (red, or between the puffball's red frames) faster and swells
+	# as the fuse burns down.
 	_blink += delta
 	var lit := 1.0 - clampf(_fuse / FUSE_TIME, 0.0, 1.0)
 	var flash := lerpf(0.12, 0.04, lit)
-	_sprite.self_modulate = FUSE_TINT if fmod(_blink, flash * 2.0) < flash else tint
+	var on := fmod(_blink, flash * 2.0) < flash
+	if _themed:
+		_sprite.self_modulate = FUSE_TINT if on else tint
+	else:
+		_sprite.texture = FUSE_FRAMES[0] if on else FUSE_FRAMES[1]
 	_sprite.scale = _sprite_scale * (1.0 + 0.3 * lit)
 
 

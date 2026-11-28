@@ -4,7 +4,7 @@
 [ext_resource type="Texture2D" uid="uid://54xasp1aqhjh" path="res://assets/meadow/enemies/swarmling-1a.png" id="2_frame"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_swarmling"]
-size = Vector2(14, 16)
+size = Vector2(13, 12)
 
 [node name="Swarmling" type="CharacterBody2D" unique_id=659571829]
 collision_layer = 2
@@ -20,7 +20,7 @@ elite_color = Color(1, 0.55, 0.8, 1)
 [node name="Sprite2D" type="Sprite2D" parent="." unique_id=233547441]
 texture = ExtResource("2_frame")
 centered = false
-offset = Vector2(-7, -8)
+offset = Vector2(-6, -6)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1826814076]
 shape = SubResource("RectangleShape2D_swarmling")

@@ -4,7 +4,7 @@
 [ext_resource type="Texture2D" uid="uid://dl1f12wi7gkkh" path="res://assets/meadow/enemies/bomber-1.png" id="2_vtnng"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_bomber"]
-size = Vector2(22, 22)
+size = Vector2(19, 21)
 
 [node name="Bomber" type="CharacterBody2D" unique_id=2094874196]
 collision_layer = 2

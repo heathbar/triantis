@@ -8,9 +8,12 @@ extends Enemy
 ## Frozen, it doesn't shoot; slowed, its timers run slower too. Touching it
 ## still hurts (contact_damage).
 ##
-## Art: assets/<theme>/enemies/shooter-1.png (ActTheme.ENEMY_LOOKS "shooter";
-## the meadow's is the default), facing right and mirrored to face its aim.
-## The scene's ColorRect is only a fallback.
+## Art (meadow, the default): a scarecrow standing in its thistles, swaying
+## (shooter-1a..c), that hops along on its pole (shooter-walk-1) while it
+## moves, and fires thistle darts (shooter-dart-1a/b, see enemy_bullet.gd).
+## Other themes: assets/<theme>/enemies/shooter-1.png (ActTheme.ENEMY_LOOKS
+## "shooter"), one still image, firing glowing balls. Art faces right and is
+## mirrored to face its aim. The scene's ColorRect is only a fallback.
 
 const ActTheme := preload("res://scripts/act_theme.gd")
 const EnemyBullet := preload("res://scripts/enemyai/enemy_bullet.gd")
@@ -34,6 +37,25 @@ const BLINK_COLOR := Color(1.0, 0.95, 0.7)
 const LINE_BLOCKERS := PhysicsLayers.WALLS | PhysicsLayers.WINDOWS | PhysicsLayers.BARRICADES
 ## Aim directions sent to mirrors (net_state has 5 bits for it).
 const AIM_STEPS := 32
+## The default (meadow) scarecrow: standing frames (played a, b, c, b...),
+## hopping on its pole, and its darts.
+const STAND_FRAMES: Array[Texture2D] = [
+	preload("res://assets/meadow/enemies/shooter-1a.png"),
+	preload("res://assets/meadow/enemies/shooter-1b.png"),
+	preload("res://assets/meadow/enemies/shooter-1c.png"),
+	preload("res://assets/meadow/enemies/shooter-1b.png"),
+]
+const WALK_LOOK := preload("res://assets/meadow/enemies/shooter-walk-1.png")
+const DART_FRAMES: Array[Texture2D] = [
+	preload("res://assets/meadow/enemies/shooter-dart-1a.png"),
+	preload("res://assets/meadow/enemies/shooter-dart-1b.png"),
+]
+## Seconds per standing frame; how high (pixels) and how often (per second)
+## it bobs hopping on its pole; moving slower than this counts as standing.
+const STAND_FRAME_TIME := 0.3
+const HOP_HEIGHT := 2.0
+const HOP_RATE := 3.0
+const MOVING_SPEED := 4.0
 
 ## Half hearts each bullet costs.
 @export var bullet_damage := 1
@@ -49,19 +71,27 @@ var _sprite: Sprite2D
 ## Mirrors: false until the owner's first state (its shot count then is
 ## where we start counting, not a new shot).
 var _synced := false
+## Drawn as the scarecrow (default art), not a still act-themed image.
+var _animated := false
+var _anim := 0.0
+## Where its last frame left it (mirrors are moved for them: they can't
+## trust velocity), to tell standing from moving.
+var _last_position := Vector2.ZERO
 
 
 func _ready() -> void:
 	super()
 	var look := ActTheme.enemy_look("shooter")
-	if look:
-		_sprite = Sprite2D.new()
-		_sprite.name = "Sprite2D"
-		add_child(_sprite)
-		ActTheme.apply_look(self, look)
-		var rect := get_node_or_null("ColorRect") as CanvasItem
-		if rect:
-			rect.visible = false
+	_animated = look == null
+	_sprite = Sprite2D.new()
+	_sprite.name = "Sprite2D"
+	add_child(_sprite)
+	ActTheme.apply_look(self, look if look else STAND_FRAMES[0])
+	var rect := get_node_or_null("ColorRect") as CanvasItem
+	if rect:
+		rect.visible = false
+	_anim = randf() * STAND_FRAME_TIME * STAND_FRAMES.size()
+	_last_position = global_position
 
 
 func make_elite(scaling: PlayerScaling) -> void:
@@ -121,6 +151,8 @@ func _fire(direction: Vector2) -> void:
 	bullet.direction = direction
 	bullet.speed = BULLET_SPEED
 	bullet.damage = bullet_damage
+	if _animated:
+		bullet.frames = DART_FRAMES
 	bullet.position = global_position + direction * MUZZLE
 	get_parent().add_child(bullet)
 
@@ -163,3 +195,19 @@ func _process(delta: float) -> void:
 			(item as ColorRect).color = base_color()
 	if _sprite and _aim.x != 0.0:
 		_sprite.flip_h = _aim.x < 0.0
+	if _sprite and _animated:
+		_animate(delta)
+
+
+## The scarecrow: swaying in its thistles when it stands, hopping along on
+## its pole when it moves (bottom-aligned with the standing art).
+func _animate(delta: float) -> void:
+	_anim += delta
+	var moved := global_position.distance_to(_last_position) / maxf(delta, 0.001)
+	_last_position = global_position
+	if moved > MOVING_SPEED * absf(scale.x) and _windup <= 0.0:
+		_sprite.texture = WALK_LOOK
+		_sprite.position.y = -roundf(absf(sin(_anim * HOP_RATE * PI)) * HOP_HEIGHT)
+	else:
+		_sprite.texture = ActTheme.frame_at(STAND_FRAMES, _anim, STAND_FRAME_TIME)
+		_sprite.position.y = 0.0

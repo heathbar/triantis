@@ -161,7 +161,7 @@ const CLASSES := {
 		"description": "Quick blade, thin skin",
 		"attributes": {
 			"lives": 2, "range": 0, "speed": 35, "harvesting": -5,
-			"ranged_damage": 10, "fire_rate": 0, "melee_damage": 50, "knockback": 0, "engineering": -100, "armor": -30,
+			"ranged_damage": 10, "fire_rate": 0, "melee_damage": 50, "knockback": 0, "engineering": -30, "armor": -30,
 		},
 	},
 	# Sandbox class for testing: only offered from the editor (see

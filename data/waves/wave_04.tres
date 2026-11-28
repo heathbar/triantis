@@ -5,6 +5,7 @@
 [ext_resource type="PackedScene" path="res://scenenodethings/enemies/brute.tscn" id="e_brute"]
 [ext_resource type="PackedScene" path="res://scenenodethings/enemy.tscn" id="e_grunt"]
 [ext_resource type="PackedScene" uid="uid://dg3ae7hgbnmjk" path="res://scenenodethings/enemies/runner.tscn" id="e_runner"]
+[ext_resource type="PackedScene" path="res://scenenodethings/enemies/charger.tscn" id="e_charger"]
 
 [sub_resource type="Resource" id="Group_grunt"]
 script = ExtResource("1_group")
@@ -21,11 +22,16 @@ enemy_scene = ExtResource("e_brute")
 count = 2
 allow_elite = false
 
+[sub_resource type="Resource" id="Group_charger"]
+script = ExtResource("1_group")
+enemy_scene = ExtResource("e_charger")
+count = 2
+
 [resource]
 script = ExtResource("2_wave")
 display_name = "Heavyweights"
 duration = 45.0
-enemy_groups = Array[ExtResource("1_group")]([SubResource("Group_grunt"), SubResource("Group_runner"), SubResource("Group_brute")])
+enemy_groups = Array[ExtResource("1_group")]([SubResource("Group_grunt"), SubResource("Group_runner"), SubResource("Group_brute"), SubResource("Group_charger")])
 opening_spawn = 6
 enemy_speed_multiplier = 1.12
 completion_bonus = 10

@@ -47,7 +47,6 @@ count = 6
 
 [resource]
 script = ExtResource("2_wave")
-display_name = "Crossfire"
 duration = 72.0
 enemy_groups = Array[ExtResource("1_group")]([SubResource("Group_grunt"), SubResource("Group_runner"), SubResource("Group_brute"), SubResource("Group_charger"), SubResource("Group_bomber"), SubResource("Group_splitter"), SubResource("Group_shooter")])
 opening_spawn = 12

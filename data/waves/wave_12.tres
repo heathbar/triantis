@@ -9,6 +9,7 @@
 [ext_resource type="PackedScene" uid="uid://dg3ae7hgbnmjk" path="res://scenenodethings/enemies/runner.tscn" id="e_runner"]
 [ext_resource type="PackedScene" path="res://scenenodethings/enemies/splitter.tscn" id="e_splitter"]
 [ext_resource type="PackedScene" uid="uid://pgyt58w10g8f" path="res://scenenodethings/enemies/swarmling.tscn" id="e_swarmling"]
+[ext_resource type="PackedScene" path="res://scenenodethings/enemies/shooter.tscn" id="e_shooter"]
 
 [sub_resource type="Resource" id="Group_grunt"]
 script = ExtResource("1_group")
@@ -47,10 +48,16 @@ script = ExtResource("1_group")
 enemy_scene = ExtResource("e_splitter")
 count = 5
 
+[sub_resource type="Resource" id="Group_shooter"]
+script = ExtResource("1_group")
+enemy_scene = ExtResource("e_shooter")
+count = 4
+
 [resource]
 script = ExtResource("2_wave")
+display_name = "Crossfire"
 duration = 70.5
-enemy_groups = Array[ExtResource("1_group")]([SubResource("Group_grunt"), SubResource("Group_runner"), SubResource("Group_swarmling"), SubResource("Group_brute"), SubResource("Group_charger"), SubResource("Group_bomber"), SubResource("Group_splitter")])
+enemy_groups = Array[ExtResource("1_group")]([SubResource("Group_grunt"), SubResource("Group_runner"), SubResource("Group_swarmling"), SubResource("Group_brute"), SubResource("Group_charger"), SubResource("Group_bomber"), SubResource("Group_splitter"), SubResource("Group_shooter")])
 opening_spawn = 11
 enemy_health_multiplier = 3.4
 enemy_speed_multiplier = 1.41
