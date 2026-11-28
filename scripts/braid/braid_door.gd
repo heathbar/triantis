@@ -39,9 +39,19 @@ func _ready() -> void:
 	z_index = 1
 
 
-## Where enemies step out: just inside the lane.
+## Where enemies step out: right in front of the doorway, in the lane.
 func exit_point() -> Vector2:
-	return global_position + global_transform.basis_xform(Vector2(0.0, face * BraidTuning.DOOR_EXIT_DEPTH))
+	return global_position + inward() * BraidTuning.DOOR_EXIT_DEPTH
+
+
+## The unit way into the lane.
+func inward() -> Vector2:
+	return global_transform.basis_xform(Vector2(0.0, face)).normalized()
+
+
+## The unit way along the wall, across the doorway.
+func across() -> Vector2:
+	return global_transform.basis_xform(Vector2.RIGHT).normalized()
 
 
 ## True while it's opening or open (don't pick it again yet).
@@ -49,16 +59,16 @@ func is_busy() -> bool:
 	return _open > 0.0 or _warn_left > 0.0
 
 
-## Opens over `warning` seconds, stays open a moment for enemies to
-## come through, then shuts.
-func open(warning: float) -> void:
+## Opens over `warning` seconds, stays open a moment (plus `extra` seconds,
+## while a big group comes through), then shuts.
+func open(warning: float, extra := 0.0) -> void:
 	if _tween:
 		_tween.kill()
 	_warn_left = warning
 	set_process(true)
 	_tween = create_tween()
 	_tween.tween_property(self, "_open", 1.0, warning)
-	_tween.tween_interval(BraidTuning.DOOR_HOLD_OPEN)
+	_tween.tween_interval(BraidTuning.DOOR_HOLD_OPEN + extra)
 	_tween.tween_property(self, "_open", 0.0, 0.3)
 
 

@@ -1166,27 +1166,44 @@ func _spawn_group(group: WaveEnemyGroup, elite: bool, count: int) -> void:
 		elif roll < behind_share + door_share:
 			var door := _pick_door()
 			if door:
-				door.open(_door_warning())
+				var rows := ceili(float(count) / BraidTuning.DOOR_ROW)
+				door.open(_door_warning(), (rows - 1) * BraidTuning.DOOR_ROW_TIME)
 				var seg := round_index()
-				# The point, not the door: the level (and its doors) may be
+				# The points, not the door: the level (and its doors) may be
 				# gone by then (a new act).
 				var exit: Vector2 = door.exit_point()
-				get_tree().create_timer(_door_warning(), false).timeout.connect(func() -> void:
-					if state == State.RUNNING and not squad_out and round_index() == seg:
-						_emit_group(group, elite, count, exit, true))
+				var across: Vector2 = door.across()
+				for row in rows:
+					var n := mini(BraidTuning.DOOR_ROW, count - row * BraidTuning.DOOR_ROW)
+					var delay := _door_warning() + row * BraidTuning.DOOR_ROW_TIME
+					get_tree().create_timer(delay, false).timeout.connect(func() -> void:
+						if state == State.RUNNING and not squad_out and round_index() == seg:
+							_emit_from_door(group, elite, n, exit, across))
 				return
 	_emit_group(group, elite, count, _spawn_point())
 
 
-## `from_door`: they come out of a door's dark doorway, fading up from black.
-func _emit_group(group: WaveEnemyGroup, elite: bool, count: int, at: Vector2,
-		from_door := false) -> void:
+## A group comes out at `at`, spread round it (_group_spots).
+func _emit_group(group: WaveEnemyGroup, elite: bool, count: int, at: Vector2) -> void:
 	for p in _group_spots(at, count):
-		var enemy := _add_enemy(group.enemy_scene, p,
-			segment_wave.enemy_health_multiplier * group.health_multiplier * _enemy_health_mult(),
-			segment_wave.enemy_speed_multiplier * group.speed_multiplier, elite)
-		if from_door:
-			_emerge(enemy)
+		_add_group_enemy(group, elite, p)
+
+
+## One row of a group coming through a door: side by side right in front of
+## the doorway (`exit`, `across` it), fading up out of the dark.
+func _emit_from_door(group: WaveEnemyGroup, elite: bool, count: int, exit: Vector2,
+		across: Vector2) -> void:
+	var gap := BraidTuning.DOOR_WIDTH / (count + 1)
+	for i in count:
+		var p := exit + across * (gap * (i + 1) - BraidTuning.DOOR_WIDTH / 2.0)
+		p += across * randf_range(-1.0, 1.0)
+		_emerge(_add_group_enemy(group, elite, p))
+
+
+func _add_group_enemy(group: WaveEnemyGroup, elite: bool, at: Vector2) -> Node2D:
+	return _add_enemy(group.enemy_scene, at,
+		segment_wave.enemy_health_multiplier * group.health_multiplier * _enemy_health_mult(),
+		segment_wave.enemy_speed_multiplier * group.speed_multiplier, elite)
 
 
 ## Fades `enemy` up from black (its alpha kept: Braid fades enemies). A
